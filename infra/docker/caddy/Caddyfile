@@ -1,0 +1,32 @@
+# Qoshul.az — Caddy (VM1, production)
+# Dəyişənlər container environment-dən gəlir (compose: CADDY_DOMAIN,
+# CADDY_ACME_EMAIL). TLS avtomatikdir (ACME). WebSocket upgrade Caddy
+# reverse_proxy-da avtomatikdir — əlavə header lazım deyil.
+
+{
+	email {$CADDY_ACME_EMAIL}
+}
+
+{$CADDY_DOMAIN} {
+	encode zstd gzip
+
+	# REST API — NestJS
+	handle /api/* {
+		reverse_proxy backend:4000
+	}
+
+	# Socket.IO — polling + WebSocket (m5)
+	handle /socket.io/* {
+		reverse_proxy backend:4000
+	}
+
+	# Sağlamlıq yoxlaması (external uptime monitor)
+	handle /health {
+		reverse_proxy backend:4000
+	}
+
+	# Media R2/CDN-dən gəlir — burada deyil
+	handle {
+		respond "Qoshul API" 404
+	}
+}

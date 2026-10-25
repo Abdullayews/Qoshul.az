@@ -1,0 +1,16 @@
+# Lokal dev — TLS yoxdur (backend host-da, m2-dən sonra)
+# İstifadə:
+#   docker run --rm -p 8080:8080 \
+#     -v ./infra/docker/caddy/Caddyfile.dev:/etc/caddy/Caddyfile:ro \
+#     caddy:2-alpine
+:8080 {
+	handle /api/* {
+		reverse_proxy host.docker.internal:4000
+	}
+	handle /socket.io/* {
+		reverse_proxy host.docker.internal:4000
+	}
+	handle {
+		respond "Qoshul dev API" 404
+	}
+}

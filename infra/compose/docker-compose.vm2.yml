@@ -1,0 +1,50 @@
+# =====================================================================
+# VM2 — Oracle A1 (1 OCPU, 6 GB RAM): YALNIZ PostgreSQL + PostGIS
+# İstifadə (VM2-də): make vm2-up
+# TƏCİD: 5432 yalnız private IP-yə bind edilir (PG_BIND_IP = VM2 private IP);
+# "yalnız VM1-dən" qaydası NSG ilə təmin olunur — docs/runbook.md §2.
+# Birinci startda imaj lokal build olunur (m10-da CI-nin hazır imajı gələcək).
+# Yaddaş büdcəsi: docs/runbook.md §5 (shared_buffers=1GB → həmişə 20% üstü)
+# =====================================================================
+name: qoshul-vm2
+
+services:
+  postgres:
+    # Öz imajımız: postgres:17 + PGDG postgis (arm64 üçün — D-002)
+    build:
+      context: ../docker/postgres
+    image: qoshul-postgres:17-3
+    container_name: qoshul-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER tələb olunur}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD tələb olunur}
+      POSTGRES_DB: ${POSTGRES_DB:-qoshul}
+    # 6 GB RAM-li VM üçün ilkin tuning — m10-da MAU rəqəminə görə dəqiqləşir.
+    # shared_buffers=1GB SABİT rezident yaddaşdır → idle-reclaim 20% qaydasına
+    # qarşı deterministik qoruma (runbook §5).
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=16MB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - maintenance_work_mem=256MB
+    ports:
+      - "${PG_BIND_IP:?PG_BIND_IP (VM2 private IP) tələb olunur}:5432:5432"
+    volumes:
+      - ${PGDATA_VOLUME:-/mnt/qoshul-pgdata}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 4g

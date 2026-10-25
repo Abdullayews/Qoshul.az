@@ -1,0 +1,40 @@
+# --- Mühit / sirlər (qayda 3) ---
+.env
+.env.*
+!.env.example
+keys/
+*.p8
+*-service-account.json
+fcm-*.json
+
+# --- Node / backend ---
+node_modules/
+dist/
+coverage/
+*.log
+npm-debug.log*
+.nyc_output/
+
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+ios/Pods/
+ios/.symlinks/
+android/.gradle/
+android/local.properties
+# freezed/json_serializable/openapi generasiya faylları COMMIT OLUNUR
+# (CI-da build_runner-ə ehtiyac azalır; freezed dokumentasiyası tövsiyəsi)
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- Lokal data ---
+pgdata/
+*.sql.gz
+*.dump

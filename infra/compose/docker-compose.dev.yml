@@ -1,0 +1,49 @@
+# =====================================================================
+# LOKAL DEVELOPMENT + CI
+# İstifadə:  cp .env.example .env → POSTGRES_PASSWORD doldur → make dev
+# Backend (m2-dən sonra) host-da işləyir (npm run start:dev, :4000) —
+# compose-da deyil (sürətli hot-reload üçün).
+# PG: 127.0.0.1:5432 · Redis: 127.0.0.1:6379 (yalnız localhost-a bind)
+# =====================================================================
+name: qoshul-dev
+
+services:
+  postgres:
+    # Öz imajımız: postgres:17 + PGDG postgis (arm64 üçün — D-002)
+    build:
+      context: ../docker/postgres
+    image: qoshul-postgres:17-3
+    container_name: qoshul-pg
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-qoshul}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env-də tələb olunur}
+      POSTGRES_DB: ${POSTGRES_DB:-qoshul}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    # linux/arm64 təsdiqlənib — D-004
+    image: redis:7-alpine
+    container_name: qoshul-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata_dev:
+  redisdata_dev:
