@@ -1,0 +1,71 @@
+# Qoshul.az — APK build pipeline (ilk versiya, D-017)
+#
+# Bu mərhələdə (m1 sonrası preview):
+#   - android/ platform faylları repoda YOXDUR — CI-də `flutter create` generasiya edir
+#   - imza: Flutter şablonunun debug keystore-u (yalnız birbaşa quraşdırma üçün)
+#   - Flutter versiyası pin edilməyib (channel: stable) — m7-də pin olunacaq
+# m7-də: kurasiyalı android/ qovluğu + real keystore (D-016) + gradle cache.
+name: APK
+
+on:
+  push:
+    branches: [feature/apk-pipeline]
+    paths:
+      - ".github/workflows/apk.yml"
+      - "mobile/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Release APK (v0.1.0)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      - name: Flutter SDK (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android platform faylları (flutter create — D-017)
+        run: |
+          set -e
+          flutter create --platforms=android --org az.qoshul --project-name qoshul .
+          # create-in toxuna biləcəyi bizim faylları GERİ qaytar (main.dart, pubspec və s.)
+          git checkout -- .
+          rm -f test/widget_test.dart
+          # Tətbiq adı: "qoshul" -> "Qoshul.az"
+          sed -i 's/android:label="qoshul"/android:label="Qoshul.az"/' \
+            android/app/src/main/AndroidManifest.xml
+          flutter --version
+
+      - name: Asılılıqlar
+        run: flutter pub get
+
+      - name: APK build (release)
+        run: flutter build apk --release
+
+      - name: Artifaktı daxil et
+        uses: actions/upload-artifact@v4
+        with:
+          name: qoshul-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
