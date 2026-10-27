@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   build:
-    name: Release APK (v0.1.0)
+    name: Release APK (v0.2.0 — UI)
     runs-on: ubuntu-latest
     defaults:
       run:
