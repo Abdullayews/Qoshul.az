@@ -38,10 +38,7 @@ class _DetailSheetState extends State<_DetailSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final state = widget.state;
     final event = widget.event;
-    final isJoined = state.joined.contains(event.id);
-    final isPending = state.pending.contains(event.id);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -49,9 +46,13 @@ class _DetailSheetState extends State<_DetailSheet> {
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: ListView(
+        return AnimatedBuilder(
+          animation: widget.state,
+          builder: (context, _) {
+            final state = widget.state;
+            final isJoined = state.joined.contains(event.id);
+            final isPending = state.pending.contains(event.id);
+            return ListView(
             controller: scrollController,
             children: [
               Center(
@@ -86,6 +87,38 @@ class _DetailSheetState extends State<_DetailSheet> {
               ),
               const SizedBox(height: 12),
               _facts(event),
+              if (isJoined && !event.past)
+                SizedBox(
+                  width: double.infinity,
+                  child: state.checkedIn.contains(event.id)
+                      ? FilledButton.icon(
+                          onPressed: null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Q.secondary,
+                            disabledBackgroundColor: Q.secondary,
+                            disabledForegroundColor: Q.primary,
+                          ),
+                          icon: const Icon(Icons.check_circle, size: 16),
+                          label: Text(
+                              'Check-in edilib (+${XpRules.checkInXp} XP qazanıldı)',
+                              style: T.button),
+                        )
+                      : FilledButton.icon(
+                          onPressed: () {
+                            final ok = state.checkInEvent(event.id);
+                            if (ok) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(
+                                    'Check-in uğurlu! +${XpRules.checkInXp} XP qazandın.'),
+                              ));
+                            }
+                          },
+                          icon: const Icon(Icons.where_to_vote_outlined, size: 16),
+                          label: Text(
+                              'Yerində check-in et (+${XpRules.checkInXp} XP)',
+                              style: T.button),
+                        ),
+                ),
               if (isJoined && event.past) _reviewForm(event),
               if (event.format != 'Onlayn') ...[
                 const SizedBox(height: 12),
@@ -150,7 +183,7 @@ class _DetailSheetState extends State<_DetailSheet> {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(event.approval
                                 ? 'Sorğun təşkilatçıya göndərildi.'
-                                : 'Tədbirə qoşuldun! +${XpRules.participationXp} XP'),
+                                : 'Tədbirə qoşuldun! +${XpRules.joinXp} XP'),
                           ));
                         }
                       },
@@ -164,7 +197,8 @@ class _DetailSheetState extends State<_DetailSheet> {
               ],
               const SizedBox(height: 24),
             ],
-          ),
+          );
+          },
         );
       },
     );
@@ -175,7 +209,7 @@ class _DetailSheetState extends State<_DetailSheet> {
       (Icons.event, '${e.date}, ${e.time}'),
       (Icons.group, '${e.spotsLeft} boş yer'),
       (Icons.location_on, e.location),
-      (Icons.emoji_events, '+50 XP'),
+      (Icons.emoji_events, '+${XpRules.joinXp} XP qoşulma'),
       (Icons.payments, e.price != null ? '${e.price} AZN' : 'Pulsuz'),
       if (e.level != null) (Icons.signal_cellular_alt, e.level!),
       if (e.language != null) (Icons.translate, e.language!),
@@ -226,19 +260,19 @@ class _DetailSheetState extends State<_DetailSheet> {
 
   /// Keçmiş + qoşululmuş tədbir üçün rəy forması (web ReviewForm portu).
   Widget _reviewForm(QoshulEvent e) {
-    if (reviewSent) {
-      return const Padding(
-        padding: EdgeInsets.only(top: 14),
-        child: Row(
-          children: [
-            Icon(Icons.check, size: 12, color: Q.primary),
-            SizedBox(width: 6),
-            Text('Rəyin üçün təşəkkürlər! (+20 XP)',
-                style: TextStyle(fontFamily: T.family, fontSize: 11, color: Q.mutedFg)),
-          ],
-        ),
-      );
-    }
+      if (reviewSent) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.check, size: 12, color: Q.primary),
+              const SizedBox(width: 6),
+              Text('Rəyin üçün təşəkkürlər! (+${XpRules.reviewXp} XP)',
+                  style: const TextStyle(fontFamily: T.family, fontSize: 11, color: Q.mutedFg)),
+            ],
+          ),
+        );
+      }
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Column(

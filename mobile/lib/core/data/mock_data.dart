@@ -1,4 +1,6 @@
+import '../models/coupon.dart';
 import '../models/models.dart';
+import '../models/notification.dart';
 
 /// Mock data — UI mərhələsi (D-023). Məzmun web tətbiqinin seed datasına
 /// əsaslanır; backend inteqrasiyasında API cavabları ilə əvəz olunacaq.
@@ -385,7 +387,8 @@ final mockEvents = <QoshulEvent>[
   ),
 ];
 
-/// Mock insanlar — web data.ts people (birebir adlar + AI uyğunluq).
+/// Mock insanlar — web data.ts people (adlar birebir) + ROL D kart sahələri
+/// (yaş, ~məsafə, ortaq maraqlar; likesBack = mock qarşılıqlılıq).
 const mockPeople = <Person>[
   Person(
     id: 'p1',
@@ -398,6 +401,10 @@ const mockPeople = <Person>[
     interest: 'Qəhvə · Səyahət',
     match: 94,
     reason: 'Hər ikiniz qəhvə görüşlərini və şəhər gəzintilərini sevirsiniz.',
+    age: 23,
+    distanceKm: 1.2,
+    rolInterests: ['Kafe və Yemək', 'Təbiət və Səyahət', 'Mədəniyyət və İncəsənət'],
+    likesBack: true,
   ),
   Person(
     id: 'p2',
@@ -410,6 +417,10 @@ const mockPeople = <Person>[
     interest: 'İdman · Texnologiya',
     match: 96,
     reason: 'İdman və texnologiya maraqlarınız üst-üstə düşür — padel görüşü üçün ideal.',
+    age: 27,
+    distanceKm: 3.4,
+    rolInterests: ['İdman və Aktivlik', 'Təhsil və Karyera', 'Oyun və Hobbi'],
+    likesBack: true,
   ),
   Person(
     id: 'p3',
@@ -422,6 +433,10 @@ const mockPeople = <Person>[
     interest: 'Mədəniyyət · Musiqi',
     match: 91,
     reason: 'Mədəni tədbirlərə birgə getmək üçün yüksək uyğunluq.',
+    age: 22,
+    distanceKm: 0.8,
+    rolInterests: ['Mədəniyyət və İncəsənət', 'Musiqi', 'Könüllülük və Sosial'],
+    likesBack: false,
   ),
   Person(
     id: 'p4',
@@ -434,6 +449,10 @@ const mockPeople = <Person>[
     interest: 'Kodlaşdırma · Şahmat',
     match: 89,
     reason: 'Texnologiya meetuplarında birlikdə iştirak üçün uyğun profil.',
+    age: 29,
+    distanceKm: 5.1,
+    rolInterests: ['Təhsil və Karyera', 'Oyun və Hobbi', 'İdman və Aktivlik'],
+    likesBack: false,
   ),
   Person(
     id: 'p5',
@@ -446,10 +465,15 @@ const mockPeople = <Person>[
     interest: 'Səyahət · Dizayn',
     match: 93,
     reason: 'Səyahət planları və dizayn maraqlarınız uyğundur.',
+    age: 25,
+    distanceKm: 2.3,
+    rolInterests: ['Təbiət və Səyahət', 'Mədəniyyət və İncəsənət', 'Musiqi'],
+    likesBack: true,
   ),
 ];
 
-/// Mock tərəfdaş məkanlar.
+/// Mock tərəfdaş məkanlar — ROL E sahələri ilə (qiymət aralığı, endirim %,
+/// avtomatik/manuel təsdiq, reyting, iş saatları).
 const mockPartners = <Partner>[
   Partner(
     id: 'v1',
@@ -462,6 +486,13 @@ const mockPartners = <Partner>[
     image: imgPadel,
     lat: 40.4236,
     lng: 49.8236,
+    priceRange: '₼₼₼',
+    autoAccept: false, // partnyor təsdiqi tələb edir → GÖZLƏYİR
+    rating: 4.8,
+    reviewsCount: 34,
+    openFrom: 8,
+    openTo: 23,
+    discountPercent: 20,
   ),
   Partner(
     id: 'v2',
@@ -474,6 +505,13 @@ const mockPartners = <Partner>[
     image: imgCoffee,
     lat: 40.3922,
     lng: 49.8522,
+    priceRange: '₼',
+    autoAccept: true,
+    rating: 4.6,
+    reviewsCount: 51,
+    openFrom: 9,
+    openTo: 22,
+    discountPercent: 15,
   ),
   Partner(
     id: 'v3',
@@ -486,6 +524,13 @@ const mockPartners = <Partner>[
     image: imgTech,
     lat: 40.3903,
     lng: 49.8556,
+    priceRange: '₼₼',
+    autoAccept: true,
+    rating: 4.4,
+    reviewsCount: 19,
+    openFrom: 10,
+    openTo: 20,
+    discountPercent: 0,
   ),
   Partner(
     id: 'v4',
@@ -498,6 +543,13 @@ const mockPartners = <Partner>[
     image: imgFriends,
     lat: 40.3292,
     lng: 49.7689,
+    priceRange: '₼',
+    autoAccept: true,
+    rating: 4.7,
+    reviewsCount: 27,
+    openFrom: 11,
+    openTo: 23,
+    discountPercent: 10,
   ),
 ];
 
@@ -591,3 +643,162 @@ const initialFriendMessages = <String, List<ChatMessage>>{
     ChatMessage(sender: 'Sən', body: 'Salam, bəli! İlk dəfə sınayıram.', mine: true),
   ],
 };
+
+// ═══════════════════════════════════════════════════════════
+// ROL (docs/product-spec.md) mock genişlənmələri — UI-2 (v0.3.0)
+// ═══════════════════════════════════════════════════════════
+
+/// ROL B Addım 4: 9 maraq kateqoriyası (min 3, max 8 seçilir).
+const rolCategories = <String>[
+  'Əyləncə və Gecə həyatı',
+  'Kafe və Yemək',
+  'İdman və Aktivlik',
+  'Təbiət və Səyahət',
+  'Mədəniyyət və İncəsənət',
+  'Təhsil və Karyera',
+  'Oyun və Hobbi',
+  'Musiqi',
+  'Könüllülük və Sosial',
+];
+
+/// ROL B: kateqoriya alt-başlıqları (nümunə etiketlər).
+const rolCategoryHints = <String, String>{
+  'Əyləncə və Gecə həyatı': 'klub, bar, karaoke',
+  'Kafe və Yemək': 'kafe, restoran, kofe görüşləri',
+  'İdman və Aktivlik': 'futbol, tennis, qaçış, velosiped, fitnes',
+  'Təbiət və Səyahət': 'hiking, kamp, Qəbələ, Şahdağ',
+  'Mədəniyyət və İncəsənət': 'teatr, muzey, konsert, sərgi',
+  'Təhsil və Karyera': 'dil klubları, networking, seminar',
+  'Oyun və Hobbi': 'stolüstü oyunlar, PlayStation, kitab klubu, foto',
+  'Musiqi': 'canlı musiqi, jam session',
+  'Könüllülük və Sosial': 'xeyriyyə, təmizlik aksiyaları',
+};
+
+/// Məkanların rezerv saat slotları (ROL E: tarix → saat → nəfər).
+const venueSlotTimes = <String, List<String>>{
+  'v1': ['10:00', '12:00', '16:00', '18:00', '20:00'],
+  'v2': ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00', '21:00'],
+  'v3': ['10:00', '12:00', '14:00', '16:00', '18:00'],
+  'v4': ['12:00', '14:00', '16:00', '18:00', '20:00'],
+};
+
+/// Növbəti 7 günün etiketləri (Bu gün / Sabah / Ay Gün).
+List<String> nextDateLabels({int count = 7}) {
+  final now = DateTime.now();
+  const months = [
+    'Yan', 'Fev', 'Mar', 'Apr', 'May', 'İyn', 'İyl', 'Avq', 'Sen', 'Okt', 'Noy', 'Dek'
+  ];
+  return List.generate(count, (i) {
+    final d = now.add(Duration(days: i));
+    if (i == 0) return 'Bu gün';
+    if (i == 1) return 'Sabah';
+    return '${months[d.month - 1]} ${d.day}';
+  });
+}
+
+/// Məkan rəyləri (ROL E: məkan detal ekranı).
+class VenueReview {
+  final String author;
+  final int stars;
+  final String text;
+  const VenueReview(this.author, this.stars, this.text);
+}
+
+const mockVenueReviews = <String, List<VenueReview>>{
+  'v1': [
+    VenueReview('Elnur K.', 5, 'Meydanlar əla, səhər saatları endirim həqiqətən işləyir.'),
+    VenueReview('Sara M.', 4, 'Təşkilat yaxşıdır, yalnız qaraj yer axtarmaq lazım oldu.'),
+  ],
+  'v2': [
+    VenueReview('Aysu R.', 5, 'Sərin qəhvə, mehriban kollektiv. 2+1 çay təklifi əladır.'),
+    VenueReview('Kamran S.', 4, 'Bir az kalabalıq olur axşam, amma atmosfer xoşdur.'),
+    VenueReview('Nərmin A.', 5, 'İlk görüş üçün ideal sakit yer.'),
+  ],
+  'v3': [
+    VenueReview('Rəşad Ə.', 5, 'Meetup-lar üçün ən yaxşı məkan, proyektor və board var.'),
+  ],
+  'v4': [
+    VenueReview('Günay T.', 4, 'Qrupla piknik üçün çox rahat, çay dəstəyi yaxşı qurulub.'),
+    VenueReview('Vüqar H.', 5, 'Axşam canlı musiqi olur, ailəvi şərait.'),
+  ],
+};
+
+/// Mock endirim təklifləri (ROL G): səviyyə-avto + XP ilə alınan.
+const mockOffers = <CouponOffer>[
+  CouponOffer(
+    id: 'o1',
+    venueId: 'v2',
+    venueName: 'Coffee Lab',
+    label: '15% endirim',
+    percent: 15,
+    minRankIndex: 0,
+    xpPrice: 200,
+  ),
+  CouponOffer(
+    id: 'o2',
+    venueId: 'v1',
+    venueName: 'Padel Arena',
+    label: '20% endirim',
+    percent: 20,
+    minRankIndex: 2, // Aktiv
+    xpPrice: 300,
+  ),
+  CouponOffer(
+    id: 'o3',
+    venueId: 'v4',
+    venueName: 'Dostlar Bağı',
+    label: '10% endirim',
+    percent: 10,
+    minRankIndex: 0,
+    xpPrice: 100,
+    validityDays: 30,
+  ),
+  // Səviyyəyə görə avtomatik açılanlar (ROL G-a):
+  CouponOffer(
+    id: 'o4',
+    venueId: 'v2',
+    venueName: 'Coffee Lab',
+    label: '5% avtomatik endirim',
+    percent: 5,
+    minRankIndex: 2, // Aktiv səviyyə → bütün partnyor kafelərdə 5%
+    xpPrice: 0,
+    autoByLevel: true,
+  ),
+  CouponOffer(
+    id: 'o5',
+    venueId: 'v3',
+    venueName: 'Techno Hub',
+    label: 'İlk ziyarət pulsuz',
+    fixedAzn: 5,
+    minRankIndex: 1, // Kəşfiyyatçı
+    xpPrice: 0,
+    autoByLevel: true,
+  ),
+];
+
+/// İlkin bildirişlər (mock) — ROL H tipləri.
+final initialNotifications = <AppNotification>[
+  AppNotification(
+    id: 'n1',
+    type: NotifType.nearbyEvent,
+    title: 'Yaxınlıqda uyğun tədbir',
+    body: 'Şənbə saat 10:00-da Coffee Lab-da qəhvə söhbəti — maraqlarına uyğundur.',
+    at: DateTime.now().subtract(const Duration(hours: 2)),
+  ),
+  AppNotification(
+    id: 'n2',
+    type: NotifType.marketing,
+    title: 'Qoshul-a xoş gəlmisən!',
+    body: 'Profilini tamamla, +30 XP qazan və ilk tədbirinə qoşul.',
+    at: DateTime.now().subtract(const Duration(days: 1)),
+    read: true,
+  ),
+  AppNotification(
+    id: 'n3',
+    type: NotifType.eventReminder,
+    title: 'Tədbirə 24 saat qalıb',
+    body: 'Padel oyunu — bu gün 18:00, Padel Arena.',
+    at: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
+    read: true,
+  ),
+];

@@ -71,6 +71,10 @@ class Person {
   final String interest;
   final int match; // 0-100
   final String reason;
+  final int age; // ROL D: kartda yaş göstərilir
+  final double distanceKm; // "~2 km" (dəqiq koordinat YOX)
+  final List<String> rolInterests; // ROL kateqoriyaları (ortaq maraq üçün)
+  final bool likesBack; // mock: qarşılıqlı "Maraqlıyam" simulyasiyası
 
   const Person({
     required this.id,
@@ -83,9 +87,17 @@ class Person {
     required this.interest,
     required this.match,
     required this.reason,
+    this.age = 24,
+    this.distanceKm = 1.5,
+    this.rolInterests = const [],
+    this.likesBack = false,
   });
 
   String get fullName => '$firstName $lastName';
+
+  /// ROL: yalnız təxmini məsafə göstərilir.
+  String get distanceLabel =>
+      distanceKm < 1 ? '~500 m' : '~${distanceKm.round()} km';
 }
 
 class Partner {
@@ -99,6 +111,14 @@ class Partner {
   final String image;
   final double lat;
   final double lng;
+  // ROL E genişlənmələri (məkan detal + rezerv axını)
+  final String priceRange; // ₼ / ₼₼ / ₼₼₼
+  final bool autoAccept; // true → TƏSDİQLƏNDİ, false → GÖZLƏYİR
+  final double rating; // 0-5
+  final int reviewsCount;
+  final int openFrom; // saat ("indi açıqdır" filtri üçün)
+  final int openTo;
+  final int discountPercent; // aktiv endirim (0 = yox)
 
   const Partner({
     required this.id,
@@ -111,7 +131,18 @@ class Partner {
     required this.image,
     required this.lat,
     required this.lng,
+    this.priceRange = '₼₼',
+    this.autoAccept = true,
+    this.rating = 4.6,
+    this.reviewsCount = 12,
+    this.openFrom = 9,
+    this.openTo = 22,
+    this.discountPercent = 0,
   });
+
+  bool isOpenAt(int hour) => hour >= openFrom && hour < openTo;
+
+  bool get hasDiscount => discountPercent > 0;
 }
 
 class City {
@@ -145,23 +176,53 @@ class PersonalityResult {
   const PersonalityResult({required this.type, required this.summary, required this.traits});
 }
 
-/// XP qaydaları — web rules.ts portları (birebir).
+/// XP qaydaları — ROL (docs/product-spec.md, bölmə F) dəyərləri.
+/// UI fazası: mock simulyasiya; backend fazasında server tərəfində hesablanacaq
+/// (qayda 8) və bu sinif DTO qaydalarına çevriləcək.
 class XpRules {
   XpRules._();
 
-  static const int participationXp = 50;
-  static const int hostingXp = 100;
-  static const int partnerHostingXp = 150;
-  static const int reviewXp = 20;
+  // — XP hadisələri (ROL F cədvəli) —
+  static const int registrationXp = 50; // qeydiyyatı tamamlama
+  static const int profileCompleteXp = 30; // profil 100%
+  static const int phoneVerifyXp = 40; // telefon/hesab təsdiqi
+  static const int dailyLoginXp = 5; // günlük giriş
+  static const int streakBonusXp = 30; // 7 günlük seriya bonusu
+  static const int matchXp = 10; // match (gündə max 3)
+  static const int joinXp = 10; // tədbirə qoşulma
+  static const int checkInXp = 40; // tədbirdə faktiki iştirak
+  static const int hostingXp = 60; // tədbir yaratma (≥3 iştirakçı gələndə)
+  static const int reservationXp = 30; // rezervdən istifadə (QR skan)
+  static const int reviewXp = 15; // məkana rəy (həftədə max 3)
+  static const int inviteXp = 100; // dost dəvəti
 
-  static const List<int> rankMax = [200, 600, 1500, 3500, 7000];
+  // — limitlər —
+  static const int matchXpDailyCap = 3;
+  static const int reviewXpWeeklyCap = 3;
+  static const int hostingMinParticipants = 3;
+  static const int noShowLimit = 3; // 3 gəlməmə → 7 gün məhdudiyyət
+  static const int noShowRestrictionDays = 7;
+  static const int couponValidityDays = 14;
+
+  // — onboarding qaydaları (ROL B) —
+  static const int minAge = 18;
+  static const int minInterests = 3;
+  static const int maxInterests = 8;
+  static const int bioLimit = 150;
+  static const int maxPhotos = 6;
+
+  // — check-in qorunması (ROL F) —
+  static const int checkInMaxDistanceM = 200;
+
+  // — səviyyələr (ROL F) —
+  static const List<int> rankMax = [99, 299, 699, 1499, 2999];
   static const List<String> rankNames = [
     'Yeni',
     'Kəşfiyyatçı',
     'Aktiv',
-    'Veteran',
-    'Ultras',
-    'Legend',
+    'Sosial',
+    'Lider',
+    'Əfsanə',
   ];
 
   static String rankForXp(int xp) {
@@ -171,7 +232,15 @@ class XpRules {
     return rankNames.last;
   }
 
-  /// {nextName, toNext, pct} — web xpProgress port.
+  /// Səviyyə indeksi (0=Yeni .. 5=Əfsanə) — kuponların min səviyyəsi üçün.
+  static int rankIndexForXp(int xp) {
+    for (var i = 0; i < rankMax.length; i++) {
+      if (xp <= rankMax[i]) return i;
+    }
+    return rankNames.length - 1;
+  }
+
+  /// {nextName, toNext, pct} — web xpProgress portu (ROL hədləri ilə).
   static Map<String, dynamic> xpProgress(int xp) {
     var lower = 0;
     for (var i = 0; i < rankMax.length; i++) {
@@ -189,7 +258,33 @@ class XpRules {
     }
     return {'nextName': null, 'toNext': 0, 'pct': 100};
   }
+
+  /// ROL B: 18+ yoxlaması (UI default aktiv; rəsmi təsdiq gözləyir).
+  static bool isAdult(DateTime birth, [DateTime? now]) {
+    final n = now ?? DateTime.now();
+    var age = n.year - birth.year;
+    final hadBirthday = n.month > birth.month ||
+        (n.month == birth.month && n.day >= birth.day);
+    if (!hadBirthday) age--;
+    return age >= minAge;
+  }
 }
+
+/// Nişanlar (ROL F): "İlk tədbir", "10 tədbir", "Səyyah", "Gecə quşu", "Təsdiqlənmiş".
+class BadgeDef {
+  final String id;
+  final String name;
+  final String description;
+  const BadgeDef(this.id, this.name, this.description);
+}
+
+const badgeDefs = <BadgeDef>[
+  BadgeDef('firstEvent', 'İlk tədbir', 'İlk tədbirinə qoşul'),
+  BadgeDef('tenEvents', '10 tədbir', '10 tədbirdə iştirak et'),
+  BadgeDef('traveler', 'Səyyah', 'Başqa şəhərdə tədbirə qoşul'),
+  BadgeDef('nightOwl', 'Gecə quşu', 'Axşam 20:00-dan sonra check-in'),
+  BadgeDef('verified', 'Təsdiqlənmiş', 'Telefon nömrəsini təsdiqlə'),
+];
 
 /// Assistant [TƏDBİR] parser — web assistant-event.ts portu.
 /// Qaytarır: {text: təmiz mətn, proposal: EventProposal?}

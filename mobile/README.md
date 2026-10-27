@@ -1,29 +1,35 @@
 # Qoshul.az — Mobil (Flutter)
 
 Status: **UI mərhələsi (D-023)** — tam arayüz, mock data, backend gözləyir.
-Branch: `feature/apk-pipeline` · Versiya: `0.2.0+2`
+Branch: `feature/apk-pipeline` · Versiya: `0.3.0+3`
 
-## Nə var indi (v0.2.0)
+## Nə var indi (v0.3.0 — ROL UI)
 
-Web tətbiqi ilə (Amin099015/qoshul) **birebir eyni stildə** tam arayüz:
+ROL (docs/product-spec.md) strukturunun tam tətbiqi — web vizual stili qorunaraq (D-023):
 
-| Ekran | Məzmun |
-|---|---|
-| Auth | Daxil ol / Qeydiyyat / Şifrəni unut (mock) + Google düyməsi |
-| Onboarding | 8 addım: əsas məlumat, təhsil/iş, dillər, maraqlar, məqsədlər, şəxsiyyət testi, açıq suallar, üstünlüklər → Big Five nəticəsi |
-| Ana səhifə | Salamlaşma + XP/rank, hero şəkli, hekayələr, "Sənin üçün" AI tövsiyələri, cəmiyyət banneri, axtarış + kateqoriya çipləri + tədbir kartları |
-| Kəşf et | Yaxınlıqda (xəritə + siyahı) / Populyar / İnsanlar (AI uyğunluq kartları, dostluq sorğuları) |
-| Söhbətlər | Tədbir qrup söhbətləri + dost söhbətləri, tam çat görünüşü (mock cavablarla) |
-| Köməkçi | AI söhbət (yazı axını simulyasiyası), [TƏDBİR] təklif kartı → "Bu tədbiri yarat" |
-| Profil | Avatar, maraqlar, şəxsiyyət nəticəsi, statistika, XP, 3 tab, ad redaktəsi |
-| Tərəfdaşlar | Məkan kartları + endirimlər + "Burada tədbir yarat" |
-| Ayarlar | Hesab, bildirişlər, təhlükəsizlik, haqqında, çıxış |
-| Tədbir detalları | Bottom sheet: şəkil, faktlar, qoşul/çıx, rəy forması (keçmiş üçün) |
-| Tədbir yaratma | Tam forma: AI doldurma (mock), kateqoriya, format, şəhər, məkan, tarix/saat, ödəniş, teqlər, təsdiq rejimi |
+- **5 tab:** Kəşf · Xəritə · Tədbirlər · Söhbətlər · Profil (+ mərkəzdə Yarat)
+- **Onboarding (ROL B):** 3 slayd → profil (18+ yoxlaması, şəkil 1-6, bio 150) →
+  9 maraq kateqoriyası (min 3, max 8) → icazələr (məkan/bildiriş, rdd mümkün) → +50 XP
+- **Auth (ROL B):** Google / Apple / email + 6 rəqəmli təsdiq kodu (mock)
+- **Xəritə (ROL TAB 2):** pin-lər (məkan/tədbir/insan), 4 filtr (kateqoriya,
+  1-3-5-10 km, indi açıqdır, endirimi var), alt kart → Rezerv et / Ətraflı
+- **Match (ROL D):** kart dəsti (şəkil, yaş, ~məsafə, ortaq maraqlar),
+  Maraqlıyam/Keç → match → chat + +10 XP (gündə max 3), report/blok
+- **Rezerv (ROL E):** tarix → slot → nəfər → qeyd → kupon → status
+  (GÖZLƏYİR/TƏSDİQLƏNDİ) → QR; check-in → İSTİFADƏ OLUNDU + 30 XP;
+  ləğv; no-show 3× → 7 gün məhdudiyyət
+- **Kuponlar (ROL G):** səviyyə-avto endirimlər + XP ilə al (balans ≠ ümumi XP),
+  unikal kod + QR + müddət; vaxtı bitən kupon XP qaytarılmır
+- **XP (ROL F):** 11 hadisə ROL cədvəli ilə (idempotent, gündəlik/həftəlik limitlər),
+  6 səviyyə (Yeni→Əfsanə), 5 nişan
+- **Bildirişlər (ROL H):** 11 tip, hər tip ayrıca söndürülür, marketinq 23:00-08:00 sükut
+- **Moderasiya (ROL I):** report (səbərlə), blok (qarşılıqlı görünməzlik),
+  3+ report → məhdudlaşdırma; ilk görüş məsləhətləri ekranı
+- **Çat (ROL TAB 4):** Şəxsi/Qruplar, oxunma statusu (çatdırıldı/oxundu),
+  yazır..., report/blok/sil
 
-Dizayn sistemi (`lib/core/theme/app_theme.dart`): web `styles.css` tokenlərinin
-OKLCH→sRGB çevirməsi ilə birebir portu — `#00A63E` yaşıl, `#FE9A00` narıncı,
-Plus Jakarta Sans (Azərbaycan qlifləri ilə, 400–800 çəkilər), kiçik radiuslar (4–8px).
+Bütün məntiq mock-data ilə klient tərəfində simulyasiya olunur (D-024:
+backend placeholder). Ödəniş yoxdur.
 
 ## Struktur
 

@@ -291,7 +291,7 @@ class EventCard extends StatelessWidget {
           SnackBar(
             content: Text(event.approval
                 ? 'Sorğun təşkilatçıya göndərildi.'
-                : 'Tədbirə qoşuldun! +${XpRules.participationXp} XP'),
+                : 'Tədbirə qoşuldun! +${XpRules.joinXp} XP'),
           ),
         );
       }

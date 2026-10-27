@@ -4,7 +4,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/ui.dart';
 
-/// Daxil ol / Qeydiyyat — web auth.tsx portu (UI mərhələsi: mock auth).
+/// Daxil ol / Qeydiyyat — ROL (product-spec B, Addım 2):
+/// "Google ilə davam et", "Apple ilə davam et", "Email ilə qeydiyyat".
+/// Email: email + parol → 6 rəqəmli təsdiq kodu (mock: istənilən 6 rəqəm).
 class AuthScreen extends StatefulWidget {
   final VoidCallback onSignedIn;
   const AuthScreen({super.key, required this.onSignedIn});
@@ -13,7 +15,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-enum _Mode { enter, up, forgot }
+enum _Mode { enter, up, forgot, code }
 
 class _AuthScreenState extends State<AuthScreen> {
   _Mode mode = _Mode.enter;
@@ -21,6 +23,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final passCtrl = TextEditingController();
   final nameCtrl = TextEditingController();
   final repeatCtrl = TextEditingController();
+  final codeCtrl = TextEditingController();
   bool busy = false;
   String? error;
   String? msg;
@@ -31,7 +34,13 @@ class _AuthScreenState extends State<AuthScreen> {
     passCtrl.dispose();
     nameCtrl.dispose();
     repeatCtrl.dispose();
+    codeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _mockDelay([int ms = 800]) async {
+    await Future.delayed(Duration(milliseconds: ms));
+    if (!mounted) return;
   }
 
   Future<void> _submit() async {
@@ -40,8 +49,19 @@ class _AuthScreenState extends State<AuthScreen> {
       error = null;
       msg = null;
     });
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
+    await _mockDelay();
+    if (mode == _Mode.code) {
+      if (codeCtrl.text.length != 6 || int.tryParse(codeCtrl.text) == null) {
+        setState(() {
+          busy = false;
+          error = 'Kod 6 rəqəmdən ibarət olmalıdır.';
+        });
+        return;
+      }
+      setState(() => busy = false);
+      widget.onSignedIn();
+      return;
+    }
     if (mode == _Mode.up) {
       if (passCtrl.text.length < 8) {
         setState(() {
@@ -57,6 +77,13 @@ class _AuthScreenState extends State<AuthScreen> {
         });
         return;
       }
+      // Qeydiyyat: 6 rəqəmli kod mərhələsinə keç (ROL B Addım 2).
+      setState(() {
+        busy = false;
+        mode = _Mode.code;
+        msg = 'E-poçtuna 6 rəqəmli təsdiq kodu göndərildi. (Demo: istənilən 6 rəqəm)';
+      });
+      return;
     }
     if (mode == _Mode.forgot) {
       setState(() {
@@ -65,15 +92,20 @@ class _AuthScreenState extends State<AuthScreen> {
       });
       return;
     }
-    // Mock uğurlu giriş.
     setState(() => busy = false);
     widget.onSignedIn();
   }
 
   Future<void> _google() async {
     setState(() => busy = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
+    await _mockDelay(900);
+    setState(() => busy = false);
+    widget.onSignedIn();
+  }
+
+  Future<void> _apple() async {
+    setState(() => busy = true);
+    await _mockDelay(900);
     setState(() => busy = false);
     widget.onSignedIn();
   }
@@ -84,10 +116,14 @@ class _AuthScreenState extends State<AuthScreen> {
         ? 'Xoş gəldin!'
         : mode == _Mode.up
             ? 'Hesab yarat'
-            : 'Şifrəni unutmusan?';
-    final subtitle = mode == _Mode.forgot
-        ? 'E-poçtunu yaz, sənə yeniləmə linki göndərək.'
-        : 'Yeni insanlara, yeni planlara qoşul.';
+            : mode == _Mode.code
+                ? 'E-poçtunu təsdiqlə'
+                : 'Şifrəni unutmusan?';
+    final subtitle = mode == _Mode.code
+        ? '${emailCtrl.text} ünvanına göndərilən kodu yaz.'
+        : mode == _Mode.forgot
+            ? 'E-poçtunu yaz, sənə yeniləmə linki göndərək.'
+            : 'Yeni insanlara, yeni planlara qoşul.';
 
     return Scaffold(
       backgroundColor: Q.background,
@@ -106,13 +142,34 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 4),
                 Text(subtitle, style: T.subtitle),
                 const SizedBox(height: 22),
-                if (mode != _Mode.forgot) ...[
+                if (mode == _Mode.code) ...[
+                  FormFieldX(
+                    label: '6 rəqəmli təsdiq kodu',
+                    child: TextField(
+                      controller: codeCtrl,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      style: T.input.copyWith(
+                          fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: 6),
+                      decoration: const InputDecoration(counterText: ''),
+                    ),
+                  ),
+                ] else ...[
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
                       onPressed: busy ? null : _google,
                       icon: const Icon(Icons.g_mobiledata, size: 22),
                       label: Text('Google ilə davam et', style: T.button),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: busy ? null : _apple,
+                      icon: const Icon(Icons.apple, size: 20),
+                      label: Text('Apple ilə davam et', style: T.button),
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -124,43 +181,43 @@ class _AuthScreenState extends State<AuthScreen> {
                             color: Q.mutedFg)),
                   ),
                   const SizedBox(height: 6),
+                  if (mode == _Mode.up)
+                    FormFieldX(
+                      label: 'Ad və soyad',
+                      child: TextField(
+                        controller: nameCtrl,
+                        maxLength: 100,
+                        style: T.input,
+                        decoration: const InputDecoration(counterText: ''),
+                      ),
+                    ),
+                  FormFieldX(
+                    label: 'E-poçt',
+                    child: TextField(
+                      controller: emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      style: T.input,
+                    ),
+                  ),
+                  if (mode != _Mode.forgot)
+                    FormFieldX(
+                      label: 'Şifrə',
+                      child: TextField(
+                        controller: passCtrl,
+                        obscureText: true,
+                        style: T.input,
+                      ),
+                    ),
+                  if (mode == _Mode.up)
+                    FormFieldX(
+                      label: 'Şifrəni təkrarla',
+                      child: TextField(
+                        controller: repeatCtrl,
+                        obscureText: true,
+                        style: T.input,
+                      ),
+                    ),
                 ],
-                if (mode == _Mode.up)
-                  FormFieldX(
-                    label: 'Ad və soyad',
-                    child: TextField(
-                      controller: nameCtrl,
-                      maxLength: 100,
-                      style: T.input,
-                      decoration: const InputDecoration(counterText: ''),
-                    ),
-                  ),
-                FormFieldX(
-                  label: 'E-poçt',
-                  child: TextField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    style: T.input,
-                  ),
-                ),
-                if (mode != _Mode.forgot)
-                  FormFieldX(
-                    label: 'Şifrə',
-                    child: TextField(
-                      controller: passCtrl,
-                      obscureText: true,
-                      style: T.input,
-                    ),
-                  ),
-                if (mode == _Mode.up)
-                  FormFieldX(
-                    label: 'Şifrəni təkrarla',
-                    child: TextField(
-                      controller: repeatCtrl,
-                      obscureText: true,
-                      style: T.input,
-                    ),
-                  ),
                 if (error != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -177,6 +234,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         style: const TextStyle(
                             fontFamily: T.family,
                             fontSize: 11,
+                            height: 1.6,
                             color: Q.mutedFg)),
                   ),
                 const SizedBox(height: 8),
@@ -198,7 +256,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ? 'Daxil ol'
                                 : mode == _Mode.up
                                     ? 'Qeydiyyatdan keç'
-                                    : 'Link göndər',
+                                    : mode == _Mode.code
+                                        ? 'Təsdiqlə'
+                                        : 'Link göndər',
                             style: T.button,
                           ),
                   ),
@@ -215,14 +275,30 @@ class _AuthScreenState extends State<AuthScreen> {
                                   fontFamily: T.family, fontSize: 12)),
                         ),
                         TextButton(
-                          onPressed: () => setState(() => mode = _Mode.up),
+                          onPressed: () => setState(() {
+                            mode = _Mode.up;
+                            msg = null;
+                          }),
                           child: const Text('Hesabın yoxdur? Qeydiyyatdan keç',
                               style: TextStyle(
                                   fontFamily: T.family, fontSize: 12)),
                         ),
-                      ] else
+                      ] else if (mode == _Mode.code)
                         TextButton(
-                          onPressed: () => setState(() => mode = _Mode.enter),
+                          onPressed: () => setState(() {
+                            mode = _Mode.up;
+                            msg = null;
+                          }),
+                          child: const Text('Kod gəlmədi? Yenidən göndər',
+                              style: TextStyle(
+                                  fontFamily: T.family, fontSize: 12)),
+                        )
+                      else
+                        TextButton(
+                          onPressed: () => setState(() {
+                            mode = _Mode.enter;
+                            msg = null;
+                          }),
                           child: const Text('Hesabın var? Daxil ol',
                               style: TextStyle(
                                   fontFamily: T.family, fontSize: 12)),

@@ -1,12 +1,16 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 
+import '../../../core/models/moderation.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui.dart';
 
-/// Söhbətlər — web ChatsScreen portu.
-/// Tədbir qrup söhbətləri + dost söhbətləri; seçiləndə çat görünüşü.
+/// Söhbətlər — ROL (product-spec C, TAB 4):
+/// "Şəxsi" (match / dost) + "Qruplar" (tədbir söhbətləri).
+/// Şəxsi chat yalnız match olunmuş və ya eyni tədbir iştirakçıları ilə.
+/// Hər söhbətdə: Report et, Blokla, Söhbəti sil.
 class ChatsScreen extends StatefulWidget {
   final AppState state;
   const ChatsScreen({super.key, required this.state});
@@ -18,6 +22,7 @@ class ChatsScreen extends StatefulWidget {
 class _ChatsScreenState extends State<ChatsScreen> {
   QoshulEvent? activeEvent;
   Person? activeFriend;
+  String _lastFriendName = '';
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +49,18 @@ class _ChatsScreenState extends State<ChatsScreen> {
             messages: state.friendMessages[activeFriend!.id] ?? const [],
             onSend: (t) => state.sendFriendMessage(activeFriend!.id, t),
             onBack: () => setState(() => activeFriend = null),
+            friendActions: true,
+            onBlock: () {
+              state.blockUser(activeFriend!.id);
+              setState(() => activeFriend = null);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(
+                      '${_lastFriendName} bloklandı — söhbət bağlandı.')));
+            },
+            onDelete: () {
+              state.deleteChat(activeFriend!.id);
+              setState(() => activeFriend = null);
+            },
           );
         }
         return _listView(state);
@@ -69,25 +86,28 @@ class _ChatsScreenState extends State<ChatsScreen> {
           )
         else ...[
           if (joinedEvents.isNotEmpty) ...[
-            const SectionHeading(title: 'Tədbir söhbətləri', icon: Icons.event),
+            const SectionHeading(title: 'Qruplar', icon: Icons.groups),
             for (final e in joinedEvents)
               _chatRow(
                 image: e.image,
                 title: e.title,
                 subtitle:
-                    '${e.participants} iştirakçı · Qrup söhbəti${e.past ? ' · keçib' : ''}',
+                    '${e.participants} iştirakçı · Tədbir qrupu${e.past ? ' · keçib' : ''}',
                 onTap: () => setState(() => activeEvent = e),
               ),
           ],
           if (friends.isNotEmpty) ...[
             const SizedBox(height: 16),
-            const SectionHeading(title: 'Dost söhbətləri', icon: Icons.person),
+            const SectionHeading(title: 'Şəxsi', icon: Icons.person),
             for (final p in friends)
               _chatRow(
                 image: p.image,
                 title: p.fullName,
-                subtitle: '${p.city} · Şəxsi söhbət',
-                onTap: () => setState(() => activeFriend = p),
+                subtitle: '${p.city} · ${state.matches.contains(p.id) ? 'Match' : 'Dost'} · Şəxsi',
+                onTap: () => setState(() {
+                  activeFriend = p;
+                  _lastFriendName = p.fullName;
+                }),
               ),
           ],
         ],
@@ -142,7 +162,8 @@ class _ChatsScreenState extends State<ChatsScreen> {
   }
 }
 
-/// Tam çat görünüşü — başlıq + mesajlar + yazma zolağı (web ChatView portu).
+/// Tam çat görünüşü — ROL TAB 4: başlıq + mesajlar (oxunma statusu ilə) +
+/// "yazır..." göstəricisi + yazma zolağı + Report/Blok/Sil menyu.
 class _ChatView extends StatefulWidget {
   final String title;
   final String subtitle;
@@ -151,6 +172,9 @@ class _ChatView extends StatefulWidget {
   final ValueChanged<String> onSend;
   final VoidCallback onBack;
   final bool calendar;
+  final bool friendActions;
+  final VoidCallback? onBlock;
+  final VoidCallback? onDelete;
 
   const _ChatView({
     required this.title,
@@ -160,6 +184,9 @@ class _ChatView extends StatefulWidget {
     required this.onSend,
     required this.onBack,
     this.calendar = false,
+    this.friendActions = false,
+    this.onBlock,
+    this.onDelete,
   });
 
   @override
@@ -168,6 +195,7 @@ class _ChatView extends StatefulWidget {
 
 class _ChatViewState extends State<_ChatView> {
   final ctrl = TextEditingController();
+  bool typing = false;
 
   @override
   void initState() {
@@ -185,6 +213,11 @@ class _ChatViewState extends State<_ChatView> {
     if (ctrl.text.trim().isEmpty) return;
     widget.onSend(ctrl.text.trim());
     ctrl.clear();
+    // "yazır..." göstəricisi (mock: cavab 1.2 s sonra gəlir)
+    setState(() => typing = true);
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => typing = false);
+    });
   }
 
   @override
@@ -223,10 +256,44 @@ class _ChatViewState extends State<_ChatView> {
                             fontSize: 13,
                             fontWeight: FontWeight.w800)),
                     Text(widget.subtitle, style: T.metaSm),
+                    if (typing)
+                      Text('yazır...',
+                          style: T.metaSm.copyWith(color: Q.primary)),
                   ],
                 ),
               ),
-              if (widget.calendar)
+              if (widget.friendActions)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 20),
+                  color: Q.foreground,
+                  onSelected: (v) {
+                    if (v == 'report') {
+                      _reportDialog();
+                    } else if (v == 'block') {
+                      widget.onBlock?.call();
+                    } else if (v == 'delete') {
+                      widget.onDelete?.call();
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                        value: 'report',
+                        child: Text('Report et',
+                            style:
+                                TextStyle(fontFamily: T.family, fontSize: 12))),
+                    PopupMenuItem(
+                        value: 'block',
+                        child: Text('Blokla',
+                            style:
+                                TextStyle(fontFamily: T.family, fontSize: 12))),
+                    PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Söhbəti sil',
+                            style:
+                                TextStyle(fontFamily: T.family, fontSize: 12))),
+                  ],
+                )
+              else if (widget.calendar)
                 IconButton(
                   onPressed: () {},
                   icon: const Icon(Icons.event, size: 20),
@@ -246,7 +313,16 @@ class _ChatViewState extends State<_ChatView> {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   children: [
                     for (final m in widget.messages)
-                      ChatBubble(sender: m.sender, body: m.body, mine: m.mine),
+                      ChatBubble(
+                        sender: m.sender,
+                        body: m.body,
+                        mine: m.mine,
+                        status: m.mine
+                            ? (m == widget.messages.lastOrNull && typing
+                                ? 'çatdırıldı'
+                                : 'oxundu')
+                            : null,
+                      ),
                   ],
                 ),
         ),
@@ -278,6 +354,46 @@ class _ChatViewState extends State<_ChatView> {
           ),
         ),
       ],
+    );
+  }
+  void _reportDialog() {
+    String reason = reportReasons.first;
+    showDialog<void>(
+      context: context,
+      builder: (d) => StatefulBuilder(
+        builder: (d, setD) => AlertDialog(
+          title: const Text('Report et'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final r in reportReasons)
+                RadioListTile<String>(
+                  value: r,
+                  groupValue: reason,
+                  onChanged: (v) => setD(() => reason = v!),
+                  title: Text(r,
+                      style: const TextStyle(fontFamily: T.family, fontSize: 12)),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  activeColor: Q.primary,
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(d), child: const Text('Ləğv et')),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(d);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text(
+                        'Report göndərildi — moderasiya komandası baxacaq.')));
+              },
+              child: const Text('Göndər'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

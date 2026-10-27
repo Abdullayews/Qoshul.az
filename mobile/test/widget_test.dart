@@ -2,249 +2,356 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:qoshul/core/data/mock_data.dart';
-import 'package:qoshul/core/models/models.dart';
+import 'package:qoshul/core/models/notification.dart';
 import 'package:qoshul/core/state/app_state.dart';
+import 'package:qoshul/core/widgets/rol.dart';
+import 'package:qoshul/features/events/presentation/event_detail_sheet.dart';
+import 'package:qoshul/features/venues/presentation/reserve_sheet.dart';
 import 'package:qoshul/main.dart';
 
+/// Widget testləri — ROL UI-2 (v0.3.0): auth axını, onboarding, 5 tab,
+/// match, rezerv, kupon, ayarlar. Səth: 800×1200; lazy ListView bölmələri
+/// scrollUntilVisible ilə yoxlanılır.
 void main() {
-  group('XpRules (web rules.ts portu)', () {
-    test('rankForXp sərhədləri', () {
-      expect(XpRules.rankForXp(0), 'Yeni');
-      expect(XpRules.rankForXp(200), 'Yeni');
-      expect(XpRules.rankForXp(201), 'Kəşfiyyatçı');
-      expect(XpRules.rankForXp(320), 'Kəşfiyyatçı');
-      expect(XpRules.rankForXp(7000), 'Ultras');
-      expect(XpRules.rankForXp(99999), 'Legend');
-    });
+  Future<void> boot(WidgetTester tester, AppState state) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    await tester.pumpWidget(buildAppWithState(state));
+    await tester.pumpAndSettle();
+  }
 
-    test('xpProgress hesablanması', () {
-      final p = XpRules.xpProgress(320);
-      expect(p['nextName'], 'Aktiv');
-      expect(p['toNext'], 281);
-      expect(p['pct'], 30); // (320-200)/(600-200) = 30%
-    });
-  });
-
-  group('parseAssistantEvent ([TƏDBİR] parser)', () {
-    test('təklifsiz mətn olduğu kimi qalır', () {
-      final r = parseAssistantEvent('Salam, necə kömək edə bilərəm?');
-      expect(r.proposal, isNull);
-      expect(r.text, 'Salam, necə kömək edə bilərəm?');
-    });
-
-    test('təklif düzgün ayrışdırılır', () {
-      const raw =
-          'Şənbə üçün plan:\n[TƏDBİR]{"title":"Yürüş","category":"Yürüş","date":"2026-11-01","time":"09:00","capacity":10,"location":"Qala","description":"Asan marşrut","partner":""}';
-      final r = parseAssistantEvent(raw);
-      expect(r.text, 'Şənbə üçün plan:');
-      expect(r.proposal, isNotNull);
-      expect(r.proposal!.title, 'Yürüş');
-      expect(r.proposal!.capacity, 10);
-      expect(r.proposal!.date, '2026-11-01');
-    });
-  });
-
-  group('AppState (mock məntiq)', () {
-    test('qoşulma XP artırır və joined-a salır', () {
-      final s = AppState();
-      final before = s.xp;
-      expect(s.join('e1'), isTrue);
-      expect(s.joined.contains('e1'), isTrue);
-      expect(s.xp, before + 50);
-      // təkrar qoşulma yox
-      expect(s.join('e1'), isFalse);
-    });
-
-    test('təsdiqli tədbir pending-ə düşür', () {
-      final s = AppState();
-      expect(s.join('e3'), isTrue); // e3 approval=true
-      expect(s.pending.contains('e3'), isTrue);
-      expect(s.joined.contains('e3'), isFalse);
-    });
-
-    test('tədbir yaratma XP + başlıq əlavə edir', () {
-      final s = AppState();
-      final before = s.xp;
-      s.createEvent(
-        title: 'Test görüşü',
-        category: 'Qəhvə',
-        city: 'Bakı',
-        location: 'Test kafe',
-        date: '2026-11-01',
-        time: '10:00',
-        capacity: 5,
-        description: 'Test',
-      );
-      expect(s.events.first.title, 'Test görüşü');
-      expect(s.xp, before + 100);
-      expect(s.joined.contains(s.events.first.id), isTrue);
-    });
-
-    test('dostluq sorğu axını', () {
-      final s = AppState();
-      expect(s.friendships['p2'], 'accepted'); // Rəşad əvvəlcədən dost
-      s.requestFriend('p1');
-      expect(s.friendships['p1'], 'sent');
-      s.acceptFriend('p1');
-      expect(s.friendships['p1'], 'accepted');
-      expect(s.acceptedFriends.length, 2);
-    });
-  });
-
-  group('AuthScreen', () {
-    testWidgets('başlıq, Google düyməsi və form render olunur', (tester) async {
-      await tester.pumpWidget(const QoshulApp());
+  /// Lazy ListView içində hədəfi tapana qədər sürüşdür (drag əsaslı).
+  Future<void> dragUntilFound(
+      WidgetTester tester, Finder target, Finder scrollable,
+      {int max = 14, bool up = false}) async {
+    for (var i = 0; i < max; i++) {
+      if (tester.any(target)) return;
+      await tester.drag(scrollable, Offset(0, up ? 400 : -350));
       await tester.pumpAndSettle();
-      expect(find.text('Xoş gəldin!'), findsOneWidget);
-      expect(find.text('Google ilə davam et'), findsOneWidget);
-      expect(find.text('Hesabın yoxdur? Qeydiyyatdan keç'), findsOneWidget);
-      // wordmark Text.rich-dır — textContaining ilə axtarılır
-      expect(find.textContaining('qoshul.az'), findsOneWidget);
-    });
-
-    testWidgets('Google düyməsi sign-in edir → onboarding açılır', (tester) async {
-      await tester.pumpWidget(const QoshulApp());
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Google ilə davam et'));
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
-      expect(find.text('Qeydiyyat anketi'), findsOneWidget);
-      expect(find.textContaining('Əsas məlumat'), findsWidgets);
-    });
-  });
-
-  group('AppShell (tam istifadəçi axını)', () {
-    AppState readyState() {
-      final s = AppState()
-        ..signedIn = true
-        ..onboarded = true
-        ..setProfileName('Kənan Səmədov');
-      return s;
     }
+  }
 
-    testWidgets('feed: salamlaşma, XP, hero, tədbir kartları', (tester) async {
-      // ListView lazy-dir — bütün məzmunun build olması üçün hündür səth.
-      tester.view.physicalSize = const Size(800, 12000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      expect(find.text('Salam, Kənan!'), findsOneWidget);
-      expect(find.text('Bu gün yeni bir hekayəyə qoşul.'), findsOneWidget);
-      expect(find.text('Şəhər səninlə\ndaha maraqlıdır.'), findsOneWidget);
-      expect(find.text('Yaxınlıqda nə var?'), findsOneWidget);
-      // mock tədbirlərdən biri görünür (tövsiyə + grid — 2 yer)
-      expect(find.text('Şənbə səhəri qəhvə və söhbət'), findsWidgets);
-      expect(find.text('Qoşul'), findsWidgets);
-    });
+  /// Uzağa scroll olmuş siyahını yuxarı qaytar (TextField-lər geri gəlsin).
+  Future<void> scrollTop(WidgetTester tester, Finder scrollable) async {
+    for (var i = 0; i < 20; i++) {
+      await tester.drag(scrollable, const Offset(0, 500));
+      await tester.pumpAndSettle(const Duration(milliseconds: 30));
+    }
+  }
 
-    testWidgets('bottom nav: Kəşf et tabına keçid', (tester) async {
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Kəşf et'));
-      await tester.pumpAndSettle();
-      expect(find.text('Yeni planlar kəşf et'), findsOneWidget);
-      expect(find.text('Yaxınlıqda'), findsOneWidget);
-    });
+  testWidgets('auth: email qeydiyyatı → 6 rəqəmli kod addımı (ROL B)',
+      (tester) async {
+    final state = AppState();
+    await boot(tester, state);
+    expect(find.text('Xoş gəldin!'), findsOneWidget);
 
-    testWidgets('explore: İnsanlar tab — AI uyğunluq kartları', (tester) async {
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Kəşf et'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('İnsanlar'));
-      await tester.pumpAndSettle();
-      expect(find.text('96% AI uyğunluq'), findsOneWidget);
-      expect(find.text('Dostluq sorğusu'), findsWidgets);
-      expect(find.text('Leyla Məmmədova'), findsOneWidget);
-    });
+    await tester.tap(find.text('Hesabın yoxdur? Qeydiyyatdan keç'));
+    await tester.pumpAndSettle();
+    expect(find.text('Hesab yarat'), findsOneWidget);
 
-    testWidgets('çatlar: tədbir söhbəti + dost söhbəti', (tester) async {
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Söhbətlər'));
-      await tester.pumpAndSettle();
-      expect(find.text('Tədbir söhbətləri'), findsOneWidget);
-      expect(find.text('Dost söhbətləri'), findsOneWidget);
-      expect(find.text('Keçən həftə qaçış klubu'), findsOneWidget);
-      expect(find.text('Rəşad Əliyev'), findsOneWidget);
-    });
+    // TextField-lər sırayla: ad, e-poçt, şifrə, təkrar
+    final fields = find.byType(TextField);
+    expect(fields, findsNWidgets(4));
+    await tester.enterText(fields.at(0), 'Aysel Əliyeva');
+    await tester.enterText(fields.at(1), 'aysel@test.az');
+    await tester.enterText(fields.at(2), 'parol12345');
+    await tester.enterText(fields.at(3), 'parol12345');
+    await tester.pump();
 
-    testWidgets('tədbir qoşulması XP artırır (snackbar)', (tester) async {
-      tester.view.physicalSize = const Size(800, 12000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      final joinButtons = find.text('Qoşul');
-      expect(joinButtons, findsWidgets);
-      await tester.tap(joinButtons.first);
-      await tester.pump(); // snackbar
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(s.joined.contains('e1'), isTrue);
-    });
+    await tester.tap(find.text('Qeydiyyatdan keç'));
+    await tester.pumpAndSettle();
 
-    testWidgets('assistant: sual → mock cavab axını', (tester) async {
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      // header-dəki Bot ikonu ilə köməkçiyə keç
-      await tester.tap(find.byIcon(Icons.smart_toy));
-      await tester.pumpAndSettle();
-      expect(find.text('Qoshul köməkçisi'), findsOneWidget);
-      // təklif çipinə toxun
-      await tester.tap(find.text('Şənbə üçün tədbir fikri ver'));
-      await tester.pump(const Duration(milliseconds: 600)); // yazı simulyasiyası başlayır
-      await tester.pumpAndSettle();
-      // cavab gəldi və [TƏDBİR] təklif kartı göründü
-      expect(find.text('Bu tədbiri yarat'), findsOneWidget);
-      expect(s.assistantMsgs.length, 2); // sual + cavab
-    });
+    // Kod mərhələsi (ROL B Addım 2)
+    expect(find.text('E-poçtunu təsdiqlə'), findsOneWidget);
 
-    testWidgets('profil: statistika və tablar', (tester) async {
-      final s = readyState();
-      await tester.pumpWidget(buildAppWithState(s));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Profil'));
-      await tester.pumpAndSettle();
-      expect(find.text('Kənan Səmədov'), findsOneWidget);
-      expect(find.text('XP xalı'), findsOneWidget);
-      expect(find.text('Tədbirlərim'), findsOneWidget);
-      expect(find.text('Yadda saxlanılanlar'), findsOneWidget);
-      expect(find.text('Nailiyyətlər'), findsOneWidget);
-    });
+    // Yanlış kod (5 rəqəm) → xəta
+    await tester.enterText(find.byType(TextField).first, '12345');
+    await tester.tap(find.text('Təsdiqlə'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('6 rəqəmdən'), findsOneWidget);
+
+    // Düz kod → giriş
+    await tester.enterText(find.byType(TextField).first, '123456');
+    await tester.tap(find.text('Təsdiqlə'));
+    await tester.pumpAndSettle();
+    expect(state.signedIn, isTrue);
   });
 
-  group('Mock data tutarlılığı', () {
-    test('kateqoriya → qrup xəritələməsi düzgündür', () {
-      expect(groupOf('Qəhvə'), 'Yemək və içki');
-      expect(groupOf('Futbol'), 'İdman');
-      expect(groupOf('Yürüş'), 'Təbiət');
-      expect(groupOf('Hakaton'), 'Texnologiya');
-      expect(groupOf('Şəhər turu'), 'Səyahət və digər'); // həmin qrupun öz üzvü
-      expect(groupOf('Mövcud olmayan'), 'Səyahət və digər'); // fallback
-    });
+  testWidgets('onboarding: profil → maraqlar (min 3) → icazə → +50 XP (ROL B)',
+      (tester) async {
+    final state = AppState()..signIn();
+    await boot(tester, state);
 
-    test('şəkil xəritələmə boş deyil', () {
-      for (final g in categoryGroups) {
-        expect(imageForCategory(g.items.first), isNotEmpty);
-      }
-      expect(imageForCategory('Yürüş'), imgPadel);
-      expect(imageForCategory('Qəhvə'), imgCoffee);
-      expect(imageForCategory('Hakaton'), imgTech);
-    });
+    // Slaydları keç
+    await tester.tap(find.text('Keç'));
+    await tester.pumpAndSettle();
+    expect(find.text('Profilini yarad'), findsOneWidget);
 
-    test('hər mock tədbir lazımi sahələrə malikdir', () {
-      for (final e in mockEvents) {
-        expect(e.title, isNotEmpty);
-        expect(e.location, isNotEmpty);
-        expect(e.capacity, greaterThanOrEqualTo(e.participants));
-      }
-    });
+    // Ad (ilk TextField; ikincisi bio-dur)
+    await tester.enterText(find.byType(TextField).first, 'Aysel Əliyeva');
+    await tester.pump();
+
+    // Doğum tarixi (18+ keçərli — initialDate = 22 yaş)
+    await tester.tap(find.text('Tarix seç'));
+    await tester.pumpAndSettle();
+    final okBtn = find.byType(TextButton).last; // dialoqda OK
+    await tester.tap(okBtn);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Davam et'));
+    await tester.pumpAndSettle();
+    expect(find.text('Maraqlarını seç'), findsOneWidget);
+
+    // 2 maraq → davam bağlı; 3 maraq → açılır (ROL B Addım 4)
+    await tester.tap(find.text('İdman və Aktivlik'));
+    await tester.pump();
+    await tester.tap(find.text('Kafe və Yemək'));
+    await tester.pump();
+    expect(find.text('Ən azı 3 maraq seç'), findsOneWidget);
+
+    await tester.tap(find.text('Musiqi'));
+    await tester.pump();
+    expect(find.text('Davam et (3 maraq)'), findsOneWidget);
+    await tester.tap(find.text('Davam et (3 maraq)'));
+    await tester.pumpAndSettle();
+
+    // İcazələr (ROL B Addım 5)
+    expect(find.text('İcazələr'), findsOneWidget);
+    final before = state.xp;
+    await tester.tap(find.text('Qoshul-a başla'));
+    await tester.pumpAndSettle();
+
+    expect(state.onboarded, isTrue);
+    expect(state.interests.length, 3);
+    expect(state.xp, before + 50 + 5); // qeydiyyat + günlük giriş
+
+    // 5 tab shell (ROL C)
+    expect(find.text('Kəşf'), findsWidgets);
+    expect(find.text('Xəritə'), findsOneWidget);
+    expect(find.text('Tədbirlər'), findsOneWidget);
+    expect(find.text('Söhbətlər'), findsOneWidget);
+    expect(find.text('Profil'), findsOneWidget);
+  });
+
+  testWidgets('shell: 5 tab naviqasiyası (ROL C)', (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    // TAB 2: Xəritə — filtrlər
+    await tester.tap(find.text('Xəritə'));
+    await tester.pumpAndSettle();
+    expect(find.text('indi açıqdır'), findsOneWidget);
+    expect(find.text('endirimi var'), findsOneWidget);
+    expect(find.text('10 km'), findsOneWidget);
+
+    // TAB 3: Tədbirlər — 3 siyahı
+    await tester.tap(find.text('Tədbirlər'));
+    await tester.pumpAndSettle();
+    expect(find.text('Yaxınlaşan'), findsOneWidget);
+    expect(find.text('Mənim tədbirlərim'), findsOneWidget);
+    expect(find.text('Yaratdığım'), findsOneWidget);
+
+    // TAB 4: Söhbətlər — Şəxsi/Qruplar
+    await tester.tap(find.text('Söhbətlər'));
+    await tester.pumpAndSettle();
+    expect(find.text('Qruplar'), findsWidgets);
+    expect(find.text('Şəxsi'), findsWidgets);
+
+    // TAB 5: Profil — nişanlar + keçidlər
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Nişanlar'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Rezervlərim'), findsOneWidget);
+    expect(find.text('Kuponlarım'), findsOneWidget);
+  });
+
+  testWidgets('feed: ROL bölmələri + axtarış (ROL TAB 1)', (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    expect(find.text('Salam, Dost!'), findsOneWidget);
+    expect(find.text('Yaxınında olan tədbirlər'), findsOneWidget);
+
+    // Aşağıdakı bölmələr lazy — drag ilə aç
+    final feed = find.byType(ListView).first;
+    await dragUntilFound(tester, find.text('Populyar məkanlar'), feed);
+    expect(find.text('Populyar məkanlar'), findsOneWidget);
+
+    await dragUntilFound(tester, find.text('Sənə uyğun insanlar'), feed);
+    expect(find.text('Sənə uyğun insanlar'), findsOneWidget);
+
+    await dragUntilFound(tester, find.text('Endirimli təkliflər'), feed);
+    expect(find.text('Endirimli təkliflər'), findsOneWidget);
+
+    // Axtarış: insan adı ilə (ROL: istifadəçi adı axtarışı)
+    // — əvvəlcə siyahını yuxarı qaytar (search sahəsi geri mounts olunsun)
+    await scrollTop(tester, feed);
+    await tester.enterText(find.byType(TextField).first, 'Leyla');
+    await tester.pumpAndSettle();
+    await dragUntilFound(tester, find.text('Sənə uyğun insanlar'), feed);
+    expect(find.text('Sənə uyğun insanlar'), findsOneWidget);
+  });
+
+  testWidgets('match: Maraqlıyam → match dialoqu (ROL D)', (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    final feed = find.byType(ListView).first;
+    await dragUntilFound(tester, find.text('Hamısına bax'), feed);
+    await tester.tap(find.text('Hamısına bax'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tanış ol'), findsWidgets);
+    // 3 namizəd kart var (ROL D) — hamısında eyni düymə
+    expect(find.text('Maraqlıyam'), findsWidgets);
+
+    final before = state.xp;
+    await tester.tap(find.text('Maraqlıyam').first);
+    await tester.pumpAndSettle();
+    // p1 (Leyla, likesBack) → match dialoqu + XP (ROL D)
+    expect(find.text('Match!'), findsOneWidget);
+    expect(state.xp, before + 10);
+    await tester.tap(find.text('Davam et'));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('rezerv axını: slot → təsdiq → GÖZLƏYİR + QR (ROL E)',
+      (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    // Scaffold konteksti (Localizations altında)
+    final ctx = tester.element(find.byType(Scaffold).first);
+    showReserveSheet(ctx, state, mockPartners.first); // v1: manuel təsdiq
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bu gün'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10:00'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Davam et'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Təsdiqlə'));
+    await tester.pumpAndSettle();
+
+    // v1 manuel → GÖZLƏYİR + QR (ROL E)
+    expect(find.text('GÖZLƏYİR'), findsOneWidget);
+    expect(find.byType(QrPlaceholder), findsOneWidget);
+    expect(state.reservations.length, 1);
+    expect(state.reservations.first.statusLabel, 'GÖZLƏYİR');
+  });
+
+  testWidgets('kupon: XP ilə al → Kuponlarım (ROL G)', (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Kuponlarım'), 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Kuponlarım'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('XP balansın'), findsOneWidget);
+    final balBefore = state.xpBalance;
+    final totalBefore = state.xp;
+
+    // o1 Coffee Lab 15% (200 XP) — balans 320 → alınır
+    await tester.tap(find.text('XP ilə al').first);
+    await tester.pumpAndSettle();
+    expect(state.xpBalance, balBefore - 200);
+    expect(state.xp, totalBefore); // ümumi XP düşmür (ROL G)
+
+    // Kuponlarım tabına keç
+    await tester.tap(find.text('Kuponlarım').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('AKTİV'), findsWidgets);
+    expect(find.textContaining('QSHUL-'), findsWidgets);
+  });
+
+  testWidgets('tədbir: qoşul (+10) → check-in (+40) (ROL F)', (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    final ctx = tester.element(find.byType(Scaffold).first);
+    final event = state.cityEvents.first; // e1: açıq qoşulma
+    showEventDetailSheet(ctx, state, event);
+    await tester.pumpAndSettle();
+
+    final before = state.xp;
+    await tester.tap(find.text('Tədbirə qoşul'));
+    await tester.pumpAndSettle();
+    expect(state.joined.contains(event.id), isTrue);
+    expect(state.xp, before + 10);
+
+    await dragUntilFound(tester, 
+        find.textContaining('Yerində check-in et'), find.byType(ListView).last);
+    await tester.tap(find.textContaining('Yerində check-in et').first);
+    await tester.pumpAndSettle();
+    expect(state.checkedIn.contains(event.id), isTrue);
+    expect(state.xp, before + 50); // +10 +40
+    expect(state.earnedBadges.contains('firstEvent'), isTrue);
+  });
+
+  testWidgets('ayarlar: məxfilik switch-ləri state-ə bağlı (ROL TAB 5)',
+      (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.settings));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Xəritədə və match-də görünürəm'), findsOneWidget);
+    expect(state.visibleOnMap, isTrue);
+
+    // Switch-in özünə toxun
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    expect(state.visibleOnMap, isFalse);
+
+    await tester.tap(find.byType(Switch).at(1));
+    await tester.pumpAndSettle();
+    expect(state.showDistance, isFalse);
+  });
+
+  testWidgets('bildiriş mərkəzi: tercih bölməsi + tiplər (ROL H)',
+      (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    await tester.tap(find.byIcon(Icons.notifications_none));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tercihlər').first); // sheet-dəki keçid
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tercihlər').last); // ekrandaki toggle
+    await tester.pumpAndSettle();
+
+    // Hər tip ayrıca switch (ROL H)
+    expect(find.text('Yeni match'), findsOneWidget);
+    expect(find.text('Tədbir xatırlatması'), findsOneWidget);
+    expect(find.text('Rezerv yeniliyi'), findsOneWidget);
+    expect(find.text('Yeniliklər və təkliflər'), findsOneWidget);
+
+    // Tip söndürmə state-ə düşür (ilk switch = Yeni match)
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    expect(state.notifPrefs.isEnabled(NotifType.match), isFalse);
   });
 }

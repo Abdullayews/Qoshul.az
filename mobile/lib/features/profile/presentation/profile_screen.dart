@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/data/mock_data.dart';
+import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/rol.dart';
 import '../../../core/widgets/ui.dart';
+import '../../coupons/presentation/coupons_screen.dart';
 import '../../events/presentation/event_card.dart';
+import '../../reservations/presentation/reservations_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 
 /// Profil — web ProfileScreen + MyProfilePanel portu.
@@ -94,7 +98,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 15),
                   Text(state.profileName, style: T.h1.copyWith(fontSize: 24)),
                   const SizedBox(height: 9),
-                  RankBadge(label: state.rank),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      RankBadge(label: state.rank),
+                      if (state.phoneVerified) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Q.secondary,
+                            borderRadius: BorderRadius.circular(Q.rMd),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.verified, size: 12, color: Q.primary),
+                              SizedBox(width: 4),
+                              Text('Təsdiqlənmiş',
+                                  style: TextStyle(
+                                      fontFamily: T.family,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: Q.primary)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 9),
                   Text(
                     '${state.city} · ${statusLabel(state.status)}'
@@ -140,6 +172,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 10),
               _traitBars(state.personality!),
             ],
+            // — nişanlar (ROL F) —
+            const SizedBox(height: 18),
+            const SectionHeading(title: 'Nişanlar', icon: Icons.military_tech),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final b in badgeDefs)
+                  Tooltip(
+                    message: b.description,
+                    child: BadgeChip(badge: b, earned: state.earnedBadges.contains(b.id)),
+                  ),
+              ],
+            ),
+            // — tez keçidlər: rezervlərim / kuponlarım (ROL TAB 5) —
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _quickCard(
+                    icon: Icons.table_restaurant,
+                    title: 'Rezervlərim',
+                    value: '${state.reservations.length}',
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ReservationsScreen(state: state))),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _quickCard(
+                    icon: Icons.confirmation_number,
+                    title: 'Kuponlarım',
+                    value: '${state.coupons.where((c) => c.isActive).length}',
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => CouponsScreen(state: state))),
+                  ),
+                ),
+              ],
+            ),
             // — statistika —
             Container(
               margin: const EdgeInsets.only(top: 20),
@@ -153,7 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _stat('${state.xp}', 'XP xalı'),
+                  _stat('${state.xp}', 'Ümumi XP'),
+                  _stat('${state.xpBalance}', 'Balans'),
                   _stat('${state.joined.length}', 'Tədbir'),
                   _stat(state.rank, 'Səviyyə'),
                 ],
@@ -198,11 +270,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onChanged: (i) => setState(() => tab = i),
             ),
             if (tab == 2)
-              CommunityBanner(
-                icon: Icons.emoji_events,
-                title: state.rank,
-                subtitle:
-                    '${state.xp} XP topladın. Növbəti görüşə qoşul, yeni səviyyəyə yüksəl!',
+              Column(
+                children: [
+                  CommunityBanner(
+                    icon: Icons.emoji_events,
+                    title: state.rank,
+                    subtitle:
+                        '${state.xp} XP topladın. Növbəti görüşə qoşul, yeni səviyyəyə yüksəl!',
+                  ),
+                  const SizedBox(height: 6),
+                  for (final b in badgeDefs)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            state.earnedBadges.contains(b.id)
+                                ? Icons.check_circle
+                                : Icons.circle_outlined,
+                            size: 14,
+                            color: state.earnedBadges.contains(b.id)
+                                ? Q.primary
+                                : Q.mutedFg,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${b.name} — ${b.description}',
+                              style: TextStyle(
+                                  fontFamily: T.family,
+                                  fontSize: 11,
+                                  height: 1.5,
+                                  color: state.earnedBadges.contains(b.id)
+                                      ? Q.foreground
+                                      : Q.mutedFg),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               )
             else if (tabList.isEmpty)
               const EmptyState(
@@ -227,6 +334,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 3),
         Text(label, style: T.meta),
       ],
+    );
+  }
+
+  /// Tez keçid kartı (Rezervlərim / Kuponlarım).
+  Widget _quickCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: Q.card,
+          border: Border.all(color: Q.border),
+          borderRadius: BorderRadius.circular(Q.rLg),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 19, color: Q.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(title,
+                  style: const TextStyle(
+                      fontFamily: T.family,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700)),
+            ),
+            Text(value, style: T.stat.copyWith(fontSize: 17)),
+          ],
+        ),
+      ),
     );
   }
 

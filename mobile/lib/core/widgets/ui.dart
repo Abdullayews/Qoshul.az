@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../models/models.dart';
 import '../theme/app_theme.dart';
 
 /// Ortaq UI komponentləri — web styles.css siniflərinin Flutter ekvivalentləri.
@@ -121,7 +122,7 @@ class XpTrack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prog = _progress(xp);
+    final prog = XpRules.xpProgress(xp);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -156,24 +157,6 @@ class XpTrack extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  static Map<String, dynamic> _progress(int xp) {
-    var lower = 0;
-    const maxes = [200, 600, 1500, 3500, 7000];
-    const names = ['Yeni', 'Kəşfiyyatçı', 'Aktiv', 'Veteran', 'Ultras', 'Legend'];
-    for (var i = 0; i < maxes.length; i++) {
-      if (xp <= maxes[i]) {
-        final span = maxes[i] - lower;
-        return {
-          'nextName': names[i + 1],
-          'toNext': maxes[i] + 1 - xp,
-          'pct': ((xp - lower) / span * 100).round().clamp(0, 100),
-        };
-      }
-      lower = maxes[i];
-    }
-    return {'nextName': null, 'toNext': 0, 'pct': 100};
   }
 }
 
@@ -522,12 +505,14 @@ class ViewHeading extends StatelessWidget {
 }
 
 /// .chat-message — söhbə balonu
+/// [status]: 'çatdırıldı' / 'oxundu' (ROL TAB 4 oxunma statusu; yalnız mənimsə).
 class ChatBubble extends StatelessWidget {
   final String sender;
   final String body;
   final bool mine;
+  final String? status;
 
-  const ChatBubble({super.key, required this.sender, required this.body, this.mine = false});
+  const ChatBubble({super.key, required this.sender, required this.body, this.mine = false, this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -560,6 +545,25 @@ class ChatBubble extends StatelessWidget {
               body,
               style: const TextStyle(fontFamily: T.family, fontSize: 12, height: 1.7),
             ),
+            if (mine && status != null) ...[
+              const SizedBox(height: 3),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    status == 'oxundu' ? Icons.done_all : Icons.done,
+                    size: 11,
+                    color: status == 'oxundu' ? Q.primary : Q.mutedFg,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    status!,
+                    style: const TextStyle(
+                        fontFamily: T.family, fontSize: 8, color: Q.mutedFg),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
