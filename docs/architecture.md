@@ -2,7 +2,7 @@
 
 ## Baxış
 
-Qoshul.az — modul monolit NestJS backend + Flutter mobil tətbiq. Realtime: Socket.IO + Redis adapter. Baza: PostgreSQL 17 + PostGIS 3. Keş və növbələr: Redis + BullMQ. Media: Cloudflare R2 + CDN. Push: FCM. Reverse proxy: Caddy (avtomatik TLS). Mikroservis və gRPC YOXDUR.
+Qoshul.az — modul monolit NestJS backend + Flutter mobil tətbiq. Realtime: Socket.IO + Redis adapter. Baza: PostgreSQL 17 + PostGIS 3. Keş və növbələr: Redis + BullMQ. Media və backup: Oracle Object Storage (S3 Compatibility API) — R2 YOXDUR (D-018). Push: FCM. Reverse proxy: Caddy (avtomatik TLS). Mikroservis və gRPC YOXDUR.
 
 ## İstək axını
 
@@ -18,8 +18,8 @@ NestJS (VM1 · :4000) — modul monolit
    │      Drizzle ORM (PG dialekti) + xam geo SQL
    ├──▶ Redis 7 (VM1 · :6379)
    │      keş · BullMQ növbələri · Socket.IO redis adapter
-   ├──▶ Cloudflare R2
-   │      media (publik bucket, CDN) · pg_dump backup (private bucket)
+   ├──▶ Oracle Object Storage (eyni tenancy — S3 compat API)
+   │      media: qoshul-media (publik) — birbaşa URL, backup: qoshul-backup (private)
    ├──▶ FCM — push (BullMQ worker-dən)
    └──▶ AI provayder — YALNIZ server tərəfli proxy (açar serverdə)
 ```
@@ -29,7 +29,7 @@ NestJS (VM1 · :4000) — modul monolit
 | Modul | Mərhələ | Öhdəliklər |
 |---|---|---|
 | auth | m3 | qeydiyyat, giriş, refresh token, Google/Apple ID token doğrulaması, email təsdiqi, (opsional) SMS OTP — sərt rate limit |
-| profile | m4 | profil CRUD, şəkil yükləmə (R2), moderasiya hook |
+| profile | m4 | profil CRUD, şəkil yükləmə (OCI OSS presigned URL), moderasiya hook |
 | match | m4 | yaxınlıq sorğusu — PostGIS `ST_DWithin` + spatial index (xam SQL) |
 | events | m4 | tədbir CRUD, iştirak, rezervasiya, tərəfdaşlar |
 | chat | m5 | Socket.IO + redis adapter, mesaj saxlama, oxunma statusu |
@@ -61,9 +61,11 @@ Drizzle ORM (PostgreSQL dialekti) + drizzle-kit migrations (`backend/src/databas
 
 Keçmiş layihədəki (React/Supabase) 11 cədvəlli sxem əsas götürülür — profiles, events, event_participants, saved_events, reviews, friendships, messages, match_cache, user_roles, partners, reservations — PG tipinə geri konvertasiya ilə (m2). 10 triqqerin server funksiyaları artıq mövcuddur (əvvəlki sessiyada yazılıb) — NestJS service-lərinə köçürülür.
 
-## Media
+## Media (Oracle-native — D-018/D-019)
 
-Flutter → (auth) backend → R2 signed URL → birbaşa yükləmə R2-yə → publik CDN URL. Report/block + şəkil moderasiyası növbəyə düşür (qayda 6).
+Flutter → (auth) backend → OSS **presigned PUT URL** (S3 compat) → birbaşa yükləmə OSS-yə → oxunuş **publik bucket URL** ilə (`objectstorage.<region>.oraclecloud.com/n/<ns>/b/qoshul-media/o/<açar>`). CDN yoxdur (beta): tətbiqdə Glide disk cache təkrar sorğuları azaldır; 50K API request/ay büdcəsi Prometheus-də izlənir (m10). Aşım ucuzdur (overage qiyməti — təsdiqlənməyib). m10 opsiyası: VM1 Caddy cache plugin (xcaddy) — OSS custom domain rəsmi dəstəyi yoxdur (təsdiqlənməyib). Object açarları UUID — listing məxfiliyi üçün unguessable. Report/block + şəkil moderasiyası növbəyə düşür (qayda 6).
+
+Yaddaş büdcəsi (Always Free 20GB cəmi): media ~15GB · backup ~3GB · ehtiyat ~2GB.
 
 ## Portativlik
 

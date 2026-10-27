@@ -13,11 +13,11 @@ Sosial platforma — istifadəçi profilləri, canlı çat, yaxınlıq (match) s
 | Baza | PostgreSQL 17 + PostGIS 3 (Drizzle ORM; koordinatlar `geometry(Point)`, geo əməliyyatlar xam SQL) |
 | Keş/növbə | Redis + BullMQ |
 | Auth | Custom JWT (access + refresh), Google/Apple ID token doğrulaması, email təsdiqi; SMS OTP opsional (sərt rate limit) |
-| Media | Cloudflare R2 + CDN |
+| Media | Oracle Cloud Object Storage (S3 Compatibility API) — publik bucket · CDN yox (beta; m10 opsiyası) |
 | Push | FCM |
 | Proxy | Caddy |
-| CI/CD | GitHub Actions — lint, Vitest, build, multi-arch Docker (arm64 məcburi) |
-| Monitorinq | Sentry, Prometheus, Grafana |
+| CI/CD | GitHub Actions — lint, Vitest, build, multi-arch Docker (arm64 məcburi), APK |
+| Monitorinq | Prometheus + Grafana (VM1-də, m10) · Sentry (opsional, xarici) |
 
 ## Hostinq topologiyası — Oracle Cloud Always Free (Ampere A1)
 
@@ -31,11 +31,16 @@ Flutter (APK) ──▶│  Caddy :443 (TLS/ACME)           PostgreSQL 17 + Post
                  └────────────────────────────┬─────────────────────────────────┘
                                               │ gündəlik pg_dump (VM1 vasitəsilə)
                                               ▼
-                                   Cloudflare R2 (backup, private)
-                                   Cloudflare R2 + CDN (media, publik)
+                                   Oracle Object Storage (eyni tenancy)
+                                   · qoshul-media (publik) — media
+                                   · qoshul-backup (private) — backup
+                                   (S3 compat API · 20GB · 50K req/ay · 10TB egress)
 ```
 
 Block volume: 200 GB cəmi = 2×47 GB boot + ~106 GB VM2-yə (`/mnt/qoshul-pgdata`).
+
+**Xarici asılılıqlar** (Oracle-a köçürülməsi mümkün deyil — decisions.md D-020):
+GitHub (kod+CI) · FCM (Android push) · Google/Apple OAuth · AI provayder · SMTP provayder (OCI port 25 bloklu) · DNS (pulsuz registrar/Cloudflare).
 
 ## Struktur
 

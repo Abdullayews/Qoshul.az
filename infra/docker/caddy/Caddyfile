@@ -4,29 +4,30 @@
 # reverse_proxy-da avtomatikdir — əlavə header lazım deyil.
 
 {
-	email {$CADDY_ACME_EMAIL}
+        email {$CADDY_ACME_EMAIL}
 }
 
 {$CADDY_DOMAIN} {
-	encode zstd gzip
+        encode zstd gzip
 
-	# REST API — NestJS
-	handle /api/* {
-		reverse_proxy backend:4000
-	}
+        # REST API — NestJS
+        handle /api/* {
+                reverse_proxy backend:4000
+        }
 
-	# Socket.IO — polling + WebSocket (m5)
-	handle /socket.io/* {
-		reverse_proxy backend:4000
-	}
+        # Socket.IO — polling + WebSocket (m5)
+        handle /socket.io/* {
+                reverse_proxy backend:4000
+        }
 
-	# Sağlamlıq yoxlaması (external uptime monitor)
-	handle /health {
-		reverse_proxy backend:4000
-	}
+        # Sağlamlıq yoxlaması (external uptime monitor)
+        handle /health {
+                reverse_proxy backend:4000
+        }
 
-	# Media R2/CDN-dən gəlir — burada deyil
-	handle {
-		respond "Qoshul API" 404
-	}
+        # Media OCI Object Storage publik bucket-dan BİRBAŞA gəlir (D-019) —
+        # buradan keçmir. m10 opsiyası: cache-proxy (xcaddy cache plugin).
+        handle {
+                respond "Qoshul API" 404
+        }
 }

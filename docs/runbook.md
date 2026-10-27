@@ -8,6 +8,17 @@
 | Boot volume-lar | 47 GB × 2 (cəmi 200 GB limitə daxil) |
 | Block volume | qalan ~106 GB → VM2-yə, mount: `/mnt/qoshul-pgdata` |
 | OS | Ubuntu LTS (arm64) — Oracle rəsmi imaj siyahısından |
+| Ehtiyat | 2× `VM.Standard.E2.1.Micro` (1/8 OCPU, 1 GB) Always Free-də mövcuddur — bastion/monitorinq ehtiyatı (D-018; idle-reclaim-ə həssas) |
+
+### OCI Always Free limitləri (rəsmi — decisions.md D-018)
+
+| Resurs | Limit |
+|---|---|
+| Object Storage (Standard + Infrequent Access + Archive cəmi) | **20 GB** |
+| Object Storage API sorğuları | **50,000 / ay** |
+| Outbound data transfer | **10 TB / ay** |
+| Block Volume | 200 GB (+5 volume backup) |
+| Flexible Load Balancer | 1× (10 Mbps) — istifadə olunmur (Caddy birbaşa) |
 
 Block volume hazırlığı (VM2):
 
@@ -78,7 +89,7 @@ m10-dan sonra: CI imajları GHCR-ə push edir, VM-lər `git pull` + `docker comp
 
 VM1-də `shared_buffers` ekvivalenti yoxdur → sərhəddi keçərək aşağı düşə bilər. Ona görə **hər gecə real iş** planlaşdırılır (saxtı yük generatoru YAZILMIR — baxım siyasəti baxımından riskli və dəyər yaratmır):
 
-1. **Backup relay (m10):** `pg_dump` VM1-də icra olunur (client → VM2 :5432), gzip sıxılır, R2-yə yüklənir → CPU (gzip) + şəbəkə (tam DB oxunu + upload) + yaddaş (page cache) — üç metricdə birdən real aktivlik.
+1. **Backup relay (m10):** `pg_dump` VM1-də icra olunur (client → VM2 :5432), zstd sıxılır, OCI OSS `qoshul-backup` bucket-inə yüklənir (rclone, S3 compat) → CPU (sıxma) + şəbəkə (tam DB oxunu + upload) + yaddaş (page cache) — üç metricdə birdən real aktivlik.
 2. **nightly-maintenance (BullMQ):** köhnə token/OTP təmizliyi, statistika hesablanması → CPU + DB trafiki.
 
 Nəticə: "7 gün hamısı 20%-dən aşağı" şərti heç vaxt ardıcıl tamamlanmır. Real istifadəçi trafiki (hətta az) bunu daha da gücləndirir.
@@ -94,9 +105,10 @@ Oracle Console → Instance → Metrics: CPU / Network / Memory qrafikləri. m10
 
 ## 6. Backup / bərpa (m10-da avtomatlaşır)
 
-- **Gündəlik:** VM1-də `pg_dump -Fc` → gzip → R2 private bucket (`qoshul-backup`) · 30 gün rotasiya
+- **Gündəlik:** VM1-də `pg_dump -Fc` → zstd → rclone (S3 compat API) → OCI OSS private bucket (`qoshul-backup`) · **14 gün rotasiya** (20GB cəmi limitin büdcəsi: media ~15GB, backup ~3GB — architecture.md Media)
 - **Bərpa sınağı:** ayda 1 dəfə (staging/lokal) — backup-un backup olduğu yox, bərpa edə bildiyi sınaqla müəyyən olunur
-- **R2 siyasəti:** media bucket publik (CDN), backup bucket private
+- **Bucket siyasəti:** `qoshul-media` publik oxunuş (UUID açarlar), `qoshul-backup` private; açarlar Customer Secret Keys (.env — qayda 3)
+- Bucket yaratmaq: OCI Console → Object Storage → Create Bucket (region = `OCI_REGION`)
 
 ## 7. Fəlakət və Hetznerə köç
 
@@ -108,6 +120,18 @@ Oracle Console → Instance → Metrics: CPU / Network / Memory qrafikləri. m10
 | Hadisə | Tezlik |
 |---|---|
 | İmaj yeniləməsi (base image patch) | ayda 1 (m10-dan sonra CI) |
-| `.env` açar rotasiyası (JWT secrets) | 6 ayda 1 |
+| `.env` açar rotasiyası (JWT secrets, OSS Customer Secret Keys) | 6 ayda 1 |
 | SSH: yalnız açar, parol bağlı, admin IP filtri | quraşdırma zamanı |
 | Backup bərpa sınağı | ayda 1 |
+
+## 9. Xarici asılılıqlar (Oracle-dan kənar — D-020)
+
+| Xidmət | Səbəb |
+|---|---|
+| GitHub (kod + CI) | pulsuz; APK pipeline istənilən; self-hosted runner VM1 RAM bölgüsünə görə m10-da qiymətləndiriləcək |
+| FCM | Android push yalnız Google infrastrukturu ilə |
+| Google/Apple OAuth | istifadəçi hesabları — xarici IdP təbiətinə görə |
+| SMTP provayder | OCI outbound **port 25 blokludur** → self-host SMTP mümkün deyil; pulsuz tier provayder (email təsdiqi m3) |
+| SMS OTP gateway | operator infrastrukturu (opsional, m3) |
+| AI provayder | xarici LLM API (m9, proxy arxasında) |
+| DNS | pulsuz (registrar/Cloudflare); OCI DNS Always Free daxil deyil — təsdiqlənməyib |
