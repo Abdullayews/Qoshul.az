@@ -21,6 +21,7 @@ Hər texniki iddia burada mənbə ilə qeyd olunur. Yoxlanmayanlar **təsdiqlən
 | D-019 | Media çatdırılma (beta): **publik bucket, birbaşa OSS URL** — CDN yoxdur; Glide disk cache (tətbiqdə) təkrar sorğuları azaldır; 50K sorğu/ay büdcəsi m10-da Prometheus ilə izlənəcək; aşım halında overage ucuzdur (dəqiq qiymət **təsdiqlənməyib**). OSS bucket custom domain rəsmi dəstəyi: **təsdiqlənməyib** (tapılmadı). m10 opsiyası: VM1 Caddy cache plugin (xcaddy ilə custom build) | qismən yoxlanılıb / qiymət m10-da | OSS docs; Caddy plugin ekosistemi |
 | D-020 | **Xaricdə qalanlar** (Oracle-a köçmək mümkün deyil / mənasız): GitHub (kod+CI — pulsuz, istifadəçi APK pipeline-ı istədi; self-hosted runner VM1 RAM bölgüsünə görə m10-da qiymətləndiriləcək), FCM (Android push = Google infrastrukturu), Google/Apple OAuth (xarici IdP), AI provayder (xarici LLM), **SMTP provayder — OCI outbound port 25 blokludur** → self-host SMTP mümkün deyil, SMS OTP gateway, DNS (pulsuz registrar/Cloudflare; OCI DNS Always Free daxil deyil — təsdiqlənməyib) | ✅ (port 25: bir neçə müstəqil mənbə 2021-2026) / rəsmi OCI sənədi təsdiqlənməyib | oscarchou.com (OCI mail-server guide); mailinabox.community; captaindns.com (2026-02) |
 | D-021 | Monitorinq birincil: **Prometheus + Grafana VM1-də** (m10, self-hosted — Oracle daxilində); Sentry → opsional xarici (free tier, istəyə bağlı); Loki (log toplusu, VM1) m10-da qiymətləndiriləcək | qərar | — |
+| D-022 | **Hibrid Oracle** (istifadəçi təsdiqi, 2026-10-28): Oracle = bütün yekun infrastruktur (D-018 vəziyyəti dəyişməz), xaricdə yalnız əvəzolunmazlar (D-020). **Miqyas profili:** beta fazası — maksimum **4 tester** (rəsmi açılışa qədər); launch — **ölkə miqyası**. Beta təsirləri: trafik ~0 → **idle-reclaim əsas risk** (runbook §5 mitigasiyası kritik); OSS 20GB bol bəsdir; CI GitHub-hosted runner-də qalır (public repo limitsiz), self-hosted → m10. **Launch öncəsi siyahı:** A1/OSS/egress limitlərinin yoxlanması, bağlantı hovuzu/cache retune, OCI **Pay-As-You-Go** keçidi qiymətləndiriləcək (PAYG hesabda Always Free resurslar pulsuz qalır və idle-reclaim tətbiq olunmur — **təsdiqlənməyib**, launch öncəsi rəsmi sənədlə yoxlanacaq) | qərar (istifadəçi təsdiqi) / PAYG iddiası ⬜ | istifadəçi direktivi (bu chat, 2026-10-28); PAYG: oracle.com/cloud/free — launch öncəsi yoxlanacaq |
 
 ## Qərarlar (mühəndislik seçimi)
 
@@ -37,7 +38,7 @@ Hər texniki iddia burada mənbə ilə qeyd olunur. Yoxlanmayanlar **təsdiqlən
 
 | Mövzu | Nə vaxt | Mənbə |
 |---|---|---|
-| MAU rəqəmi (bağlantı hovuzu + yaddaş tuning üçün) | istifadəçidən gözlənilir | — |
+| Launch MAU hədəfi (bağlantı hovuzu + yaddaş retune) | launch öncəsi siyahı (D-022) — beta profili məlumdur: ≤4 tester, kiçik dəyərlərlə qurulur | — |
 | NestJS cari versiyası + Node 24/26 uyğunluğu | m2 | docs.nestjs.com |
 | Drizzle ORM PG dialekti + PostGIS `geometry` dəstəyi | m2 | orm.drizzle.team |
 | BullMQ ↔ Redis 7/8 rəsmi dəstək matrisi | m6 | docs.bullmq.io |

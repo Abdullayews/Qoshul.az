@@ -94,6 +94,8 @@ VM1-də `shared_buffers` ekvivalenti yoxdur → sərhəddi keçərək aşağı d
 
 Nəticə: "7 gün hamısı 20%-dən aşağı" şərti heç vaxt ardıcıl tamamlanmır. Real istifadəçi trafiki (hətta az) bunu daha da gücləndirir.
 
+**Beta fazası (D-022 — ≤4 tester):** istifadəçi trafigi ~0 olacaq → yuxarıdakı mitigasiyalar bu fazada **yeganə qoruyucudur**; gecəlik backup relay + nightly-maintenance işləri heç vaxt bağlanmamalıdır.
+
 ### Monitorinq
 
 ```bash
