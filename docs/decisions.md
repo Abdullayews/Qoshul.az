@@ -14,6 +14,8 @@ Hər texniki iddia burada mənbə ilə qeyd olunur. Yoxlanmayanlar **təsdiqlən
 | D-006 | `node:24-alpine` — `linux/arm64` mövcuddur (son push 2026-10-22) | ✅ yoxlanılıb | Docker Hub API (2026-10-25) |
 | D-007 | Node 24: LTS 2025-10-28, Maintenance 2026-10-20-dən, EOL 2028-04-30. Node 26: LTS 2026-10-28-dən başlayır (m2-də yenidən baxıla bilər) | ✅ yoxlanılıb | `raw.githubusercontent.com/nodejs/Release/main/schedule.json` |
 | D-008 | Redis 8 seçilmədi: `8-alpine` arm64 mövcuddur, amma BullMQ-Redis 8 uyğunluğu hələ yoxlanmayıb; 7-alpine aktiv şəkildə yenilənir → mərhələli keçid m6-da mümkün | ✅ (fakt hissəsi) / ⬜ (BullMQ hissəsi — m6) | Docker Hub API + m6-da bullmq.io |
+| D-015 | GitHub Actions-da Flutter APK build mümkündür (checkout → setup-java → flutter-action → `flutter build apk --release` → upload-artifact). Pulsuz limit: **public repo — standart runnerlərdə limitsiz; private repo — Free planda 2,000 dəq/ay** (Linux x64 $0.006/dəq). 1 release build ≈ 10–15 dəq (təxmin) → private repoda ayda ~130–190 build. macOS runner (gələcək iOS) ~10x baha | ✅ yoxlanılıb (tariflər) / ⬜ (build vaxtı — m7-də ölçüləcək) | docs.github.com (runners, billing); github.com/orgs/community/discussions/182186 ("2,000 minutes on Free", 2025-12); github.com/pricing/calculator (Linux 2-core $0.006/dəq, 2026-10-28) |
+| D-016 | APK imzalama: keystore bir dəfə lokal yaradılır (`keytool`), base64 olaraq **yalnız GitHub Secrets**-də; repo-da heç vaxt. Self-hosted runner Oracle VM1-də — pulsuz alternativ, amma 6 GB RAM bölünür → m10-da qiymətləndiriləcək | qərar / ⬜ (m10 qiymətləndirməsi) | GitHub secrets sənədləri |
 
 ## Qərarlar (mühəndislik seçimi)
 
