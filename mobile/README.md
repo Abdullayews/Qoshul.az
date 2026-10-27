@@ -1,9 +1,27 @@
 # Qoshul.az — Mobil (Flutter)
 
-Status: **UI mərhələsi (D-023)** — tam arayüz, mock data, backend gözləyir.
-Branch: `feature/apk-pipeline` · Versiya: `0.3.0+3`
+Status: **UI mərhələsi (D-023/D-025)** — tam arayüz + dizayn qatı, mock data, backend gözləyir.
+Branch: `feature/apk-pipeline` · Versiya: `0.4.0+4`
 
-## Nə var indi (v0.3.0 — ROL UI)
+## Nə var indi (v0.4.0 — Liquid Glass + Hərəkət dili)
+
+D-025 (docs/design-spec.md): Apple iOS 26 "Liquid Glass" dilindən **minimal**
+interpretasiya + bütün bölmələrə vahid hərəkət dili:
+
+- **Şüşə — cəmi 5 səth** (yalnız məzmunun real axdığı yerlərdə):
+  üzən alt nav pill (`extendBody`), xəritə filtr paneli, xəritə alt kartı,
+  sayğac həbi, match fəaliyyət həbləri — kartlar/siyahılar web-parity düz qalır
+- **Hərəkət tokenləri:** d1-d4 (150-550ms), Apple-yumşaq əyrilər
+  (easeOutCubic/easeOutBack/elasticOut), 45ms stagger, `disableAnimations` hörməti
+- **Hər yerdə animasiya:** staggered siyahı girişləri, kart toxunuş miqyası,
+  tab fade-through, seçilmiş ikon bounce, XP zolağının animasiyalı dolğusu,
+  rəqəm sayğacları (XP/stat), nişan pop-ları, pin drop, xəritə kartı slide-up,
+  **real match swipe dəsti** (drag→fırlanma→uçuş/geri qayıdış + MARAQLIYAM/KEÇ
+  möhürləri), çat "yazır..." nöqtə dalğası, QR pop, onboarding nöqtə morph
+- **Sıfır xarici asılılıq qorunur** — glass və motion tam Flutter SDK ilə
+  (BackdropFilter + qradiyent + kənar; AnimationController primitivləri)
+
+## Nə var idi (v0.3.0 — ROL UI)
 
 ROL (docs/product-spec.md) strukturunun tam tətbiqi — web vizual stili qorunaraq (D-023):
 
@@ -38,15 +56,14 @@ mobile/lib/
 ├── main.dart                 # Auth → Onboarding → Shell axını
 ├── core/
 │   ├── theme/app_theme.dart  # Q (rənglər) + T (tipografiya) + ThemeData
-│   ├── models/models.dart    # QoshulEvent, Person, Partner, XpRules, [TƏDBİR] parser
+│   ├── models/               # models (event/person/partner/XP) + reservation/coupon/notification/moderation
 │   ├── data/mock_data.dart   # 13 tədbir, 5 insan, 4 məkan, 12 kateqoriya qrupu, 25 şəhər
 │   ├── state/app_state.dart  # ChangeNotifier (mock) — m8-də BLoC-a parçalanacaq
-│   └── widgets/              # brand (wordmark), ui (banner, çip, XP, AI-box, bubble...)
-└── features/
-    ├── shell/                # header + bottom nav (4 tab + Yarat)
-    ├── feed/ explore/ chats/ assistant/ profile/ partners/
-    ├── auth/ onboarding/ settings/
-    └── events/               # EventCard + detail sheet + create sheet + city picker
+│   └── widgets/              # brand, ui, rol (ROL hissələri),
+│                             # glass (D-025 şüşə səthlər), motion (D-025 hərəkət dili)
+└── features/                 # 17 qovluq: shell, feed, map, match, events, venues,
+                              # reservations, coupons, chats, notifications, profile,
+                              # settings, safety, onboarding, auth, partners, assistant
 ```
 
 **Sıfır xarici asılılıq** — yalnız Flutter SDK (D-023). Backend inteqrasiyasında

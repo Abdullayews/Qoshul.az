@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   build:
-    name: Release APK (v0.3.0 — ROL UI)
+    name: Release APK (v0.4.0 — Liquid Glass + Motion)
     runs-on: ubuntu-latest
     defaults:
       run:

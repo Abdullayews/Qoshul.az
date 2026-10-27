@@ -5,6 +5,7 @@ import '../../../core/models/models.dart';
 import '../../../core/models/reservation.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/rol.dart';
 import '../../../core/widgets/ui.dart';
 
@@ -255,7 +256,10 @@ class _ReserveSheetState extends State<_ReserveSheet> {
                   children: [
                     ResvStatusChip(status: result!.status),
                     const SizedBox(height: 14),
-                    QrPlaceholder(code: result!.qrCode),
+                    // QR uğur nəticəsində pop şəklində görünür (D-025).
+                    PopIn(
+                      child: QrPlaceholder(code: result!.qrCode),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       result!.qrCode,

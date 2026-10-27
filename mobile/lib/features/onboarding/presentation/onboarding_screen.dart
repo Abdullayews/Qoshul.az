@@ -5,6 +5,7 @@ import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/brand.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/ui.dart';
 
 /// Onboarding — ROL (docs/product-spec.md, bölmə B) axını:
@@ -106,27 +107,33 @@ class _WelcomeStepState extends State<_WelcomeStep> {
             onPageChanged: (i) => setState(() => page = i),
             children: [
               for (final (icon, title, text) in _slides)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 34),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 84,
-                        height: 84,
-                        decoration: BoxDecoration(
-                          color: Q.secondary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(icon, size: 38, color: Q.primary),
+                // Hər slayd məzmunu pop ilə doğulur (D-025).
+                KeyedSubtree(
+                  key: ValueKey(title),
+                  child: PopIn(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 34),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 84,
+                            height: 84,
+                            decoration: BoxDecoration(
+                              color: Q.secondary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(icon, size: 38, color: Q.primary),
+                          ),
+                          const SizedBox(height: 28),
+                          Text(title, style: T.hero),
+                          const SizedBox(height: 12),
+                          Text(text,
+                              style: T.subtitle.copyWith(fontSize: 13, height: 1.8)),
+                        ],
                       ),
-                      const SizedBox(height: 28),
-                      Text(title, style: T.hero),
-                      const SizedBox(height: 12),
-                      Text(text,
-                          style: T.subtitle.copyWith(fontSize: 13, height: 1.8)),
-                    ],
+                    ),
                   ),
                 ),
             ],
@@ -136,7 +143,10 @@ class _WelcomeStepState extends State<_WelcomeStep> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             for (var i = 0; i < _slides.length; i++)
-              Container(
+              // Nöqtə morph: aktiv enlənir (D-025).
+              AnimatedContainer(
+                duration: Motion.d2,
+                curve: Motion.ease,
                 width: i == page ? 18 : 6,
                 height: 6,
                 margin: const EdgeInsets.symmetric(horizontal: 3),

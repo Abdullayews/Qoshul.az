@@ -4,6 +4,7 @@ import '../../../core/models/coupon.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/rol.dart';
 import '../../../core/widgets/ui.dart';
 
@@ -95,7 +96,10 @@ class _CouponsScreenState extends State<CouponsScreen> {
     return Column(
       children: [
         for (final o in visible)
-          OfferCard(
+          // Təklif kartları sırayla girir (D-025).
+          StaggerIn(
+            index: visible.indexOf(o),
+            child: OfferCard(
             venueName: o.venueName,
             label: o.label,
             requirement: o.autoByLevel
@@ -117,6 +121,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12)),
                     child: const Text('XP ilə al', style: T.button),
                   ),
+            ),
           ),
       ],
     );

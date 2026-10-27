@@ -4,6 +4,8 @@ import '../../core/models/notification.dart';
 import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/brand.dart';
+import '../../core/widgets/glass.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/ui.dart';
 import '../assistant/presentation/assistant_screen.dart';
 import '../chats/presentation/chats_screen.dart';
@@ -17,7 +19,11 @@ import '../profile/presentation/profile_screen.dart';
 
 /// Əsas tətbiq qabığı — ROL (product-spec C): 5 tab alt paneli.
 /// Kəşf · Xəritə · Tədbirlər · [Yarat] · Söhbətlər · Profil
-/// Header: wordmark + Tərəfdaşlar + AI köməkçi + bildiriş zili.
+///
+/// v0.4.0 (D-025): alt panel Liquid Glass üzən pill kimi — məzmun
+/// `extendBody` sayəsində panelin ALTINDAN axır və blur-da yumşalır
+/// (Apple iOS 26 "lensing" prinsipi). Tab keçidləri fade-through,
+/// seçilmiş ikon bounce, oxunmamış badge pop ilə canlanır.
 class AppShell extends StatefulWidget {
   final AppState state;
   const AppShell({super.key, required this.state});
@@ -53,6 +59,7 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       backgroundColor: Q.background,
+      extendBody: true, // məzmun şüşə pillin altından axır → blur işləyir
       body: AnimatedBuilder(
         animation: widget.state,
         builder: (context, _) => Column(
@@ -63,14 +70,16 @@ class _AppShellState extends State<AppShell> {
               onBell: openNotifications,
               unread: widget.state.unreadCount,
             ),
-            Expanded(child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
-            )),
+            Expanded(
+              // Fade-through: köhnə tab solub kiçilir, yenisi böyüyərək görünür.
+              child: FadeThrough(
+                child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
+              ),
+            ),
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNav(
+      bottomNavigationBar: _GlassNav(
         index: index,
         onChanged: (i) => setState(() => index = i),
         onCreate: openCreate,
@@ -79,7 +88,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _push(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).push(GlassPageRoute(builder: (_) => screen));
   }
 }
 
@@ -124,7 +133,7 @@ class _NotificationsSheet extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context).push(MaterialPageRoute(
+                    Navigator.of(context).push(GlassPageRoute(
                         builder: (_) => NotificationsScreen(state: state)));
                   },
                   child: const Text('Tercihlər', style: TextStyle(fontSize: 11)),
@@ -152,41 +161,45 @@ class _NotificationsSheet extends StatelessWidget {
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, i) {
                         final n = state.notifications[i];
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: n.read ? Q.card : Q.secondary,
-                            border: Border.all(
-                                color: n.read ? Q.border : Q.primary,
-                                width: n.read ? 1 : 1.2),
-                            borderRadius: BorderRadius.circular(Q.rLg),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(_icons[n.type] ?? Icons.notifications,
-                                  size: 18, color: Q.primary),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(n.title,
-                                        style: const TextStyle(
-                                            fontFamily: T.family,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700)),
-                                    const SizedBox(height: 3),
-                                    Text(n.body,
-                                        style: const TextStyle(
-                                            fontFamily: T.family,
-                                            fontSize: 10,
-                                            height: 1.6,
-                                            color: Q.mutedFg)),
-                                  ],
+                        return StaggerIn(
+                          index: i,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: n.read ? Q.card : Q.secondary,
+                              border: Border.all(
+                                  color: n.read ? Q.border : Q.primary,
+                                  width: n.read ? 1 : 1.2),
+                              borderRadius: BorderRadius.circular(Q.rLg),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(_icons[n.type] ?? Icons.notifications,
+                                    size: 18, color: Q.primary),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(n.title,
+                                          style: const TextStyle(
+                                              fontFamily: T.family,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700)),
+                                      const SizedBox(height: 3),
+                                      Text(n.body,
+                                          style: const TextStyle(
+                                              fontFamily: T.family,
+                                              fontSize: 10,
+                                              height: 1.6,
+                                              color: Q.mutedFg)),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -212,7 +225,8 @@ class _NotificationsSheet extends StatelessWidget {
   }
 }
 
-/// .app-header — 67px, ağ, alt haşiyə.
+/// .app-header — 67px, ağ, alt haşiyə (web-parity, D-023).
+/// Şüşə YALNIZ alt pilldə — header kontentin üstünə düşmür (minimal qayda).
 class _Header extends StatelessWidget {
   final VoidCallback onPartners;
   final VoidCallback onAssistant;
@@ -263,20 +277,23 @@ class _Header extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: Q.accent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Q.card, width: 1),
-                    ),
-                    child: Text(
-                      '$unread',
-                      style: const TextStyle(
-                          fontFamily: T.family,
-                          fontSize: 7,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white),
+                  child: PopIn(
+                    // Oxunmamış sayı dəyişəndə pop edərək yenidən doğulur.
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Q.accent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Q.card, width: 1),
+                      ),
+                      child: Text(
+                        '$unread',
+                        style: const TextStyle(
+                            fontFamily: T.family,
+                            fontSize: 7,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white),
+                      ),
                     ),
                   ),
                 ),
@@ -288,13 +305,15 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// .bottom-nav — ROL 5 tab + mərkəzdə Yarat.
-class _BottomNav extends StatelessWidget {
+/// Şüşə alt panel — Liquid Glass üzən pill (D-025 səth #1).
+/// `extendBody: true` sayəsində altından keçən siyahı blur-da əriyir;
+/// Apple HIG qaydası: kontrol funksional qat kimi məzmunun ÜSTÜNDƏ üzür.
+class _GlassNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChanged;
   final VoidCallback onCreate;
 
-  const _BottomNav({required this.index, required this.onChanged, required this.onCreate});
+  const _GlassNav({required this.index, required this.onChanged, required this.onCreate});
 
   static const _items = [
     (Icons.home_outlined, 'Kəşf'),
@@ -306,35 +325,40 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 77,
-      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
-      decoration: BoxDecoration(
-        color: Q.card.withValues(alpha: 0.96),
-        border: const Border(top: BorderSide(color: Q.border)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x0A28301F),
-            blurRadius: 24,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < _items.length; i++) ...[
-            if (i == 2) _createButton(),
-            Expanded(child: _navItem(i)),
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        child: GlassSurface(
+          radius: BorderRadius.circular(24),
+          sigma: 18,
+          luminance: 0.52,
+          shadows: const [
+            BoxShadow(
+              color: Color(0x1428301F),
+              blurRadius: 22,
+              offset: Offset(0, 6),
+            ),
           ],
-        ],
+          child: SizedBox(
+            height: 66,
+            child: Row(
+              children: [
+                for (var i = 0; i < _items.length; i++) ...[
+                  if (i == 2) _createButton(),
+                  Expanded(child: _navItem(i)),
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _createButton() {
-    return GestureDetector(
+    return ScaleTap(
       onTap: onCreate,
-      behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Column(
@@ -350,8 +374,8 @@ class _BottomNav extends StatelessWidget {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Q.primary.withValues(alpha: 0.2),
-                      blurRadius: 10,
+                      color: Q.primary.withValues(alpha: 0.28),
+                      blurRadius: 12,
                       offset: const Offset(0, 3),
                     ),
                   ],
@@ -376,16 +400,21 @@ class _BottomNav extends StatelessWidget {
   Widget _navItem(int i) {
     final active = index == i;
     final (icon, label) = _items[i];
-    return GestureDetector(
+    return ScaleTap(
       onTap: () => onChanged(i),
-      behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon,
-              size: 20,
-              color: active ? Q.primary : Q.mutedFg,
-              weight: active ? 700 : 400),
+          // Seçiləndə ikon bounce — spring "canlı" toxunuş (D-025).
+          AnimatedScale(
+            scale: active ? 1.15 : 1.0,
+            duration: Motion.d2,
+            curve: active ? Motion.enter : Motion.ease,
+            child: Icon(icon,
+                size: 20,
+                color: active ? Q.primary : Q.mutedFg,
+                weight: active ? 700 : 400),
+          ),
           const SizedBox(height: 5),
           Stack(
             clipBehavior: Clip.none,
@@ -399,20 +428,21 @@ class _BottomNav extends StatelessWidget {
                   color: active ? Q.primary : Q.mutedFg,
                 ),
               ),
-              if (active)
-                Positioned(
-                  bottom: -5,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      width: 4,
-                      height: 4,
-                      decoration: BoxDecoration(
-                          color: Q.primary, shape: BoxShape.circle),
-                    ),
+              Positioned(
+                bottom: -5,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: Motion.d1,
+                    curve: Motion.ease,
+                    width: active ? 4 : 0,
+                    height: active ? 4 : 0,
+                    decoration: BoxDecoration(
+                        color: Q.primary, shape: BoxShape.circle),
                   ),
                 ),
+              ),
             ],
           ),
         ],

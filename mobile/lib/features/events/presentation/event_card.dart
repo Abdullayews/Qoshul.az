@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import 'event_detail_sheet.dart';
 
 /// .event-card — web EventCard portu.
@@ -25,7 +26,10 @@ class EventCard extends StatelessWidget {
     final isPending = state.pending.contains(event.id);
     final isSaved = state.saved.contains(event.id);
 
-    return GestureDetector(
+    // StaggerIn: kart hər build-də (scroll-da da) yumşaq girir (D-025).
+    return StaggerIn(
+      index: 0,
+      child: ScaleTap(
       onTap: () => showEventDetailSheet(context, state, event),
       child: Container(
         decoration: BoxDecoration(
@@ -213,6 +217,7 @@ class EventCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../theme/app_theme.dart';
+import 'motion.dart';
 
 /// Ortaq UI komponentləri — web styles.css siniflərinin Flutter ekvivalentləri.
 
@@ -115,7 +116,8 @@ class RankBadge extends StatelessWidget {
   }
 }
 
-/// .xp-line + .xp-track — XP progress zolağı
+/// .xp-line + .xp-track — XP progress zolağı (v0.4.0: animasiyalı dolğu
+/// + rəqəm sayğacı — dəyişən XP göz qarşısında artır, D-025).
 class XpTrack extends StatelessWidget {
   final int xp;
   const XpTrack({super.key, required this.xp});
@@ -123,17 +125,21 @@ class XpTrack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prog = XpRules.xpProgress(xp);
+    final target = (prog['pct'] as int) / 100;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('$xp XP',
-                style: const TextStyle(
-                    fontFamily: T.family,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600)),
+            CountUp(
+              value: xp,
+              suffix: ' XP',
+              style: const TextStyle(
+                  fontFamily: T.family,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600),
+            ),
             Text(
               prog['nextName'] == null
                   ? 'Ən yüksək səviyyədəsən!'
@@ -147,11 +153,17 @@ class XpTrack extends StatelessWidget {
           borderRadius: BorderRadius.circular(2),
           child: SizedBox(
             height: 4,
-            child: LinearProgressIndicator(
-              value: (prog['pct'] as int) / 100,
-              minHeight: 4,
-              backgroundColor: Q.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(Q.primary),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: target),
+              duration: Motion.d4,
+              curve: Motion.ease,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 4,
+                backgroundColor: Q.border,
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Q.primary),
+              ),
             ),
           ),
         ),
@@ -185,7 +197,7 @@ class Segmented extends StatelessWidget {
                 onTap: () => onChanged(i),
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
+                  duration: Motion.d1,
                   height: 33,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -267,7 +279,7 @@ class SearchBarField extends StatelessWidget {
   }
 }
 
-/// .category-chip — kateqoriya filtri
+/// .category-chip — kateqoriya filtri (v0.4.0: seçiləndə bounce, D-025)
 class CategoryChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -287,24 +299,29 @@ class CategoryChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 31,
-        padding: const EdgeInsets.symmetric(horizontal: 11),
-        decoration: BoxDecoration(
-          color: active ? Q.primary : Q.card,
-          border: Border.all(color: active ? Q.primary : Q.border),
-          borderRadius: BorderRadius.circular(Q.rMd),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: active ? Q.primaryFg : Q.mutedFg),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: active ? T.chipActive : T.chip,
-            ),
-          ],
+      child: AnimatedScale(
+        scale: active ? 1.05 : 1.0,
+        duration: Motion.d2,
+        curve: active ? Motion.enter : Motion.ease,
+        child: Container(
+          height: 31,
+          padding: const EdgeInsets.symmetric(horizontal: 11),
+          decoration: BoxDecoration(
+            color: active ? Q.primary : Q.card,
+            border: Border.all(color: active ? Q.primary : Q.border),
+            borderRadius: BorderRadius.circular(Q.rMd),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: active ? Q.primaryFg : Q.mutedFg),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: active ? T.chipActive : T.chip,
+              ),
+            ],
+          ),
         ),
       ),
     );

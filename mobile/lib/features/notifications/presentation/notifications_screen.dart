@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/notification.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/ui.dart';
 
 /// Bildiriş mərkəzi + tip tercihləri — ROL (product-spec H):
@@ -63,18 +64,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(20, 21, 20, 24),
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('${state.unreadCount} oxunmamış',
-                      style: T.subtitle),
-                  if (state.unreadCount > 0)
-                    TextButton(
-                      onPressed: state.markAllNotificationsRead,
-                      child: const Text('Hamısını oxunmuş et',
-                          style: TextStyle(fontSize: 11)),
-                    ),
-                ],
+              StaggerIn(
+                index: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('${state.unreadCount} oxunmamış',
+                        style: T.subtitle),
+                    if (state.unreadCount > 0)
+                      TextButton(
+                        onPressed: state.markAllNotificationsRead,
+                        child: const Text('Hamısını oxunmuş et',
+                            style: TextStyle(fontSize: 11)),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               if (state.notifications.isEmpty)
@@ -83,7 +87,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     text: 'Hələ bildiriş yoxdur.')
               else
                 for (final n in state.notifications)
-                  Container(
+                  StaggerIn(
+                    index: state.notifications.indexOf(n),
+                    child: Container(
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(13),
                     decoration: BoxDecoration(
@@ -132,6 +138,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ],
                     ),
+                  ),
                   ),
             ],
           );

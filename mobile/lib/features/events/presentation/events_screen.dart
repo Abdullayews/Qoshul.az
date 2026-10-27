@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/data/mock_data.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/ui.dart';
 import '../../venues/presentation/venue_detail_screen.dart';
 import 'event_card.dart';
@@ -35,31 +36,53 @@ class _EventsScreenState extends State<EventsScreen> {
         final list = tab == 0 ? upcoming : tab == 1 ? mine : createdByMe;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 21, 20, 24),
+          // alt 128px: şüşə nav pill altından axış (extendBody, D-025)
+          padding: const EdgeInsets.fromLTRB(20, 21, 20, 128),
           children: [
-            const ViewHeading(
-              title: 'Tədbirlər',
-              subtitle: 'Yaxınlaşan görüşlər, iştirak etdiyin və yaratdıqların.',
+            StaggerIn(
+              index: 0,
+              child: const ViewHeading(
+                title: 'Tədbirlər',
+                subtitle:
+                    'Yaxınlaşan görüşlər, iştirak etdiyin və yaratdıqların.',
+              ),
             ),
-            Segmented(
-              labels: const ['Yaxınlaşan', 'Mənim tədbirlərim', 'Yaratdığım'],
-              active: tab,
-              onChanged: (i) => setState(() => tab = i),
+            StaggerIn(
+              index: 1,
+              child: Segmented(
+                labels: const ['Yaxınlaşan', 'Mənim tədbirlərim', 'Yaratdığım'],
+                active: tab,
+                onChanged: (i) => setState(() => tab = i),
+              ),
             ),
-            if (list.isEmpty)
-              EmptyState(
-                icon: tab == 2 ? Icons.add_circle_outline : Icons.event,
-                text: tab == 0
-                    ? 'Hazırda yaxınlaşan tədbir yoxdur.'
-                    : tab == 1
-                        ? 'Hələ heç bir tədbirə qoşulmamısan.\n"Yaxınlaşan" siyahısından birini seç.'
-                        : 'Heç bir tədbir yaratmamısan.\nMərkəzdəki "Yarat" düyməsi ilə başla.',
-              )
-            else
-              for (final e in list) ...[
-                EventCard(event: e, state: state),
-                const SizedBox(height: 16),
-              ],
+            // Tab dəyişəndə siyahı fade-through ilə yenilənir (D-025).
+            FadeThrough(
+              child: KeyedSubtree(
+                key: ValueKey(tab),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (list.isEmpty)
+                      EmptyState(
+                        icon: tab == 2
+                            ? Icons.add_circle_outline
+                            : Icons.event,
+                        text: tab == 0
+                            ? 'Hazırda yaxınlaşan tədbir yoxdur.'
+                            : tab == 1
+                                ? 'Hələ heç bir tədbirə qoşulmamısan.\n"Yaxınlaşan" siyahısından birini seç.'
+                                : 'Heç bir tədbir yaratmamısan.\nMərkəzdəki "Yarat" düyməsi ilə başla.',
+                      )
+                    else
+                      for (final e in list) ...[
+                        EventCard(event: e, state: state),
+                        const SizedBox(height: 16),
+                      ],
+                  ],
+                ),
+              ),
+            ),
             if (tab == 0) _venueHint(),
             const SafetyNote(),
           ],
@@ -77,7 +100,7 @@ class _EventsScreenState extends State<EventsScreen> {
       trailing: Icon(Icons.north_east, size: 20, color: Q.primary),
       onTap: () {
         final s = widget.state;
-        Navigator.of(context).push(MaterialPageRoute(
+        Navigator.of(context).push(GlassPageRoute(
           builder: (_) => VenueDetailScreen(state: s, venue: mockPartners.first),
         ));
       },

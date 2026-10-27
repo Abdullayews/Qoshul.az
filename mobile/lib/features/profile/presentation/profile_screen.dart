@@ -4,6 +4,7 @@ import '../../../core/data/mock_data.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/rol.dart';
 import '../../../core/widgets/ui.dart';
 import '../../coupons/presentation/coupons_screen.dart';
@@ -39,7 +40,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final tabList = tab == 1 ? saved : mine;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(20, 13, 20, 24),
+          // alt 128px: şüşə nav pill altından axış (extendBody, D-025)
+          padding: const EdgeInsets.fromLTRB(20, 13, 20, 128),
           children: [
             // — redaktə / ayarlar düymələri —
             Row(
@@ -54,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 IconButton(
                   tooltip: 'Ayarlar',
                   onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => SettingsScreen(state: state)),
+                    GlassPageRoute(builder: (_) => SettingsScreen(state: state)),
                   ),
                   icon: const Icon(Icons.settings, size: 20),
                   color: Q.foreground,
@@ -180,9 +182,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               runSpacing: 8,
               children: [
                 for (final b in badgeDefs)
-                  Tooltip(
-                    message: b.description,
-                    child: BadgeChip(badge: b, earned: state.earnedBadges.contains(b.id)),
+                  // Nişanlar sırayla pop şəklində doğulur (D-025).
+                  PopIn(
+                    delay: Motion.staggerStep * badgeDefs.indexOf(b),
+                    child: Tooltip(
+                      message: b.description,
+                      child: BadgeChip(
+                          badge: b,
+                          earned: state.earnedBadges.contains(b.id)),
+                    ),
                   ),
               ],
             ),
@@ -195,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.table_restaurant,
                     title: 'Rezervlərim',
                     value: '${state.reservations.length}',
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    onTap: () => Navigator.of(context).push(GlassPageRoute(
                         builder: (_) => ReservationsScreen(state: state))),
                   ),
                 ),
@@ -205,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.confirmation_number,
                     title: 'Kuponlarım',
                     value: '${state.coupons.where((c) => c.isActive).length}',
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    onTap: () => Navigator.of(context).push(GlassPageRoute(
                         builder: (_) => CouponsScreen(state: state))),
                   ),
                 ),
@@ -224,9 +232,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _stat('${state.xp}', 'Ümumi XP'),
-                  _stat('${state.xpBalance}', 'Balans'),
-                  _stat('${state.joined.length}', 'Tədbir'),
+                  // Statlar sayğacla artır — XP qazanınca canlı dəyişir (D-025).
+                  _statCount(state.xp, 'Ümumi XP'),
+                  _statCount(state.xpBalance, 'Balans'),
+                  _statCount(state.joined.length, 'Tədbir'),
                   _stat(state.rank, 'Səviyyə'),
                 ],
               ),
@@ -254,12 +263,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderRadius: BorderRadius.circular(2),
               child: SizedBox(
                 height: 4,
-                child: LinearProgressIndicator(
-                  value: (prog['pct'] as int) / 100,
-                  minHeight: 4,
-                  backgroundColor: Q.border,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(Q.primary),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: (prog['pct'] as int) / 100),
+                  duration: Motion.d4,
+                  curve: Motion.ease,
+                  builder: (context, value, _) => LinearProgressIndicator(
+                    value: value,
+                    minHeight: 4,
+                    backgroundColor: Q.border,
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Q.primary),
+                  ),
                 ),
               ),
             ),
@@ -337,6 +351,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// Animasiyalı stat — rəqəm sayğacla artır (D-025).
+  Widget _statCount(int value, String label) {
+    return Column(
+      children: [
+        CountUp(value: value, style: T.stat),
+        const SizedBox(height: 3),
+        Text(label, style: T.meta),
+      ],
+    );
+  }
+
   /// Tez keçid kartı (Rezervlərim / Kuponlarım).
   Widget _quickCard({
     required IconData icon,
@@ -347,7 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Container(
+      child: ScaleTap(
+        onTap: onTap,
+        child: Container(
         padding: const EdgeInsets.all(13),
         decoration: BoxDecoration(
           color: Q.card,
@@ -368,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Text(value, style: T.stat.copyWith(fontSize: 17)),
           ],
         ),
+      ),
       ),
     );
   }

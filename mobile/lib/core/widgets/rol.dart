@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../models/reservation.dart';
 import '../theme/app_theme.dart';
+import 'motion.dart';
 
 /// ROL UI-2 (v0.3.0) widgetları — rezerv/kupon/match/bildiriş üçün ortaq hissələr.
 /// Vizual dil D-023 web stili ilə eynidir (Q tokenləri).
@@ -216,9 +217,8 @@ class VenueMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return ScaleTap(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 168,
         decoration: BoxDecoration(
@@ -324,9 +324,8 @@ class PersonMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return ScaleTap(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 128,
         padding: const EdgeInsets.all(10),

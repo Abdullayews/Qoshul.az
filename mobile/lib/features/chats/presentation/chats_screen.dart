@@ -5,6 +5,7 @@ import '../../../core/models/moderation.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/ui.dart';
 
 /// Söhbətlər — ROL (product-spec C, TAB 4):
@@ -74,9 +75,14 @@ class _ChatsScreenState extends State<ChatsScreen> {
     final friends = state.acceptedFriends;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 21, 20, 24),
+      // alt 128px: şüşə nav pill altından axış (extendBody, D-025)
+      padding: const EdgeInsets.fromLTRB(20, 21, 20, 128),
       children: [
-        const ViewHeading(title: 'Söhbətlər', subtitle: 'Görüşdən əvvəl tanış olaq.'),
+        StaggerIn(
+          index: 0,
+          child: const ViewHeading(
+              title: 'Söhbətlər', subtitle: 'Görüşdən əvvəl tanış olaq.'),
+        ),
         if (joinedEvents.isEmpty && friends.isEmpty)
           const EmptyState(
             icon: Icons.chat_bubble_outline_rounded,
@@ -88,26 +94,33 @@ class _ChatsScreenState extends State<ChatsScreen> {
           if (joinedEvents.isNotEmpty) ...[
             const SectionHeading(title: 'Qruplar', icon: Icons.groups),
             for (final e in joinedEvents)
-              _chatRow(
-                image: e.image,
-                title: e.title,
-                subtitle:
-                    '${e.participants} iştirakçı · Tədbir qrupu${e.past ? ' · keçib' : ''}',
-                onTap: () => setState(() => activeEvent = e),
+              StaggerIn(
+                index: joinedEvents.indexOf(e),
+                child: _chatRow(
+                  image: e.image,
+                  title: e.title,
+                  subtitle:
+                      '${e.participants} iştirakçı · Tədbir qrupu${e.past ? ' · keçib' : ''}',
+                  onTap: () => setState(() => activeEvent = e),
+                ),
               ),
           ],
           if (friends.isNotEmpty) ...[
             const SizedBox(height: 16),
             const SectionHeading(title: 'Şəxsi', icon: Icons.person),
             for (final p in friends)
-              _chatRow(
-                image: p.image,
-                title: p.fullName,
-                subtitle: '${p.city} · ${state.matches.contains(p.id) ? 'Match' : 'Dost'} · Şəxsi',
-                onTap: () => setState(() {
-                  activeFriend = p;
-                  _lastFriendName = p.fullName;
-                }),
+              StaggerIn(
+                index: friends.indexOf(p),
+                child: _chatRow(
+                  image: p.image,
+                  title: p.fullName,
+                  subtitle:
+                      '${p.city} · ${state.matches.contains(p.id) ? 'Match' : 'Dost'} · Şəxsi',
+                  onTap: () => setState(() {
+                    activeFriend = p;
+                    _lastFriendName = p.fullName;
+                  }),
+                ),
               ),
           ],
         ],
@@ -257,8 +270,16 @@ class _ChatViewState extends State<_ChatView> {
                             fontWeight: FontWeight.w800)),
                     Text(widget.subtitle, style: T.metaSm),
                     if (typing)
-                      Text('yazır...',
-                          style: T.metaSm.copyWith(color: Q.primary)),
+                      // Yazır göstəricisi: canlı nöqtə dalğası (D-025).
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TypingDots(color: Q.primary, size: 4),
+                          const SizedBox(width: 5),
+                          Text('yazır...',
+                              style: T.metaSm.copyWith(color: Q.primary)),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -310,18 +331,23 @@ class _ChatViewState extends State<_ChatView> {
                   child: Text('Hələ mesaj yoxdur. İlk mesajı sən yaz!',
                       style: T.subtitle))
               : ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 8),
                   children: [
                     for (final m in widget.messages)
-                      ChatBubble(
-                        sender: m.sender,
-                        body: m.body,
-                        mine: m.mine,
-                        status: m.mine
-                            ? (m == widget.messages.lastOrNull && typing
-                                ? 'çatdırıldı'
-                                : 'oxundu')
-                            : null,
+                      // Yeni mesajlar pop şəklində girir (D-025).
+                      StaggerIn(
+                        index: widget.messages.indexOf(m),
+                        child: ChatBubble(
+                          sender: m.sender,
+                          body: m.body,
+                          mine: m.mine,
+                          status: m.mine
+                              ? (m == widget.messages.lastOrNull && typing
+                                  ? 'çatdırıldı'
+                                  : 'oxundu')
+                              : null,
+                        ),
                       ),
                   ],
                 ),

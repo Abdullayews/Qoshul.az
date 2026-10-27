@@ -4,6 +4,7 @@ import '../../../core/data/mock_data.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../safety/presentation/safety_screen.dart';
 
@@ -84,7 +85,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _section('Bildirişlər'),
             _card([
               _navRow(Icons.tune, 'Bildiriş tercihleri', () {
-                Navigator.of(context).push(MaterialPageRoute(
+                Navigator.of(context).push(GlassPageRoute(
                     builder: (_) => NotificationsScreen(state: state)));
               }, subtitle: 'Hər tip ayrıca; marketinq 23:00-08:00 sükut'),
             ]),
@@ -93,7 +94,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _navRow(Icons.health_and_safety_outlined, 'İlk görüş məsləhətləri',
                   () {
                 Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SafetyScreen()));
+                    GlassPageRoute(builder: (_) => const SafetyScreen()));
               }),
               _divider(),
               _navRow(Icons.block, 'Bloklananlar (${state.blocked.length})',

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/data/mock_data.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/motion.dart';
 import '../../../core/widgets/rol.dart';
 import '../../../core/widgets/ui.dart';
 import '../../coupons/presentation/coupons_screen.dart';
@@ -89,53 +90,66 @@ class FeedScreenState extends State<FeedScreen> {
     return AnimatedBuilder(
       animation: state,
       builder: (context, _) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 21, 20, 24),
+        // alt 128px: məzmun şüşə nav pillin altından axır (extendBody, D-025)
+        padding: const EdgeInsets.fromLTRB(20, 21, 20, 128),
         children: [
-          // — salamlaşma (ROL TAB 1: salam, XP, səviyyə) —
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Salam, $name!', style: T.h1),
-                    const SizedBox(height: 4),
-                    const Text('Bu gün yeni bir hekayəyə qoşul.',
-                        style: T.subtitle),
-                  ],
+          // — salamlaşma (ROL TAB 1: salam, XP, səviyyə) — staggered giriş —
+          StaggerIn(
+            index: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Salam, $name!', style: T.h1),
+                      const SizedBox(height: 4),
+                      const Text('Bu gün yeni bir hekayəyə qoşul.',
+                          style: T.subtitle),
+                    ],
+                  ),
                 ),
-              ),
-              RankBadge(label: state.rank),
-            ],
+                RankBadge(label: state.rank),
+              ],
+            ),
           ),
           const SizedBox(height: 17),
-          XpTrack(xp: state.xp),
+          StaggerIn(
+            index: 1,
+            child: XpTrack(xp: state.xp),
+          ),
           const SizedBox(height: 20),
           // — axtarış (məkan, tədbir, istifadəçi adı) —
-          SearchBarField(
-            controller: searchCtrl,
-            hint: 'Məkan, tədbir və ya insan axtar...',
-            onFilter: () => setState(() {}),
+          StaggerIn(
+            index: 2,
+            child: SearchBarField(
+              controller: searchCtrl,
+              hint: 'Məkan, tədbir və ya insan axtar...',
+              onFilter: () => setState(() {}),
+            ),
           ),
           const SizedBox(height: 14),
           // — kateqoriya çipləri (maraqlara görə filtr) —
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final entry in _groupIcons.entries)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 7),
-                    child: CategoryChip(
-                      label: entry.key,
-                      icon: entry.value,
-                      active: category == entry.key,
-                      onTap: () => setState(() => category = entry.key),
+          StaggerIn(
+            index: 3,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final entry in _groupIcons.entries)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 7),
+                      child: CategoryChip(
+                        label: entry.key,
+                        icon: entry.value,
+                        active: category == entry.key,
+                        onTap: () => setState(() => category = entry.key),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -189,7 +203,7 @@ class FeedScreenState extends State<FeedScreen> {
                   priceRange: venues[i].priceRange,
                   rating: venues[i].rating,
                   discount: venues[i].discountPercent,
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  onTap: () => Navigator.of(context).push(GlassPageRoute(
                       builder: (_) =>
                           VenueDetailScreen(state: state, venue: venues[i]))),
                 ),
@@ -204,7 +218,7 @@ class FeedScreenState extends State<FeedScreen> {
             trailing: SectionLink(
                 text: 'Hamısına bax',
                 icon: Icons.north_east,
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                onTap: () => Navigator.of(context).push(GlassPageRoute(
                     builder: (_) => MatchScreen(state: state)))),
           ),
           if (people.isEmpty)
@@ -227,7 +241,7 @@ class FeedScreenState extends State<FeedScreen> {
                       ? people[i].distanceLabel
                       : people[i].city,
                   matchPercent: people[i].match,
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  onTap: () => Navigator.of(context).push(GlassPageRoute(
                       builder: (_) => MatchScreen(state: state))),
                 ),
               ),
@@ -240,7 +254,7 @@ class FeedScreenState extends State<FeedScreen> {
             trailing: SectionLink(
                 text: 'Bütün endirimlər',
                 icon: Icons.north_east,
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                onTap: () => Navigator.of(context).push(GlassPageRoute(
                     builder: (_) => CouponsScreen(state: state)))),
           ),
           if (discountOffers.isEmpty)
@@ -255,11 +269,12 @@ class FeedScreenState extends State<FeedScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, i) {
                   final o = discountOffers[i];
-                  return GestureDetector(
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  return ScaleTap(
+                    onTap: () => Navigator.of(context).push(GlassPageRoute(
                         builder: (_) => CouponsScreen(state: state))),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
+                    child: StaggerIn(
+                      index: i,
+                      child: Container(
                       width: 210,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -296,7 +311,8 @@ class FeedScreenState extends State<FeedScreen> {
                         ],
                       ),
                     ),
-                  );
+                  ),
+              );
                 },
               ),
             ),
@@ -307,7 +323,7 @@ class FeedScreenState extends State<FeedScreen> {
             title: 'Eyni maraqlar, yeni tanışlıqlar',
             subtitle: 'Sevdiyin məkanlarda görüş, əlavə XP qazan.',
             trailing: Icon(Icons.north_east, size: 20, color: Q.primary),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            onTap: () => Navigator.of(context).push(GlassPageRoute(
                 builder: (_) => MatchScreen(state: state))),
           ),
           // — bütün tədbirlər —

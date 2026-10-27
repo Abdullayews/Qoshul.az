@@ -4,7 +4,8 @@ import '../../../core/data/mock_data.dart';
 import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/ui.dart';
+import '../../../core/widgets/glass.dart';
+import '../../../core/widgets/motion.dart';
 import '../../events/presentation/event_detail_sheet.dart';
 import '../../match/presentation/match_screen.dart';
 import '../../venues/presentation/reserve_sheet.dart';
@@ -13,7 +14,10 @@ import '../../venues/presentation/venue_detail_screen.dart';
 /// Xəritə tabı — ROL (product-spec C, TAB 2).
 /// PostGIS əsaslı xəritənin UI placeholder-i (D-023): stilləşdirilmiş
 /// CustomPaint. Pin-lər: məkanlar, tədbirlər, (razılıq verən) insanlar.
-/// Filtrlər: kateqoriya, məsafə (1/3/5/10 km), "indi açıqdır", "endirimi var".
+///
+/// v0.4.0 (D-025): filtr paneli və alt kart Liquid Glass — xəritənin
+/// üzərində üzən funksional qat (Apple HIG). Pin-lər staggered drop,
+/// kart seçiləndə slide-up, GlassPageRoute keçidləri.
 class MapScreen extends StatefulWidget {
   final AppState state;
   const MapScreen({super.key, required this.state});
@@ -64,68 +68,12 @@ class _MapScreenState extends State<MapScreen> {
     ];
     final pins = [...venuePins, ...eventPins, ...peoplePins];
 
-    return Column(
+    // Xəritə tam sahəni doldurur; filtr/və kart üzərində şüşə qat kimi üzür.
+    return Stack(
+      clipBehavior: Clip.hardEdge,
       children: [
-        // — filtrlər —
-        Container(
-          color: Q.card,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
-          child: Column(
-            children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final e in _categoryChips.entries)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 7),
-                        child: CategoryChip(
-                          label: e.key,
-                          icon: e.value,
-                          active: category == e.key,
-                          onTap: () => setState(() => category = e.key),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final km in const [1, 3, 5, 10])
-                      Padding(
-                        padding: const EdgeInsets.only(right: 7),
-                        child: CategoryChip(
-                          label: '$km km',
-                          icon: Icons.near_me,
-                          active: distanceKm == km,
-                          onTap: () => setState(() => distanceKm = km),
-                        ),
-                      ),
-                    const SizedBox(width: 6),
-                    CategoryChip(
-                      label: 'indi açıqdır',
-                      icon: Icons.schedule,
-                      active: openNow,
-                      onTap: () => setState(() => openNow = !openNow),
-                    ),
-                    const SizedBox(width: 7),
-                    CategoryChip(
-                      label: 'endirimi var',
-                      icon: Icons.percent,
-                      active: withDiscount,
-                      onTap: () => setState(() => withDiscount = !withDiscount),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        // — xəritə sahəsi —
-        Expanded(
+        // — xəritə sahəsi (fondan sona) —
+        Positioned.fill(
           child: LayoutBuilder(builder: (context, constraints) {
             final mapW = constraints.maxWidth;
             final mapH = constraints.maxHeight;
@@ -139,45 +87,123 @@ class _MapScreenState extends State<MapScreen> {
                     size: Size(mapW, mapH),
                   ),
                 ),
-                for (final pin in pins)
+                for (var i = 0; i < pins.length; i++)
                   Positioned(
-                    left: pin.fx * mapW - 22,
-                    top: pin.fy * mapH - 46,
+                    left: pins[i].fx * mapW - 22,
+                    top: pins[i].fy * mapH - 46,
                     width: 44,
                     height: 56,
                     child: GestureDetector(
-                      onTap: () => setState(() => selected = pin),
+                      onTap: () => setState(() => selected = pins[i]),
                       behavior: HitTestBehavior.opaque,
-                      child: _pinWidget(pin, selected == pin),
+                      // Pin-lər xəritəyə damla kimi düşür — staggered pop.
+                      child: PopIn(
+                        delay: Motion.staggerStep * (i % 12),
+                        child: _pinWidget(pins[i], selected == pins[i]),
+                      ),
                     ),
                   ),
-                if (selected != null)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: _bottomCard(selected!),
-                  ),
-                Positioned(
-                  top: 10,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 9, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Q.card,
-                      border: Border.all(color: Q.border),
-                      borderRadius: BorderRadius.circular(Q.rMd),
-                    ),
-                    child: Text(
-                      '${venuePins.length} məkan · ${eventPins.length} tədbir · '
-                      '${peoplePins.length} insan',
-                      style: T.meta,
-                    ),
-                  ),
-                ),
               ],
             );
           }),
         ),
+        // — şüşə filtr paneli (D-025 səth #2) —
+        Positioned(
+          top: 8,
+          left: 12,
+          right: 12,
+          child: SafeArea(
+            top: false,
+            bottom: false,
+            child: GlassSurface(
+              radius: BorderRadius.circular(16),
+              sigma: 16,
+              luminance: 0.5,
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final e in _categoryChips.entries)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 7),
+                            child: _GlassFilterChip(
+                              label: e.key,
+                              icon: e.value,
+                              active: category == e.key,
+                              onTap: () => setState(() => category = e.key),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final km in const [1, 3, 5, 10])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 7),
+                            child: _GlassFilterChip(
+                              label: '$km km',
+                              icon: Icons.near_me,
+                              active: distanceKm == km,
+                              onTap: () => setState(() => distanceKm = km),
+                            ),
+                          ),
+                        const SizedBox(width: 6),
+                        _GlassFilterChip(
+                          label: 'indi açıqdır',
+                          icon: Icons.schedule,
+                          active: openNow,
+                          onTap: () => setState(() => openNow = !openNow),
+                        ),
+                        const SizedBox(width: 7),
+                        _GlassFilterChip(
+                          label: 'endirimi var',
+                          icon: Icons.percent,
+                          active: withDiscount,
+                          onTap: () =>
+                              setState(() => withDiscount = !withDiscount),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // — sayğac (şüşə həb) —
+        Positioned(
+          bottom: 12,
+          left: 12,
+          child: GlassPill(
+            dense: true,
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+            child: Text(
+              '${venuePins.length} məkan · ${eventPins.length} tədbir · '
+              '${peoplePins.length} insan',
+              style: glassText(size: 10, w: FontWeight.w600, color: Q.foreground),
+            ),
+          ),
+        ),
+        // — seçilmiş pinin şüşə alt kartı (D-025 səth #3) —
+        if (selected != null)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: _SlideUp(child: _bottomCard(selected!)),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -192,7 +218,9 @@ class _MapScreenState extends State<MapScreen> {
             : Q.foreground;
     return Column(
       children: [
-        Container(
+        AnimatedContainer(
+          duration: Motion.d1,
+          curve: Motion.enter,
           width: active ? 40 : 34,
           height: active ? 40 : 34,
           decoration: BoxDecoration(
@@ -222,7 +250,8 @@ class _MapScreenState extends State<MapScreen> {
                       ),
           ),
         ),
-        Container(
+        AnimatedContainer(
+          duration: Motion.d1,
           width: 2.5,
           height: active ? 14 : 11,
           color: color,
@@ -232,21 +261,24 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /// Pin-ə toxunanda alt kart (ROL TAB 2): ad, qiymət aralığı, endirim,
-  /// "Ətraflı" və "Rezerv et" düymələri.
+  /// "Ətraflı" və "Rezerv et" düymələri — şüşə üzərində.
   Widget _bottomCard(_MapPin pin) {
     final state = widget.state;
     Widget card;
     if (pin.type == _PinType.venue) {
       final v = pin.venue!;
-      card = Container(
-        margin: const EdgeInsets.all(12),
+      card = GlassSurface(
+        radius: BorderRadius.circular(Q.rXl),
+        sigma: 18,
+        luminance: 0.58,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Q.card,
-          border: Border.all(color: Q.border),
-          borderRadius: BorderRadius.circular(Q.rXl),
-          boxShadow: const [Q.softShadow],
-        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x1E28301F),
+            blurRadius: 26,
+            offset: Offset(0, 8),
+          ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,11 +295,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(v.name,
-                          style: const TextStyle(
-                              fontFamily: T.family,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800)),
+                      Text(v.name, style: glassText(size: 14)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -298,9 +326,10 @@ class _MapScreenState extends State<MapScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) =>
-                            VenueDetailScreen(state: state, venue: v))),
+                    onPressed: () =>
+                        Navigator.of(context).push(GlassPageRoute(
+                            builder: (_) =>
+                                VenueDetailScreen(state: state, venue: v))),
                     child: const Text('Ətraflı', style: T.button),
                   ),
                 ),
@@ -318,24 +347,23 @@ class _MapScreenState extends State<MapScreen> {
       );
     } else if (pin.type == _PinType.event) {
       final e = pin.event!;
-      card = Container(
-        margin: const EdgeInsets.all(12),
+      card = GlassSurface(
+        radius: BorderRadius.circular(Q.rXl),
+        sigma: 18,
+        luminance: 0.58,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Q.card,
-          border: Border.all(color: Q.border),
-          borderRadius: BorderRadius.circular(Q.rXl),
-          boxShadow: const [Q.softShadow],
-        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x1E28301F),
+            blurRadius: 26,
+            offset: Offset(0, 8),
+          ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(e.title,
-                style: const TextStyle(
-                    fontFamily: T.family,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800)),
+            Text(e.title, style: glassText(size: 14)),
             const SizedBox(height: 4),
             Text('${e.category} · ${e.date}, ${e.time} · ~${e.distance} km',
                 style: T.meta),
@@ -352,15 +380,18 @@ class _MapScreenState extends State<MapScreen> {
       );
     } else {
       final p = pin.person!;
-      card = Container(
-        margin: const EdgeInsets.all(12),
+      card = GlassSurface(
+        radius: BorderRadius.circular(Q.rXl),
+        sigma: 18,
+        luminance: 0.58,
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Q.card,
-          border: Border.all(color: Q.border),
-          borderRadius: BorderRadius.circular(Q.rXl),
-          boxShadow: const [Q.softShadow],
-        ),
+        shadows: const [
+          BoxShadow(
+            color: Color(0x1E28301F),
+            blurRadius: 26,
+            offset: Offset(0, 8),
+          ),
+        ],
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,11 +404,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${p.firstName}, ${p.age}',
-                          style: const TextStyle(
-                              fontFamily: T.family,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800)),
+                      Text('${p.firstName}, ${p.age}', style: glassText(size: 14)),
                       const SizedBox(height: 3),
                       Text('${p.distanceLabel} · ${p.match}% uyğunluq',
                           style: T.meta),
@@ -390,8 +417,8 @@ class _MapScreenState extends State<MapScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => MatchScreen(state: state))),
+                onPressed: () => Navigator.of(context).push(GlassPageRoute(
+                    builder: (_) => MatchScreen(state: state))),
                 child: const Text('Tanış ol', style: T.button),
               ),
             ),
@@ -399,7 +426,102 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
     }
-    return SafeArea(child: card);
+    return card;
+  }
+}
+
+/// Alt kartın slide-up + fade girişi — pin seçiləndə "sürüşüb gəlir".
+class _SlideUp extends StatefulWidget {
+  final Widget child;
+  const _SlideUp({required this.child});
+
+  @override
+  State<_SlideUp> createState() => _SlideUpState();
+}
+
+class _SlideUpState extends State<_SlideUp>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: Motion.d3);
+  late final Animation<double> _t = CurvedAnimation(parent: _c, curve: Motion.ease);
+
+  @override
+  void initState() {
+    super.initState();
+    _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Motion.animationsOn(context)) return widget.child;
+    return AnimatedBuilder(
+      animation: _t,
+      builder: (context, child) => FractionalTranslation(
+        translation: Offset(0, 0.35 * (1 - _t.value)),
+        child: Opacity(opacity: _t.value, child: child),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Şüşə filtr çipi — xəritə üzərində üzən seçim həbi (D-025 səth #2).
+class _GlassFilterChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _GlassFilterChip({
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTap(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Motion.d1,
+        curve: Motion.ease,
+        height: 31,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        decoration: BoxDecoration(
+          // Aktiv: brend yaşıl, qatılıq 88% — şüşə kimiliksə də aydın seçim.
+          color: active
+              ? Q.primary.withValues(alpha: GlassQuality.blur ? 0.88 : 1)
+              : Colors.white.withValues(alpha: 0.42),
+          border: Border.all(
+            color: active ? Q.primary : Colors.white.withValues(alpha: 0.6),
+            width: active ? 1.2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(Q.rMd),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: active ? Q.primaryFg : Q.foreground),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: T.family,
+                fontSize: 10,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? Q.primaryFg : Q.foreground,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

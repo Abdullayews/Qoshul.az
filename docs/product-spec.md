@@ -206,7 +206,8 @@ Mövcud vəziyyət (D-023/D-024): **UI fazası birinci** — backend m2+ UI tam 
 | Mərhələ | Məzmun | Status |
 |---|---|---|
 | UI-1 (v0.2.0) | Web stili birebir: tema, font, əsas ekranlar | ✅ çatdırılıb (APK) |
-| UI-2 (v0.3.0) | ROL strukturu: 5 tab, onboarding, match, rezerv, kupon, XP, bildiriş, moderasiya | təsdiq gözləyir |
+| UI-2 (v0.3.0) | ROL strukturu: 5 tab, onboarding, match, rezerv, kupon, XP, bildiriş, moderasiya | ✅ çatdırılıb (APK) |
+| UI-3 (v0.4.0) | Dizayn qatı: Liquid Glass minimal (5 səth) + hərəkət dili bütün bölmələrə (D-025, docs/design-spec.md) | təsdiq gözləyir |
 | UI-test | 4 tester tam yoxlama → düzəlişlər | — |
 | **"UI hazır" təsdiqi** | — | **qapı: bundan sonra backend** |
 | m2 | NestJS nüvə | gözləyir |
