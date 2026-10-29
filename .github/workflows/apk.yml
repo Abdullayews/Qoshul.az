@@ -9,7 +9,7 @@ name: APK
 
 on:
   push:
-    branches: [feature/apk-pipeline]
+    branches: [main]
     paths:
       - ".github/workflows/apk.yml"
       - "mobile/**"
