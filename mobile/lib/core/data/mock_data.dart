@@ -1,6 +1,7 @@
 import '../models/coupon.dart';
 import '../models/models.dart';
 import '../models/notification.dart';
+import '../models/xp_economy.dart';
 
 /// Mock data — UI mərhələsi (D-023). Məzmun web tətbiqinin seed datasına
 /// əsaslanır; backend inteqrasiyasında API cavabları ilə əvəz olunacaq.
@@ -385,6 +386,54 @@ final mockEvents = <QoshulEvent>[
     description:
         '5 km asan temp. Qoşulduğun üçün +50 XP qazandın — rəyini yazaraq əlavə +20 XP qazana bilərsən.',
   ),
+  // D-026 (L.3) demo: istifadəçinin öz təşkil etdiyi, bitmiş aktivite —
+  // "Aktiviteyi bitir" axını (statik QR → şəkil → taq → 50/25 XP) üçün.
+  const QoshulEvent(
+    id: 'e-mafiya',
+    title: 'Mafiya oyunu gecəsi',
+    category: 'Stolüstü oyunlar',
+    image: imgFriends,
+    city: 'Bakı',
+    location: 'Xankəndi Restoranı, Nərimanov',
+    lat: 40.3842,
+    lng: 49.8641,
+    distance: 2.2,
+    time: '20:00',
+    date: 'Keçən cümə',
+    past: true,
+    capacity: 10,
+    participants: 5,
+    host: 'Dost', // onboarding-də profileName ilə əvəz olunur (AppState)
+    description:
+        'Xankəndi Restoranında klassik mafiya gecəsi. 5 nəfərlik masa, oyun kartları bizdən. '
+        'Aktivite bitəndə çıxışda restoranın QR-ını oxudub şəkilləri paylaşacağam — '
+        'taq edilən hər kəs obyekt XP-si qazanır.',
+    level: 'Orta',
+    venueId: 'v5',
+  ),
+  // D-026 (L.1): Kəşf peşəkar sıralaması üçün yüksək çəkili nümunələr.
+  const QoshulEvent(
+    id: 'e-chess',
+    title: 'Blits şahmat turniri — reytinqlilər',
+    category: 'Şahmat',
+    image: imgTech,
+    city: 'Bakı',
+    location: 'Techno Hub, Nərimanov',
+    lat: 40.3903,
+    lng: 49.8556,
+    distance: 3.1,
+    time: '19:30',
+    date: 'Şənbə',
+    past: false,
+    capacity: 16,
+    participants: 11,
+    host: 'Nurlan Vəliyev',
+    description:
+        '5 dəqiqəlik blits, isveçrə sistemi, 7 raund. Reytinqi 1600+ olan oyunçular üçün. '
+        'Yeni başlayanlara ayrıca masa olacaq.',
+    level: 'Peşəkar',
+    price: 10,
+  ),
 ];
 
 /// Mock insanlar — web data.ts people (adlar birebir) + ROL D kart sahələri
@@ -550,6 +599,45 @@ const mockPartners = <Partner>[
     openFrom: 11,
     openTo: 23,
     discountPercent: 10,
+  ),
+  // D-026 (L.2): obyektə-məxsus Endirim XP bazası demo-su üçün iki obyekt.
+  Partner(
+    id: 'v5',
+    name: 'Xankəndi Restoranı',
+    category: 'Restoran',
+    address: 'Şəfəq qəsəbəsi, Nərimanov',
+    city: 'Bakı',
+    deal: 'XP kartı ilə hesabda endirim',
+    hours: '10:00–23:00',
+    image: imgFriends,
+    lat: 40.3842,
+    lng: 49.8641,
+    priceRange: '₼₼',
+    autoAccept: true,
+    rating: 4.5,
+    reviewsCount: 68,
+    openFrom: 10,
+    openTo: 23,
+    discountPercent: 0,
+  ),
+  Partner(
+    id: 'v6',
+    name: 'Kokaltı Kafesi',
+    category: 'Kafe',
+    address: 'Kokaltı küçəsi 8',
+    city: 'Bakı',
+    deal: 'Yeni açılış — XP qazanmaq üçün aktivite keçir',
+    hours: '09:00–22:00',
+    image: imgCoffee,
+    lat: 40.3781,
+    lng: 49.8469,
+    priceRange: '₼',
+    autoAccept: true,
+    rating: 4.3,
+    reviewsCount: 9,
+    openFrom: 9,
+    openTo: 22,
+    discountPercent: 0,
   ),
 ];
 
@@ -802,3 +890,108 @@ final initialNotifications = <AppNotification>[
     read: true,
   ),
 ];
+
+/// D-026 (L.2): ilkin obyektə-məxsus Endirim XP hesabları (mock).
+/// Ayrı baza qaydası: Xankəndi-də qazanılan XP yalnız Xankəndiyə aiddir.
+/// Kokaltı 0 göstərilir — "bu obyektdə hələ XP yoxdur" halını nümayiş üçün.
+Map<String, VenueXpAccount> initialVenueXp() => <String, VenueXpAccount>{
+      'v5': VenueXpAccount(
+        venueId: 'v5',
+        venueName: 'Xankəndi Restoranı',
+        balance: 325,
+        config: const VenueXpConfig(
+          xpPerAzn: 20, // 100 XP = 5 AZN
+          maxDiscountPercent: 25,
+          minBillAzn: 10,
+        ),
+      )..ledger.addAll(<XpLedgerEntry>[
+          XpLedgerEntry(
+            id: 'xl1',
+            venueId: 'v5',
+            grant: true,
+            amount: 50,
+            balanceAfter: 50,
+            note: 'Təşkilatçı mükafatı — "Mafiya oyunu gecəsi"',
+            at: DateTime(2026, 10, 24, 23, 10),
+          ),
+          XpLedgerEntry(
+            id: 'xl2',
+            venueId: 'v5',
+            grant: true,
+            amount: 275,
+            balanceAfter: 325,
+            note: '11 taq edilən iştirakçı · aktivite şəkli paylaşılıb',
+            at: DateTime(2026, 10, 24, 23, 12),
+          ),
+        ]),
+      'v2': VenueXpAccount(
+        venueId: 'v2',
+        venueName: 'Coffee Lab',
+        balance: 120,
+        config: const VenueXpConfig(
+          xpPerAzn: 25, // 100 XP = 4 AZN
+          maxDiscountPercent: 20,
+          minBillAzn: 0,
+        ),
+      )..ledger.addAll(<XpLedgerEntry>[
+          XpLedgerEntry(
+            id: 'xl3',
+            venueId: 'v2',
+            grant: true,
+            amount: 120,
+            balanceAfter: 120,
+            note: 'Təşkilatçı + taq edilən iştirakçılar — "Səhər qəhvə klubu"',
+            at: DateTime(2026, 10, 18, 10, 5),
+          ),
+        ]),
+      'v6': VenueXpAccount(
+        venueId: 'v6',
+        venueName: 'Kokaltı Kafesi',
+        balance: 0,
+        config: const VenueXpConfig(
+          xpPerAzn: 20,
+          maxDiscountPercent: 15,
+          minBillAzn: 0,
+        ),
+      ),
+      'v1': VenueXpAccount(
+        venueId: 'v1',
+        venueName: 'Padel Arena',
+        balance: 340,
+        config: const VenueXpConfig(
+          xpPerAzn: 20, // 100 XP = 5 AZN
+          maxDiscountPercent: 30,
+          minBillAzn: 0,
+        ),
+      )..ledger.addAll(<XpLedgerEntry>[
+          XpLedgerEntry(
+            id: 'xl4',
+            venueId: 'v1',
+            grant: true,
+            amount: 340,
+            balanceAfter: 340,
+            note: 'Təşkilatçı + taq edilən iştirakçılar — "Padel turniri"',
+            at: DateTime(2026, 10, 11, 21, 40),
+          ),
+        ]),
+      'v4': VenueXpAccount(
+        venueId: 'v4',
+        venueName: 'Dostlar Bağı',
+        balance: 150,
+        config: const VenueXpConfig(
+          xpPerAzn: 30, // 100 XP ≈ 3.33 AZN
+          maxDiscountPercent: 20,
+          minBillAzn: 0,
+        ),
+      )..ledger.addAll(<XpLedgerEntry>[
+          XpLedgerEntry(
+            id: 'xl5',
+            venueId: 'v4',
+            grant: true,
+            amount: 150,
+            balanceAfter: 150,
+            note: 'Təşkilatçı + 4 taq edilən iştirakçı — "Piknik günü"',
+            at: DateTime(2026, 10, 4, 17, 20),
+          ),
+        ]),
+    };

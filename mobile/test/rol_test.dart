@@ -241,8 +241,7 @@ void main() {
     test('başqa məkan kuponu rezervə tətbiq olunmur', () {
       final s = AppState();
       s.xp = 500;
-      s.xpBalance = 500;
-      final c = s.buyCoupon('o3'); // Dostlar Bağı (v4)
+      final c = s.buyCoupon('o3'); // Dostlar Bağı (v4, balans 150 ≥ 100)
       expect(c, isNotNull);
       final r = s.createReservation(
           venue: mockPartners[1], // Coffee Lab — kupon v4 üçündür
@@ -255,29 +254,31 @@ void main() {
   });
 
   group('AppState — kuponlar (ROL G)', () {
-    test('XP ilə al: balans düşür, ümumi XP dəyişmir', () {
+    test('XP ilə al: obyekt balansı düşür, ümumi XP dəyişmir (D-026 L.6)', () {
       final s = AppState();
       final totalBefore = s.xp;
-      final balBefore = s.xpBalance;
-      final c = s.buyCoupon('o1'); // 200 XP
+      s.venueXp['v2']!.balance = 400; // Coffee Lab bazası
+      final balBefore = s.venueXp['v2']!.balance;
+      final c = s.buyCoupon('o1'); // 200 XP, Coffee Lab (v2)
       expect(c, isNotNull);
-      expect(s.xpBalance, balBefore - 200);
-      expect(s.xp, totalBefore); // ümumi XP düşmür
+      expect(s.venueXp['v2']!.balance, balBefore - 200);
+      expect(s.xp, totalBefore); // Peşəkarlıq XP-si düşmür
       expect(c!.code.startsWith('QSHUL-'), isTrue);
       expect(c.isActive, isTrue);
     });
 
-    test('balans çatmırsa → null', () {
+    test('obyekt balansı çatmırsa → null (D-026 ayrı baza)', () {
       final s = AppState();
-      s.xpBalance = 100;
-      expect(s.buyCoupon('o1'), isNull); // 200 XP lazım
+      s.venueXp['v2']!.balance = 100;
+      expect(s.buyCoupon('o1'), isNull); // 200 XP lazım (v2 bazası)
+      // Balansın digər obyektdə olmasının fərqi yoxdur:
+      expect(s.venueXp['v1']!.balance, greaterThanOrEqualTo(300));
     });
 
     test('səviyyə çatmırsa → null', () {
       final s = AppState();
       s.xp = 150; // Kəşfiyyatçı
-      s.xpBalance = 500;
-      expect(s.buyCoupon('o2'), isNull); // Aktiv+ tələb edir
+      expect(s.buyCoupon('o2'), isNull); // Aktiv+ tələb edir (v1 balansı yetir)
     });
 
     test('səviyyə-avto təkliflər görünürlüyü', () {
@@ -291,8 +292,7 @@ void main() {
     test('kupon rezerv check-in-də İSTİFADƏ OLUNDU olur', () {
       final s = AppState();
       s.xp = 500;
-      s.xpBalance = 500;
-      final c = s.buyCoupon('o3'); // v4
+      final c = s.buyCoupon('o3'); // v4, balans 150 ≥ 100
       final r = s.createReservation(
           venue: mockPartners[3], date: 'Bu gün', time: '12:00', party: 4,
           couponCode: c!.code);

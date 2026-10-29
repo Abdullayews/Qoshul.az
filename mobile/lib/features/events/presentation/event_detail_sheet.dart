@@ -4,6 +4,7 @@ import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui.dart';
+import 'finish_activity_sheet.dart';
 
 /// Tədbir detalı — web EventCard-dakı Dialog-un mobil portu (bottom sheet).
 Future<void> showEventDetailSheet(
@@ -87,6 +88,41 @@ class _DetailSheetState extends State<_DetailSheet> {
               ),
               const SizedBox(height: 12),
               _facts(event),
+              // D-026 (L.3): təşkilatçı bitirmə axını — statik QR + şəkil + taq.
+              if (state.canFinishActivity(event)) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: Q.primary),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      showFinishActivitySheet(context, state, event);
+                    },
+                    icon: const Icon(Icons.workspace_premium, size: 16),
+                    label: Text(
+                        'Aktiviteyi bitir və XP payla (+${XpRules.organizerXp})',
+                        style: T.button),
+                  ),
+                ),
+              ] else if (state.isActivityFinished(event.id)) ...[
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Q.secondary,
+                      disabledBackgroundColor: Q.secondary,
+                      disabledForegroundColor: Q.primary,
+                    ),
+                    icon: const Icon(Icons.check_circle, size: 16),
+                    label: Text(
+                        'Aktivite bitib — XP paylandı (+${XpRules.organizerXp} təşkilatçı)',
+                        style: T.button),
+                  ),
+                ),
+              ],
               if (isJoined && !event.past)
                 SizedBox(
                   width: double.infinity,

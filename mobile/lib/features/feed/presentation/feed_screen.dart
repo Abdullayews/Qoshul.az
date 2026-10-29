@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/data/mock_data.dart';
+import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/motion.dart';
@@ -86,6 +87,12 @@ class FeedScreenState extends State<FeedScreen> {
       ..sort((a, b) => a.distance.compareTo(b.distance));
     final discountOffers =
         state.visibleOffers.where((o) => !o.autoByLevel || o.percent > 0).toList();
+    // D-026 (L.1): peşəkar sıralama — səviyyən nə qədər yüksəkdirsə,
+    // peşəkar aktiviteler bir o qədər üstdə önə düşür.
+    final proRanked = [...filtered]
+      ..sort((a, b) =>
+          XpRules.proWeight(b.level) * (state.rankIndex + 1) -
+          XpRules.proWeight(a.level) * (state.rankIndex + 1));
 
     return AnimatedBuilder(
       animation: state,
@@ -163,6 +170,21 @@ class FeedScreenState extends State<FeedScreen> {
             ),
             for (final e in tonight.take(2)) ...[
               EventCard(event: e, state: state),
+              const SizedBox(height: 14),
+            ],
+            const SizedBox(height: 4),
+          ],
+          // — Sənin səviyyənə görə (D-026 L.1: peşəkar sıralama) —
+          if (proRanked.isNotEmpty) ...[
+            SectionHeading(
+              title: 'Sənin səviyyənə görə',
+              icon: Icons.military_tech,
+              trailing: SectionLink(
+                  text: state.rank,
+                  icon: Icons.workspace_premium),
+            ),
+            for (final e in proRanked.take(3)) ...[
+              EventCard(event: e, state: state, showLevel: true),
               const SizedBox(height: 14),
             ],
             const SizedBox(height: 4),

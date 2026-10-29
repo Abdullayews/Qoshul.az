@@ -1,9 +1,29 @@
 # Qoshul.az — Mobil (Flutter)
 
 Status: **UI mərhələsi (D-023/D-025)** — tam arayüz + dizayn qatı, mock data, backend gözləyir.
-Branch: `feature/apk-pipeline` · Versiya: `0.4.0+4`
+Branch: `main` · Versiya: `0.5.0+5`
 
-## Nə var indi (v0.4.0 — Liquid Glass + Hərəkət dili)
+## Nə var indi (v0.5.0 — İkitərəfli XP iqtisadiyyatı)
+
+D-026 (product-spec L bölməsi) — tam UX dəsti, mock data ilə:
+
+- **İki XP**: Peşəkarlıq XP (səviyyə, xərclənmir; Kəşf peşəkar sıralaması) +
+  Endirim XP (obyektə-məxsus ayrı baza: Xankəndi XP-si yalnız Xankəndidə işləyir)
+- **XP Kartı** (Profil → XP kartım): obyekt balansları + 60 saniyəlik tək-istifadəlik
+  dinamik QR + 6 rəqəmli fallback kod + xp_config tənzimləmələri + ledger tarixçəsi
+- **Biznes rejimi** (Tərəfdaşlar → Biznes rejimi): işçi skanı → müştəri balansı →
+  hesab məbləği → canlı endirim hesablanması (məzənnə/maks %/min hesab) → receipt
+- **Təşkilatçı bitirmə axını**: obyektin statik QR-ı → şəkil paylaş (yalnız təşkilatçı,
+  biznes hesabına düşür) → iştirakçı taq (+50 təşkilatçı, +25 hər taq)
+- **Kəşf**: "Sənin səviyyənə görə" bölməsi — peşəkar aktiviteler önə düşür (L.1)
+- **Xəritə görünüşü**: 3 seçim — Hamı / Yalnız dostlar / Gizli (D-027)
+- **Kuponlar**: XP ilə alış obyektin öz Endirim XP bazasından (L.6)
+- XP müddəti yoxdur; balans = qazanma − xərcləmə (ledger)
+
+Əvvəlki qatlar: v0.2.0 web-parity UI · v0.3.0 ROL strukturu · v0.4.0 Liquid Glass
+minimal + bütün bölmələrə hərəkət dili.
+
+
 
 D-025 (docs/design-spec.md): Apple iOS 26 "Liquid Glass" dilindən **minimal**
 interpretasiya + bütün bölmələrə vahid hərəkət dili:

@@ -291,13 +291,21 @@ void main() {
         ..onboarded = true;
       await boot(tester, state);
 
-      // Match ekranına get (feed-dən "Hamısına bax")
+      // Match ekranına get (feed-dən "Hamısına bax") — D-026 bölməsi
+      // feed-i uzatdığı üçün mövqe-nəzarətli üzə çıxarma + toxunma.
       final feed = find.byType(ListView).first;
-      for (var i = 0; i < 14 && !tester.any(find.text('Hamısına bax')); i++) {
-        await tester.drag(feed, const Offset(0, -350));
+      const targetTxt = 'Hamısına bax';
+      for (var i = 0; i < 26; i++) {
+        if (tester.any(find.text(targetTxt))) {
+          final dy = tester.getTopLeft(find.text(targetTxt).first).dy;
+          if (dy >= 0 && dy < 1060) break;
+          await tester.drag(feed, Offset(0, dy < 0 ? 150 : -150));
+        } else {
+          await tester.drag(feed, const Offset(0, -150));
+        }
         await tester.pumpAndSettle();
       }
-      await tester.tap(find.text('Hamısına bax'));
+      await tester.tap(find.text(targetTxt));
       await tester.pumpAndSettle();
 
       final before = state.matchCandidates.length;
