@@ -46,8 +46,8 @@ yalnız məzmunun real axdığı səthlərdə işləyir (blur üçün arxada mə
 | # | Səth | Harada | Arxasında nə axır |
 |---|---|---|---|
 | 1 | **Alt nav pill** (üzən, radius 24, sigma 18) | AppShell | Siyahı məzmunu (`extendBody: true`) |
-| 2 | **Xəritə filtr paneli** (radius 16) | MapScreen | CustomPaint xəritə |
-| 3 | **Xəritə alt kartı** (seçilmiş pin) | MapScreen | CustomPaint xəritə |
+| 2 | **Xəritə filtr paneli** (radius 16) | MapScreen | OSM tile xəritəsi (D-030) |
+| 3 | **Xəritə alt kartı** (seçilmiş pin) | MapScreen | OSM tile xəritəsi (D-030) |
 | 4 | **Sayğac həbi** + uyğunluq çipi | MapScreen / MatchScreen | Xəritə / şəkil |
 | 5 | **Match fəaliyyət həbləri** (Keç / Maraqlıyam) | MatchScreen kart üzərində | Profil şəkli |
 

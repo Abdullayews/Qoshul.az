@@ -1,10 +1,11 @@
-# Qoshul.az — APK build pipeline (ilk versiya, D-017)
+# Qoshul.az — APK build pipeline (D-017, v0.6.0 genişlənmə)
 #
 # Bu mərhələdə (m1 sonrası preview):
 #   - android/ platform faylları repoda YOXDUR — CI-də `flutter create` generasiya edir
+#   - kurasiyalı native qat (D-032: Kotlin MainActivity + Java NativePerfInfo)
+#     mobile/platform/android/ qovluğunda saxlanılır və create-dən sonra yerləşdirilir
 #   - imza: Flutter şablonunun debug keystore-u (yalnız birbaşa quraşdırma üçün)
-#   - Flutter versiyası pin edilməyib (channel: stable) — m7-də pin olunacaq
-# m7-də: kurasiyalı android/ qovluğu + real keystore (D-016) + gradle cache.
+#   - Flutter versiyası pin edilməyib (channel: stable) — m8-də pin olunacaq
 name: APK
 
 on:
@@ -24,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: Release APK (v0.5.0 — İkitərəfli XP)
+    name: Release APK (v0.6.0 — Real xəritə + native qat)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -51,14 +52,30 @@ jobs:
           flutter create --platforms=android --org az.qoshul --project-name qoshul .
           # create-in toxuna biləcəyi bizim faylları GERİ qaytar (main.dart, pubspec və s.)
           git checkout -- .
-          rm -f test/widget_test.dart
           # Tətbiq adı: "qoshul" -> "Qoshul.az"
           sed -i 's/android:label="qoshul"/android:label="Qoshul.az"/' \
             android/app/src/main/AndroidManifest.xml
           flutter --version
 
+      - name: Kurasiyalı native qat (D-032 — Kotlin + Java)
+        # MainActivity.kt (edge-to-edge insets + immersive + MethodChannel) və
+        # NativePerfInfo.java (adaptiv keyfiyyət profili) — D-017 create axınına
+        # qatı qoyulur; gələcəkdə tam android/ qovluğu repoya keçəndə no-op.
+        run: |
+          set -e
+          cp -r platform/android/app/src/main/kotlin \
+             android/app/src/main/kotlin
+          mkdir -p android/app/src/main/java
+          cp -r platform/android/app/src/main/java/az \
+             android/app/src/main/java/
+
       - name: Asılılıqlar
         run: flutter pub get
+
+      - name: Keyfiyyət qapısı (analyze + test)
+        run: |
+          flutter analyze --no-pub
+          flutter test --no-pub
 
       - name: APK build (release)
         run: flutter build apk --release

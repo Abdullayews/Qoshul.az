@@ -47,22 +47,35 @@ Seçilmiş kateqoriyalar: kəşf feed-ini, match sırasını və bildirişləri 
 
 **Addım 6.** Başlanğıc XP: qeydiyyatı tamamlayana **+50 XP**.
 
-## C. Əsas naviqasiya (alt tab bar, 5 tab)
+## C. Əsas naviqasiya (alt tab bar, 5 tab) — v0.6.0 (D-028/D-029/D-031)
 
-**TAB 1: KƏŞF (Ana səhifə)**
-- Yuxarıda: salam, cari XP, səviyyə, bildiriş ikonu.
-- Kateqoriya çipləri (seçilmiş maraqlara görə, filtr kimi işləyir).
-- Bölmələr: "Bu axşam", "Yaxınında olan tədbirlər", "Populyar məkanlar", "Sənə uyğun insanlar" (match), "Endirimli təkliflər".
-- Axtarış: məkan, tədbir, istifadəçi adı.
+Ümumi quruluş: edge-to-edge tam ekran (şəffaf status/nav barlar, məzmun
+barların altından axır — Instagram paradigması); hər tabda ümumi üst header
+(loqo, Tərəfdaşlar, AI köməkçi, bildiriş zəngi); alt nav — şüşə üzən pill.
+
+**TAB 1: KƏŞF (Ana səhifə — Instagram-paradigmalı "Sən üçün" axını)**
+- Ən üstdə SABİT axtarış (pinned — scroll ilə itmir; məkan / insan adı).
+- Salam, cari XP, səviyyə (rank həbi).
+- "Bu axşam N tədbir var" keçid kartı → Tədbirlər tabına körpü.
+- Bölmələr: "Populyar məkanlar", "Sənə uyğun insanlar" (match), "Endirimli təkliflər".
+- Tədbir siyahıları bu tabda YOXDUR (D-028 — tədbirlər öz ana tabında, dublikat yoxdur).
 - Hər kartdan detal ekranına keçid.
 
-**TAB 2: XƏRİTƏ**
-- PostGIS əsaslı: yaxınlıqdakı məkanlar, tədbirlər və (razılıq verənlər üçün) insanlar pin kimi göstərilir.
+**TAB 2: XƏRİTƏ (real — OpenStreetMap, D-030)**
+- Real OSM raster tile-lar (öz renderer — sıfır xarici asılılıq), pan/pinch zoom,
+  zoom həbləri; pin-lər real lat/lng koordinatlarında: məkanlar, tədbirlər,
+  (razılıq verənlər üçün) insanlar + "mənim yerim" indikatoru.
 - Filtrlər: kateqoriya, məsafə (1/3/5/10 km), "indi açıqdır", "endirimi var".
 - Pin-ə toxunanda alt kart açılır: ad, qiymət aralığı, endirim, "Ətraflı" və "Rezerv et" düymələri.
-- İstifadəçi öz görünürlüyünü Profil → Məxfilik bölməsində söndürə bilər (xəritədə və match-də görünməz olur).
+- İstifadəçi öz görünürlüyünü Profil → Məxfilik bölməsində idarə edir (D-027):
+  Hamı / Yalnız dostlar / Gizli.
+- "© OpenStreetMap contributors" atribusiyası — məcburi kredit (OSM qaydası).
 
-**TAB 3: TƏDBİRLƏR**
+**TAB 3: TƏDBİRLƏR (tam kəşf mərkəzi — bütün tədbir funksiyaları burada)**
+- Ən üstdə SABİT axtarış (pinned — tədbir adı/məkanı/kateqoriyası).
+- Kateqoriya çipləri (maraqlara görə filtr — Kəşfdən buraya köçdü).
+- "Sənin səviyyənə görə" peşəkar önəçəkilmə (D-026 L.1 — səviyyən yüksəldikcə
+  peşəkar aktiviteler üstdə görünür).
 - Siyahı: "Yaxınlaşan", "Mənim tədbirlərim", "Yaratdığım".
 - Tədbir yaratmaq: ad, kateqoriya, məkan (xəritədən və ya partnyor məkan seçimi), tarix-saat, maksimum iştirakçı sayı, təsvir, şəkil, açıq/təsdiqlə-qoşul rejimi.
 - Qoşulmaq: "Qoşul" → (açıqdırsa dərhal, təsdiqlə rejimdirsə təşkilatçının təsdiqi) → tədbirin qrup chat-inə avtomatik əlavə olunma.
@@ -301,3 +314,21 @@ təşkilatçı bitirmə axını (statik QR → şəkil paylaş + taq → 50/25 p
 Kəşf peşəkar sıralaması, xəritə 3-seçimli görünüş, profildə ikili XP göstərişi.
 Hər şey mock-data — backend qaydaları (server-only hesab, idempotency,
 atomiklik) m2+ fazasında.
+
+### UI-5 (v0.6.0) əhatəsi — istifadəçi direktivləri (2026-10-29)
+
+- **Tam ekran düzəlişi (D-031):** edge-to-edge — şəffaf status/nav barlar,
+  header status barın altına keçən inset alır; alt nav gesture bar üstündən.
+- **Kəşf restructurizasiyası (D-028):** tədbir bölmələri Kəşfdən silindi
+  (dublikat yoxdur); Tədbirlər tabında mərkəzləşdi; "Bu axşam" körpü kartı.
+- **Pinned axtarış (D-029):** Kəşf və Tədbirlərdə səhifənin ən üstündə
+  sabit — scroll ilə itmir.
+- **Real xəritə (D-030):** OpenStreetMap raster tile-lar, öz renderer
+  (sıfır xarici asılılıq), pan/pinch, zoom həbləri, real lat/lng pin-lər,
+  "mənim yerim" indikatoru, OSM atribusiyası.
+- **Native Kotlin/Java qatı (D-032):** MainActivity.kt (insets güvəncəsi +
+  immersive + MethodChannel) + NativePerfInfo.java (cihaz profili) +
+  adaptiv GlassQuality (zəif cihazda blur söndürülür).
+- **Qrafik cilalama (D-033):** aktiv nav kapsulu + filled ikonlar, axtarış
+  fokus halqası, zoom həbləri.
+- **CI keyfiyyət qapısı:** analyze + test hər build-də (artıq CI-da da).

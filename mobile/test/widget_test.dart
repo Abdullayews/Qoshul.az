@@ -5,8 +5,10 @@ import 'package:qoshul/core/data/mock_data.dart';
 import 'package:qoshul/core/models/notification.dart';
 import 'package:qoshul/core/models/xp_economy.dart';
 import 'package:qoshul/core/state/app_state.dart';
+import 'package:qoshul/core/widgets/glass.dart';
 import 'package:qoshul/core/widgets/rol.dart';
 import 'package:qoshul/features/events/presentation/event_detail_sheet.dart';
+import 'package:qoshul/features/map/presentation/tile_map.dart';
 import 'package:qoshul/features/venues/presentation/reserve_sheet.dart';
 import 'package:qoshul/main.dart';
 
@@ -54,6 +56,10 @@ void main() {
   }
 
   /// Uzağa scroll olmuş siyahını yuxarı qaytar (TextField-lər geri gəlsin).
+  ///
+  /// v0.6.0: pinned axtarış (D-029) sayəsində artıq feed testlərinə lazım
+  /// deyil — gələcək testlər üçün saxlanılır.
+  // ignore: unused_element
   Future<void> scrollTop(WidgetTester tester, Finder scrollable) async {
     for (var i = 0; i < 20; i++) {
       await tester.drag(scrollable, const Offset(0, 500));
@@ -168,12 +174,16 @@ void main() {
     expect(find.text('endirimi var'), findsOneWidget);
     expect(find.text('10 km'), findsOneWidget);
 
-    // TAB 3: Tədbirlər — 3 siyahı
+    // TAB 3: Tədbirlər — 3 siyahı + kateqoriya çipləri + peşəcar sıralama
     await tester.tap(find.text('Tədbirlər'));
     await tester.pumpAndSettle();
     expect(find.text('Yaxınlaşan'), findsOneWidget);
     expect(find.text('Mənim tədbirlərim'), findsOneWidget);
     expect(find.text('Yaratdığım'), findsOneWidget);
+    // v0.6.0 (D-026 L.1 + D-028): peşəkar sıralama və kateqoriya çipləri
+    // Kəşf feed-indən Tədbirlər tabına köçürüldü.
+    expect(find.text('Sənin səviyyənə görə'), findsOneWidget);
+    expect(find.text('Hamısı'), findsOneWidget);
 
     // TAB 4: Söhbətlər — Şəxsi/Qruplar
     await tester.tap(find.text('Söhbətlər'));
@@ -190,20 +200,55 @@ void main() {
     expect(find.text('Kuponlarım'), findsOneWidget);
   });
 
-  testWidgets('feed: ROL bölmələri + axtarış (ROL TAB 1)', (tester) async {
+  testWidgets('xəritə: real OSM tile renderer + zoom idarəsi (D-030)',
+      (tester) async {
+    final state = AppState()
+      ..signIn()
+      ..onboarded = true;
+    await boot(tester, state);
+
+    await tester.tap(find.text('Xəritə'));
+    await tester.pumpAndSettle();
+
+    // Öz renderer (sıfır xarici asılılıq) qurulub
+    expect(find.byType(TileMapView), findsOneWidget);
+    // OSM atribusiyası görünür (istifadə qaydası — məcburi kredit)
+    expect(find.text('© OpenStreetMap contributors'), findsOneWidget);
+    // Zoom həbləri (şüşə) — Yarat düyməsindən fərqli
+    expect(find.widgetWithIcon(GlassPill, Icons.add), findsOneWidget);
+    expect(find.widgetWithIcon(GlassPill, Icons.remove), findsOneWidget);
+
+    // Zoom dəyişməsi state-i sındırmır
+    await tester.tap(find.widgetWithIcon(GlassPill, Icons.add));
+    await tester.pumpAndSettle();
+    expect(find.byType(TileMapView), findsOneWidget);
+    await tester.tap(find.widgetWithIcon(GlassPill, Icons.remove));
+    await tester.pumpAndSettle();
+    // Pin toxunuşu → şüşə alt kart (venue pin, görünürsə)
+    final pin = find.byIcon(Icons.storefront);
+    if (tester.any(pin)) {
+      await tester.tap(pin.first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('feed: Kəşf = "Sən üçün" axını + pinned axtarış (ROL TAB 1, v0.6.0)',
+      (tester) async {
     final state = AppState()
       ..signIn()
       ..onboarded = true;
     await boot(tester, state);
 
     expect(find.text('Salam, Dost!'), findsOneWidget);
-    // D-026 (L.1): yeni "Sənin səviyyənə görə" bölməsi feed-i uzadıb —
-    // aşağıdakı başlıqlar artıq drag ilə açılır.
-    final feed = find.byType(ListView).first;
-    await dragUntilFound(tester, find.text('Yaxınında olan tədbirlər'), feed);
-    expect(find.text('Yaxınında olan tədbirlər'), findsOneWidget);
-    expect(find.text('Sənin səviyyənə görə'), findsOneWidget);
 
+    // D-029: axtarış scroll ETMƏDƏN görünür — səhifənin ən üstündə sabit.
+    expect(find.byType(TextField), findsOneWidget);
+    // D-028: tədbir siyahıları Kəşfdən çıxarılıb (Tədbirlər ana tabında).
+    expect(find.text('Yaxınında olan tədbirlər'), findsNothing);
+    expect(find.text('Bütün tədbirlər'), findsNothing);
+    expect(find.text('Sənin səviyyənə görə'), findsNothing);
+
+    final feed = find.byType(ListView).first;
     await dragUntilFound(tester, find.text('Populyar məkanlar'), feed);
     expect(find.text('Populyar məkanlar'), findsOneWidget);
 
@@ -213,13 +258,20 @@ void main() {
     await dragUntilFound(tester, find.text('Endirimli təkliflər'), feed);
     expect(find.text('Endirimli təkliflər'), findsOneWidget);
 
-    // Axtarış: insan adı ilə (ROL: istifadəçi adı axtarışı)
-    // — əvvəlcə siyahını yuxarı qaytar (search sahəsi geri mounts olunsun)
-    await scrollTop(tester, feed);
+    // Axtarış: insan adı ilə (pinned olduğu üçün scroll-back lazım DEYİL)
     await tester.enterText(find.byType(TextField).first, 'Leyla');
     await tester.pumpAndSettle();
-    await dragUntilFound(tester, find.text('Sənə uyğun insanlar'), feed);
     expect(find.text('Sənə uyğun insanlar'), findsOneWidget);
+
+    // Axtarışı təmizlə → "Bu axşam" keçid kartı → Tədbirlər tabı (D-028)
+    await tester.enterText(find.byType(TextField).first, '');
+    await tester.pumpAndSettle();
+    final banner = find.textContaining('Bu axşam');
+    if (tester.any(banner)) {
+      await tester.tap(banner.first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.text('Yaxınlaşan'), findsOneWidget);
+    }
   });
 
   testWidgets('match: Maraqlıyam → match dialoqu (ROL D)', (tester) async {

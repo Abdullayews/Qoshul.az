@@ -11,10 +11,12 @@ import '../../events/presentation/event_detail_sheet.dart';
 import '../../match/presentation/match_screen.dart';
 import '../../venues/presentation/reserve_sheet.dart';
 import '../../venues/presentation/venue_detail_screen.dart';
+import 'tile_map.dart';
 
 /// Xəritə tabı — ROL (product-spec C, TAB 2).
-/// PostGIS əsaslı xəritənin UI placeholder-i (D-023): stilləşdirilmiş
-/// CustomPaint. Pin-lər: məkanlar, tədbirlər, (razılıq verən) insanlar.
+/// v0.6.0 (D-030): REAL xəritə — OpenStreetMap raster tile-ları (öz
+/// renderer, sıfır xarici asılılıq). Pin-lər real lat/lng koordinatlarında:
+/// məkanlar, tədbirlər, (razılıq verən) insanlar + "mənim yerim".
 ///
 /// v0.4.0 (D-025): filtr paneli və alt kart Liquid Glass — xəritənin
 /// üzərində üzən funksional qat (Apple HIG). Pin-lər staggered drop,
@@ -33,6 +35,12 @@ class _MapScreenState extends State<MapScreen> {
   bool openNow = false;
   bool withDiscount = false;
   _MapPin? selected;
+
+  final TileMapController _mapCtrl = TileMapController();
+
+  // Bakı mərkəzi — mock istifadəçi mövqeyi (m5+ GPS).
+  static const _myLat = 40.4093;
+  static const _myLng = 49.8671;
 
   static const _categoryChips = <String, IconData>{
     'Hamısı': Icons.public,
@@ -80,40 +88,33 @@ class _MapScreenState extends State<MapScreen> {
     return Stack(
       clipBehavior: Clip.hardEdge,
       children: [
-        // — xəritə sahəsi (fondan sona) —
+        // — REAL xəritə (OSM tile-lar, D-030) —
         Positioned.fill(
-          child: LayoutBuilder(builder: (context, constraints) {
-            final mapW = constraints.maxWidth;
-            final mapH = constraints.maxHeight;
-            return Stack(
-              clipBehavior: Clip.hardEdge,
-              children: [
-                GestureDetector(
-                  onTap: () => setState(() => selected = null),
-                  child: CustomPaint(
-                    painter: _MapPainter(),
-                    size: Size(mapW, mapH),
+          child: TileMapView(
+            controller: _mapCtrl,
+            initLat: _myLat,
+            initLng: _myLng,
+            initZoom: 13,
+            markers: [
+              TileMarker(
+                lat: _myLat,
+                lng: _myLng,
+                builder: (_) => const _MyLocationDot(),
+              ),
+              for (var i = 0; i < pins.length; i++)
+                TileMarker(
+                  lat: pins[i].lat,
+                  lng: pins[i].lng,
+                  onTap: () => setState(() => selected = pins[i]),
+                  // Pin-lər xəritəyə damla kimi düşür — staggered pop.
+                  builder: (_) => PopIn(
+                    delay: Motion.staggerStep * (i % 12),
+                    child: _pinWidget(pins[i], selected == pins[i]),
                   ),
                 ),
-                for (var i = 0; i < pins.length; i++)
-                  Positioned(
-                    left: pins[i].fx * mapW - 22,
-                    top: pins[i].fy * mapH - 46,
-                    width: 44,
-                    height: 56,
-                    child: GestureDetector(
-                      onTap: () => setState(() => selected = pins[i]),
-                      behavior: HitTestBehavior.opaque,
-                      // Pin-lər xəritəyə damla kimi düşür — staggered pop.
-                      child: PopIn(
-                        delay: Motion.staggerStep * (i % 12),
-                        child: _pinWidget(pins[i], selected == pins[i]),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          }),
+            ],
+            onTap: () => setState(() => selected = null),
+          ),
         ),
         // — şüşə filtr paneli (D-025 səth #2) —
         Positioned(
@@ -186,6 +187,28 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         ),
+        // — zoom idarəsi (şüşə həblər, D-030) —
+        Positioned(
+          top: 170,
+          right: 12,
+          child: Column(
+            children: [
+              GlassPill(
+                onTap: _mapCtrl.zoomIn,
+                dense: true,
+                padding: const EdgeInsets.all(7),
+                child: const Icon(Icons.add, size: 16, color: Q.foreground),
+              ),
+              const SizedBox(height: 8),
+              GlassPill(
+                onTap: _mapCtrl.zoomOut,
+                dense: true,
+                padding: const EdgeInsets.all(7),
+                child: const Icon(Icons.remove, size: 16, color: Q.foreground),
+              ),
+            ],
+          ),
+        ),
         // — sayğac (şüşə həb) —
         Positioned(
           bottom: 12,
@@ -255,6 +278,7 @@ class _MapScreenState extends State<MapScreen> {
             ? Q.accent
             : Q.foreground;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedContainer(
           duration: Motion.d1,
@@ -468,6 +492,37 @@ class _MapScreenState extends State<MapScreen> {
   }
 }
 
+/// "Mənim yerim" — göy dalğa + ağ halqa (mock GPS: Bakı mərkəzi).
+class _MyLocationDot extends StatelessWidget {
+  const _MyLocationDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 44,
+      height: 50,
+      child: Center(
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D7FF9),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2D7FF9).withValues(alpha: 0.4),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Alt kartın slide-up + fade girişi — pin seçiləndə "sürüşüb gəlir".
 class _SlideUp extends StatefulWidget {
   final Widget child;
@@ -575,12 +630,6 @@ class _MapPin {
   final double lat;
   final double lng;
 
-  // Xəritə koordinat transformu (Bakı bounding box → 0..1).
-  static const _minLat = 40.30;
-  static const _maxLat = 40.46;
-  static const _minLng = 49.72;
-  static const _maxLng = 49.90;
-
   _MapPin.venue(Partner v)
       : type = _PinType.venue,
         venue = v,
@@ -604,71 +653,4 @@ class _MapPin {
         person = p,
         lat = 40.37 + (p.match % 7) * 0.012, // mock: insan paylanması
         lng = 49.83 + (p.age % 7) * 0.007;
-
-  double _norm(double v, double min, double max) =>
-      ((v - min) / (max - min)).clamp(0.08, 0.92);
-
-  // Placeholder sahədə nisbi mövqe (0..1) — LayoutBuilder ölçüsü ilə vurulur.
-  double get fx => _norm(lng, _minLng, _maxLng);
-  double get fy => 1 - _norm(lat, _minLat, _maxLat);
-}
-
-// ───────────────────────── Xəritə rəssamı ─────────────────────────
-
-class _MapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // fon
-    final bg = Paint()..color = const Color(0xFFEDF3EF);
-    canvas.drawRect(Offset.zero & size, bg);
-
-    // su (Xəzər — aşağı/sağ künc)
-    final water = Paint()..color = const Color(0xFFD6E8F5);
-    final waterPath = Path()
-      ..moveTo(size.width, size.height * 0.55)
-      ..quadraticBezierTo(
-          size.width * 0.8, size.height * 0.7, size.width * 0.92, size.height)
-      ..lineTo(size.width, size.height)
-      ..close();
-    canvas.drawPath(waterPath, water);
-
-    // parklar
-    final park = Paint()..color = const Color(0xFFDDEEDD);
-    canvas.drawCircle(Offset(size.width * 0.22, size.height * 0.28), 46, park);
-    canvas.drawCircle(Offset(size.width * 0.7, size.height * 0.2), 34, park);
-
-    // bloklar
-    final block = Paint()..color = const Color(0xFFE2E9E4);
-    const rows = 7, cols = 5;
-    for (var r = 0; r < rows; r++) {
-      for (var c = 0; c < cols; c++) {
-        if ((r * 5 + c * 3) % 4 == 0) continue;
-        final w = size.width / cols - 14;
-        final h = size.height / rows - 14;
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromLTWH(8 + c * (w + 16) + ((r % 2) * 10),
-                8 + r * (h + 18), w, h),
-            const Radius.circular(6),
-          ),
-          block,
-        );
-      }
-    }
-
-    // yollar
-    final road = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(0, size.height * 0.42),
-        Offset(size.width, size.height * 0.36), road);
-    canvas.drawLine(Offset(size.width * 0.3, 0),
-        Offset(size.width * 0.38, size.height), road);
-    canvas.drawLine(Offset(size.width * 0.72, 0),
-        Offset(size.width * 0.66, size.height), road);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MapPainter old) => false;
 }

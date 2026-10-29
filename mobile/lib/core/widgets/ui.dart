@@ -224,8 +224,11 @@ class Segmented extends StatelessWidget {
   }
 }
 
-/// .search-bar — axtarış zolağı (+ sağda filtr düyməsi)
-class SearchBarField extends StatelessWidget {
+/// .search-bar — axtarış zolağı (+ sağda filtr düyməsi).
+/// v0.6.0 (D-029 qrafik cilalama): müasir 14px radius, toxunanda
+/// brend-yaşıl fokus halqası + yumşaq işıq kölgəsi — hər tabda
+/// səhifənin ƏN ÜSTÜNDƏ sabit (pinned) istifadə olunur.
+class SearchBarField extends StatefulWidget {
   final TextEditingController controller;
   final String hint;
   final VoidCallback? onFilter;
@@ -238,39 +241,81 @@ class SearchBarField extends StatelessWidget {
   });
 
   @override
+  State<SearchBarField> createState() => _SearchBarFieldState();
+}
+
+class _SearchBarFieldState extends State<SearchBarField> {
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 43,
+    final focused = _focus.hasFocus;
+    return AnimatedContainer(
+      duration: Motion.d1,
+      curve: Motion.ease,
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 13),
       decoration: BoxDecoration(
         color: Q.card,
-        border: Border.all(color: Q.border),
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: focused ? Q.primary : Q.border,
+          width: focused ? 1.4 : 1,
+        ),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: Q.primary.withValues(alpha: 0.12),
+                  blurRadius: 14,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : const [Q.softShadow],
       ),
       child: Row(
         children: [
-          const SizedBox(width: 12),
-          Icon(Icons.search, size: 16, color: Q.mutedFg),
-          const SizedBox(width: 8),
+          Icon(Icons.search,
+              size: 17, color: focused ? Q.primary : Q.mutedFg),
+          const SizedBox(width: 9),
           Expanded(
             child: TextField(
-              controller: controller,
+              controller: widget.controller,
+              focusNode: _focus,
               style: T.input,
+              cursorColor: Q.primary,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
-                hintText: hint,
+                hintText: widget.hint,
+                hintStyle: const TextStyle(
+                  fontFamily: T.family,
+                  fontSize: 12,
+                  color: Q.mutedFg,
+                ),
                 counterText: '',
               ),
             ),
           ),
-          if (onFilter != null)
+          if (widget.onFilter != null)
             SizedBox(
               width: 36,
               height: 30,
               child: IconButton(
-                onPressed: onFilter,
+                onPressed: widget.onFilter,
                 padding: EdgeInsets.zero,
-                icon: Icon(Icons.tune, size: 16, color: Q.mutedFg),
+                icon: Icon(Icons.tune, size: 17, color: Q.mutedFg),
               ),
             ),
         ],

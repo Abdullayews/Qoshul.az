@@ -24,6 +24,10 @@ import '../profile/presentation/profile_screen.dart';
 /// `extendBody` sayəsində panelin ALTINDAN axır və blur-da yumşalır
 /// (Apple iOS 26 "lensing" prinsipi). Tab keçidləri fade-through,
 /// seçilmiş ikon bounce, oxunmamış badge pop ilə canlanır.
+///
+/// v0.6.0 (D-031): edge-to-edge tam ekran — header status barın
+/// ALTINA keçən inset qəbul edir (məzmun barların altından gizlənmir);
+/// v0.6.0 (D-028): "Bu axşam" kartı Kəşfdən Tədbirlər tabına körpü qurur.
 class AppShell extends StatefulWidget {
   final AppState state;
   const AppShell({super.key, required this.state});
@@ -50,7 +54,11 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      FeedScreen(state: widget.state),
+      FeedScreen(
+        state: widget.state,
+        // "Bu axşam" keçid kartı → Tədbirlər ana tabı (D-028).
+        onOpenEvents: () => setState(() => index = 2),
+      ),
       MapScreen(state: widget.state),
       EventsScreen(state: widget.state),
       ChatsScreen(state: widget.state),
@@ -226,6 +234,10 @@ class _NotificationsSheet extends StatelessWidget {
 }
 
 /// .app-header — 67px, ağ, alt haşiyə (web-parity, D-023).
+/// v0.6.0 (D-031): status bar inseti header-in ÖZÜNƏ daxildir —
+/// fonda kəsik yoxdur, məzmun barların altından gizlənmir
+/// (edge-to-edge tam ekran düzgün görünür; native Kotlin tərəfdən
+/// DecorFitsSystemWindows=false güvəncəsi).
 /// Şüşə YALNIZ alt pilldə — header kontentin üstünə düşmür (minimal qayda).
 class _Header extends StatelessWidget {
   final VoidCallback onPartners;
@@ -242,64 +254,67 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.paddingOf(context).top;
     return Container(
-      height: 67,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.only(top: topInset),
       decoration: const BoxDecoration(
         color: Q.card,
         border: Border(bottom: BorderSide(color: Q.border)),
       ),
-      child: Row(
-        children: [
-          const Wordmark(fontSize: 25),
-          const Spacer(),
-          IconButton(
-            onPressed: onPartners,
-            icon: const Icon(Icons.handshake, size: 19),
-            color: Q.foreground,
-            tooltip: 'Tərəfdaşlar',
-          ),
-          IconButton(
-            onPressed: onAssistant,
-            icon: const Icon(Icons.smart_toy, size: 20),
-            color: Q.foreground,
-            tooltip: 'AI köməkçi',
-          ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: onBell,
-                icon: const Icon(Icons.notifications_none, size: 20),
-                color: Q.foreground,
-                tooltip: 'Bildirişlər',
-              ),
-              if (unread > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: PopIn(
-                    // Oxunmamış sayı dəyişəndə pop edərək yenidən doğulur.
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: Q.accent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Q.card, width: 1),
-                      ),
-                      child: Text(
-                        '$unread',
-                        style: const TextStyle(
-                            fontFamily: T.family,
-                            fontSize: 7,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white),
+      child: SizedBox(
+        height: 67,
+        child: Row(
+          children: [
+            const Wordmark(fontSize: 25),
+            const Spacer(),
+            IconButton(
+              onPressed: onPartners,
+              icon: const Icon(Icons.handshake, size: 19),
+              color: Q.foreground,
+              tooltip: 'Tərəfdaşlar',
+            ),
+            IconButton(
+              onPressed: onAssistant,
+              icon: const Icon(Icons.smart_toy, size: 20),
+              color: Q.foreground,
+              tooltip: 'AI köməkçi',
+            ),
+            Stack(
+              children: [
+                IconButton(
+                  onPressed: onBell,
+                  icon: const Icon(Icons.notifications_none, size: 20),
+                  color: Q.foreground,
+                  tooltip: 'Bildirişlər',
+                ),
+                if (unread > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: PopIn(
+                      // Oxunmamış sayı dəyişəndə pop edərək yenidən doğulur.
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Q.accent,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Q.card, width: 1),
+                        ),
+                        child: Text(
+                          '$unread',
+                          style: const TextStyle(
+                              fontFamily: T.family,
+                              fontSize: 7,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white),
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -316,11 +331,11 @@ class _GlassNav extends StatelessWidget {
   const _GlassNav({required this.index, required this.onChanged, required this.onCreate});
 
   static const _items = [
-    (Icons.home_outlined, 'Kəşf'),
-    (Icons.map_outlined, 'Xəritə'),
-    (Icons.event_outlined, 'Tədbirlər'),
-    (Icons.chat_bubble_outline_rounded, 'Söhbətlər'),
-    (Icons.person_outline_rounded, 'Profil'),
+    (Icons.home_outlined, Icons.home_rounded, 'Kəşf'),
+    (Icons.map_outlined, Icons.map_rounded, 'Xəritə'),
+    (Icons.event_outlined, Icons.event_rounded, 'Tədbirlər'),
+    (Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'Söhbətlər'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
   ];
 
   @override
@@ -399,53 +414,65 @@ class _GlassNav extends StatelessWidget {
 
   Widget _navItem(int i) {
     final active = index == i;
-    final (icon, label) = _items[i];
+    final (icon, activeIcon, label) = _items[i];
     return ScaleTap(
       onTap: () => onChanged(i),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Seçiləndə ikon bounce — spring "canlı" toxunuş (D-025).
-          AnimatedScale(
-            scale: active ? 1.15 : 1.0,
-            duration: Motion.d2,
-            curve: active ? Motion.enter : Motion.ease,
-            child: Icon(icon,
-                size: 20,
-                color: active ? Q.primary : Q.mutedFg,
-                weight: active ? 700 : 400),
-          ),
-          const SizedBox(height: 5),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: T.family,
-                  fontSize: 9,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+      // v0.6.0 (D-029 qrafik cilalama): aktiv item yumşaq kapsul alır —
+      // Instagram-vari "seçilmiş zonanın" vizual izi (D-025 hərəkət dili ilə).
+      child: AnimatedContainer(
+        duration: Motion.d2,
+        curve: Motion.ease,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: active ? Q.primary.withValues(alpha: 0.10) : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Seçiləndə ikon bounce + filled variant — spring "canlı" toxunuş.
+            AnimatedScale(
+              scale: active ? 1.15 : 1.0,
+              duration: Motion.d2,
+              curve: active ? Motion.enter : Motion.ease,
+              child: Icon(active ? activeIcon : icon,
+                  size: 20,
                   color: active ? Q.primary : Q.mutedFg,
-                ),
-              ),
-              Positioned(
-                bottom: -5,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: Motion.d1,
-                    curve: Motion.ease,
-                    width: active ? 4 : 0,
-                    height: active ? 4 : 0,
-                    decoration: BoxDecoration(
-                        color: Q.primary, shape: BoxShape.circle),
+                  weight: active ? 700 : 400),
+            ),
+            const SizedBox(height: 5),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: T.family,
+                    fontSize: 9,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                    color: active ? Q.primary : Q.mutedFg,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Positioned(
+                  bottom: -5,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: Motion.d1,
+                      curve: Motion.ease,
+                      width: active ? 4 : 0,
+                      height: active ? 4 : 0,
+                      decoration: const BoxDecoration(
+                          color: Q.primary, shape: BoxShape.circle),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
