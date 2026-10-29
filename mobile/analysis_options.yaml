@@ -1,0 +1,17 @@
+# Qoshul.az — analyzer konfiqi (D-023: flutter_lints paketi YOXDUR — sıfır
+# xarici asılılıq qaydası). Bu fayl repoda tracked olduğundan `flutter
+# create`-in default flutter_lints include-u (CI-da pubspec-də paket
+# olmadığından include_file_not_found warning verir) mövcud faylı əvəz
+# edə bilmir.
+#
+# Qaydalar: SDK default linter + info səviyyəli unused_element (test
+# helper-ləri üçün) — xəta yalnız əsl error-lardır.
+analyzer:
+  errors:
+    unused_element: info
+    unused_import: info
+linter:
+  rules:
+    - avoid_print
+    - prefer_const_constructors
+    - prefer_final_locals

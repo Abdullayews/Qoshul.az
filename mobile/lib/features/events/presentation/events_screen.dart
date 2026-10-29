@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/data/mock_data.dart';
-import '../../../core/models/xp_economy.dart';
+import '../../../core/models/models.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/motion.dart';
