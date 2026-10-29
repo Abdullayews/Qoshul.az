@@ -53,7 +53,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           TextButton(
             onPressed: () => setState(() => showPrefs = !showPrefs),
             child: Text(showPrefs ? 'Siyahı' : 'Tercihlər',
-                style: const TextStyle(fontSize: 11)),
+                style: const TextStyle(fontSize: 12.5)),
           ),
         ],
       ),
@@ -75,7 +75,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       TextButton(
                         onPressed: state.markAllNotificationsRead,
                         child: const Text('Hamısını oxunmuş et',
-                            style: TextStyle(fontSize: 11)),
+                            style: TextStyle(fontSize: 12.5)),
                       ),
                   ],
                 ),
@@ -128,7 +128,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               Text(n.body,
                                   style: const TextStyle(
                                       fontFamily: T.family,
-                                      fontSize: 10,
+                                      fontSize: 11.5,
                                       height: 1.6,
                                       color: Q.mutedFg)),
                               const SizedBox(height: 4),

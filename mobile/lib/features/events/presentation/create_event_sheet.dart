@@ -209,7 +209,7 @@ class _CreateSheetState extends State<_CreateSheet> {
                       const Text('AI köməkçisi: fikrini qısa yaz',
                           style: TextStyle(
                               fontFamily: T.family,
-                              fontSize: 11,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(height: 7),
                       Row(
@@ -280,7 +280,7 @@ class _CreateSheetState extends State<_CreateSheet> {
                           child: Text(g.group,
                               style: const TextStyle(
                                   fontFamily: T.family,
-                                  fontSize: 11,
+                                  fontSize: 12.5,
                                   fontWeight: FontWeight.w800,
                                   color: Q.mutedFg)),
                         ),

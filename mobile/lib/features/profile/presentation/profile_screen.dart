@@ -121,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Text('Təsdiqlənmiş',
                                   style: TextStyle(
                                       fontFamily: T.family,
-                                      fontSize: 10,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
                                       color: Q.primary)),
                             ],
@@ -158,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Text(i,
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 10,
+                              fontSize: 11.5,
                               color: Q.primary)),
                     ),
                 ],
@@ -261,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   prog['nextName'] ?? 'Maksimum',
                   style: const TextStyle(
                       fontFamily: T.family,
-                      fontSize: 10,
+                      fontSize: 11.5,
                       fontWeight: FontWeight.w600),
                 ),
                 Text(
@@ -325,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               '${b.name} — ${b.description}',
                               style: TextStyle(
                                   fontFamily: T.family,
-                                  fontSize: 11,
+                                  fontSize: 12.5,
                                   height: 1.5,
                                   color: state.earnedBadges.contains(b.id)
                                       ? Q.foreground
@@ -430,12 +430,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Text(entry.value,
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 10,
+                              fontSize: 11.5,
                               color: Q.mutedFg)),
                       Text('${traits[entry.key]}',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 10,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w600)),
                     ],
                   ),

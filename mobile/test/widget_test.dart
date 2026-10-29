@@ -12,7 +12,8 @@ import 'package:qoshul/features/map/presentation/tile_map.dart';
 import 'package:qoshul/features/venues/presentation/reserve_sheet.dart';
 import 'package:qoshul/main.dart';
 
-/// Widget testləri — ROL UI-2 (v0.3.0): auth axını, onboarding, 5 tab,
+/// Widget testləri — ROL UI-2 (v0.3.0→v0.7.0): auth axını, onboarding,
+/// 4 tab + Kəşf daxili tabları (D-034),
 /// match, rezerv, kupon, ayarlar. Səth: 800×1200; lazy ListView bölmələri
 /// scrollUntilVisible ilə yoxlanılır.
 void main() {
@@ -153,15 +154,16 @@ void main() {
     expect(state.interests.length, 3);
     expect(state.xp, before + 50 + 5); // qeydiyyat + günlük giriş
 
-    // 5 tab shell (ROL C)
+    // Shell (ROL C, v0.7.0): 4 alt tab + Kəşfdə daxili "Tədbirlər" tabı
     expect(find.text('Kəşf'), findsWidgets);
     expect(find.text('Xəritə'), findsOneWidget);
+    // 'Tədbirlər' artıq ana ekranda daxili tabdır (D-034)
     expect(find.text('Tədbirlər'), findsOneWidget);
     expect(find.text('Söhbətlər'), findsOneWidget);
     expect(find.text('Profil'), findsOneWidget);
   });
 
-  testWidgets('shell: 5 tab naviqasiyası (ROL C)', (tester) async {
+  testWidgets('shell: 4 alt tab + Kəşf daxili tabları (ROL C, D-034)', (tester) async {
     final state = AppState()
       ..signIn()
       ..onboarded = true;
@@ -174,24 +176,23 @@ void main() {
     expect(find.text('endirimi var'), findsOneWidget);
     expect(find.text('10 km'), findsOneWidget);
 
-    // TAB 3: Tədbirlər — 3 siyahı + kateqoriya çipləri + peşəcar sıralama
+    // TAB 1 içindəki "Tədbirlər" daxili tabı (D-034) — 3 siyahı +
+    // kateqoriya çipləri + peşəkar sıralama (D-026 L.1)
     await tester.tap(find.text('Tədbirlər'));
     await tester.pumpAndSettle();
     expect(find.text('Yaxınlaşan'), findsOneWidget);
     expect(find.text('Mənim tədbirlərim'), findsOneWidget);
     expect(find.text('Yaratdığım'), findsOneWidget);
-    // v0.6.0 (D-026 L.1 + D-028): peşəkar sıralama və kateqoriya çipləri
-    // Kəşf feed-indən Tədbirlər tabına köçürüldü.
     expect(find.text('Sənin səviyyənə görə'), findsOneWidget);
     expect(find.text('Hamısı'), findsOneWidget);
 
-    // TAB 4: Söhbətlər — Şəxsi/Qruplar
+    // TAB 3: Söhbətlər — Şəxsi/Qruplar
     await tester.tap(find.text('Söhbətlər'));
     await tester.pumpAndSettle();
     expect(find.text('Qruplar'), findsWidgets);
     expect(find.text('Şəxsi'), findsWidgets);
 
-    // TAB 5: Profil — nişanlar + keçidlər
+    // TAB 4: Profil — nişanlar + keçidlər
     await tester.tap(find.text('Profil'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Nişanlar'), 200,
@@ -232,7 +233,7 @@ void main() {
     }
   });
 
-  testWidgets('feed: Kəşf = "Sən üçün" axını + pinned axtarış (ROL TAB 1, v0.6.0)',
+  testWidgets('feed: ana ekran daxili tabları + pinned axtarış (ROL TAB 1, v0.7.0)',
       (tester) async {
     final state = AppState()
       ..signIn()
@@ -243,7 +244,8 @@ void main() {
 
     // D-029: axtarış scroll ETMƏDƏN görünür — səhifənin ən üstündə sabit.
     expect(find.byType(TextField), findsOneWidget);
-    // D-028: tədbir siyahıları Kəşfdən çıxarılıb (Tədbirlər ana tabında).
+    // D-034: "Sənin üçün" görünüşündə tədbir siyahıları YOXDUR
+    // (tədbirlər eyni ekranda "Tədbirlər" daxili tabındadır).
     expect(find.text('Yaxınında olan tədbirlər'), findsNothing);
     expect(find.text('Bütün tədbirlər'), findsNothing);
     expect(find.text('Sənin səviyyənə görə'), findsNothing);
@@ -263,7 +265,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Sənə uyğun insanlar'), findsOneWidget);
 
-    // Axtarışı təmizlə → "Bu axşam" keçid kartı → Tədbirlər tabı (D-028)
+    // Axtarışı təmizlə → "Bu axşam" keçid kartı → "Tədbirlər" daxili tabı (D-034)
     await tester.enterText(find.byType(TextField).first, '');
     await tester.pumpAndSettle();
     final banner = find.textContaining('Bu axşam');

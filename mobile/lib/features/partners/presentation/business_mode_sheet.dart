@@ -88,7 +88,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                           Text(
                             'Müştərinin dinamik XP kodunu oxu, hesabı yaz — '
                             'endirim avtomatik hesablanır.',
-                            style: T.meta.copyWith(fontSize: 10, height: 1.5),
+                            style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
                           ),
                           const SizedBox(height: 16),
                           if (step == 0) _stepScan(state),
@@ -123,7 +123,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
             for (final v in venues)
               ChoiceChip(
                 label: Text(v.venueName, style: const TextStyle(
-                    fontFamily: T.family, fontSize: 11)),
+                    fontFamily: T.family, fontSize: 12.5)),
                 selected: venueId == v.venueId,
                 onSelected: (_) => setState(() {
                   venueId = v.venueId;
@@ -132,7 +132,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                 selectedColor: Q.secondary,
                 labelStyle: TextStyle(
                     fontFamily: T.family,
-                    fontSize: 11,
+                    fontSize: 12.5,
                     color: venueId == v.venueId ? Q.primary : Q.foreground),
               ),
           ],
@@ -159,7 +159,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                     'Kod oxunmadı: müştərinin XP kartı bu obyekt üçün etibarlı '
                     'deyil və ya vaxtı bitib. Müştəçi "Profil → XP kartım"-dan '
                     'bu obyekt üçün yeni kod almalıdır (60 saniyəlik, tək istifadəlik).',
-                    style: T.meta.copyWith(fontSize: 10, height: 1.5),
+                    style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
                   ),
                 ),
               ],
@@ -218,7 +218,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                               fontSize: 13,
                               fontWeight: FontWeight.w800)),
                       Text('Kod təsdiqləndi · ${acct.venueName} bazası',
-                          style: T.meta.copyWith(fontSize: 10)),
+                          style: T.meta.copyWith(fontSize: 11.5)),
                     ],
                   ),
                 ),
@@ -234,7 +234,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                           color: Q.primary),
                       suffix: ' XP',
                     ),
-                    Text('balans', style: T.meta.copyWith(fontSize: 9)),
+                    Text('balans', style: T.meta.copyWith(fontSize: 10.5)),
                   ],
                 ),
               ],
@@ -245,7 +245,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
         Text(
           'Məzənnə: ${acct.config.describe()} · Endirim hesabın maks '
           '${acct.config.maxDiscountPercent}%-i qədər ola bilər.',
-          style: T.meta.copyWith(fontSize: 10, height: 1.5),
+          style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
         ),
         const SizedBox(height: 14),
         SizedBox(
@@ -304,7 +304,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                 children: [
                   Text('Endirim',
                       style: T.meta.copyWith(
-                          fontSize: 11, fontWeight: FontWeight.w700)),
+                          fontSize: 12.5, fontWeight: FontWeight.w700)),
                   Text(
                     ok
                         ? '− ${(p['discount'] as double).toStringAsFixed(2)} ₼'
@@ -322,7 +322,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Müştəri ödəyir',
-                      style: T.meta.copyWith(fontSize: 11)),
+                      style: T.meta.copyWith(fontSize: 12.5)),
                   Text(
                     ok ? '${(bill - (p['discount'] as double)).toStringAsFixed(2)} ₼' : '—',
                     style: const TextStyle(
@@ -336,7 +336,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
                 const SizedBox(height: 8),
                 Text(errText,
                     style: T.meta.copyWith(
-                        fontSize: 10, height: 1.5, color: Q.destructive)),
+                        fontSize: 11.5, height: 1.5, color: Q.destructive)),
               ],
             ],
           ),
@@ -397,7 +397,7 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
             '${acct.venueName} bazasından ${last.amount} XP xərcləndi. '
             'Hər iki tərəfə receipt göndərildi — əməliyyat ledger-də izlənilir.',
             textAlign: TextAlign.center,
-            style: T.meta.copyWith(fontSize: 10, height: 1.6),
+            style: T.meta.copyWith(fontSize: 11.5, height: 1.6),
           ),
           const SizedBox(height: 16),
           _kv('İştirak edən XP', '${last.amount} XP'),
@@ -422,11 +422,11 @@ class _BusinessModeSheetState extends State<_BusinessModeSheet> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(k, style: T.meta.copyWith(fontSize: 11)),
+            Text(k, style: T.meta.copyWith(fontSize: 12.5)),
             Text(v,
                 style: const TextStyle(
                     fontFamily: T.family,
-                    fontSize: 11,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700)),
           ],
         ),

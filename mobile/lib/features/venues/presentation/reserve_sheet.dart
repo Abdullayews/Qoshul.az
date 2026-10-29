@@ -320,7 +320,7 @@ class _ReserveSheetState extends State<_ReserveSheet> {
           Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    fontFamily: T.family, fontSize: 11, height: 1.6)),
+                    fontFamily: T.family, fontSize: 12.5, height: 1.6)),
           ),
         ],
       ),

@@ -129,3 +129,36 @@ jobs:
 
             Bu release CI tərəfindən avtomatik yaradılır — hər build artifacts
             səhifəsində də mövcuddur.
+
+  # Vizual QA (v0.7.0): veb build — APK quraşdırmadan brauzerdə yoxlama
+  # üçün artifact. UI-first mərhələsində hər versiyanın ekran görüntüləri
+  # bu artifact-dən alınır (agent tərəfindən brauzer skrinşotları ilə).
+  web:
+    name: Web build (vizual QA)
+    needs: build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      - name: Flutter SDK (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Asılılıqlar
+        run: flutter pub get
+
+      - name: Web build (release)
+        run: flutter build web --release
+
+      - name: Artifaktı daxil et
+        uses: actions/upload-artifact@v4
+        with:
+          name: qoshul-web
+          path: mobile/build/web
+          if-no-files-found: error

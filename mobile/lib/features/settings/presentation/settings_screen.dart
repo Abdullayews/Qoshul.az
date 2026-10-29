@@ -78,7 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               'Dəqiq koordinatın heç kimə göstərilmir — yalnız təxmini məsafə. XP-nin müddəti yoxdur — balans = qazanma − xərcləmə.',
               style: const TextStyle(
-                  fontFamily: T.family, fontSize: 10, height: 1.6, color: Q.mutedFg),
+                  fontFamily: T.family, fontSize: 11.5, height: 1.6, color: Q.mutedFg),
             ),
             _section('Bildirişlər'),
             _card([
@@ -154,7 +154,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Telefon nömrəni əlavə et və SMS kodunu yaz. '
               'Təsdiq "Təsdiqlənmiş" nişanı + ${XpRules.phoneVerifyXp} XP verir.',
               style: const TextStyle(
-                  fontFamily: T.family, fontSize: 11, height: 1.7),
+                  fontFamily: T.family, fontSize: 12.5, height: 1.7),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -214,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         Navigator.pop(d);
                       },
                       child: const Text('Blokdan çıxar',
-                          style: TextStyle(fontSize: 11)),
+                          style: TextStyle(fontSize: 12.5)),
                     ),
                   ),
                 ),
@@ -278,7 +278,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             Text(v.hint,
                                 style: const TextStyle(
                                     fontFamily: T.family,
-                                    fontSize: 10,
+                                    fontSize: 11.5,
                                     height: 1.4,
                                     color: Q.mutedFg)),
                           ],
@@ -331,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Text(title,
             style: const TextStyle(
                 fontFamily: T.family,
-                fontSize: 11,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: Q.mutedFg)),
       );
@@ -363,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           Text(value,
               style: T.meta.copyWith(
-                  fontSize: 11, color: valueColor ?? Q.mutedFg)),
+                  fontSize: 12.5, color: valueColor ?? Q.mutedFg)),
           if (onTap != null) ...[
             const SizedBox(width: 4),
             Icon(Icons.chevron_right, size: 16, color: Q.mutedFg),
@@ -420,7 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Text(subtitle,
                         style: const TextStyle(
                             fontFamily: T.family,
-                            fontSize: 10,
+                            fontSize: 11.5,
                             color: Q.mutedFg)),
                   ],
                 ],

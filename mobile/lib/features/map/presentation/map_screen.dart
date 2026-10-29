@@ -370,7 +370,7 @@ class _MapScreenState extends State<MapScreen> {
                             Text('-${v.discountPercent}%',
                                 style: const TextStyle(
                                     fontFamily: T.family,
-                                    fontSize: 10,
+                                    fontSize: 11.5,
                                     fontWeight: FontWeight.w800,
                                     color: Q.accentFg)),
                           ],
@@ -606,7 +606,7 @@ class _GlassFilterChip extends StatelessWidget {
               label,
               style: TextStyle(
                 fontFamily: T.family,
-                fontSize: 10,
+                fontSize: 11.5,
                 fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 color: active ? Q.primaryFg : Q.foreground,
               ),

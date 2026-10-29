@@ -101,7 +101,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                                 child: Text(s,
                                     style: const TextStyle(
                                         fontFamily: T.family,
-                                        fontSize: 11)),
+                                        fontSize: 12.5)),
                               ),
                           ],
                         ),
@@ -139,7 +139,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                               '${proposal.date} ${proposal.time} · ${proposal.location} · ${proposal.capacity} nəfər',
                               style: const TextStyle(
                                   fontFamily: T.family,
-                                  fontSize: 11,
+                                  fontSize: 12.5,
                                   color: Q.mutedFg),
                             ),
                             const SizedBox(height: 10),
@@ -153,7 +153,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                               label: const Text('Bu tədbiri yarat',
                                   style: TextStyle(
                                       fontFamily: T.family,
-                                      fontSize: 10,
+                                      fontSize: 11.5,
                                       fontWeight: FontWeight.w600)),
                             ),
                           ],

@@ -344,7 +344,7 @@ class _ProfileStepState extends State<_ProfileStep> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(error!,
                 style: const TextStyle(
-                    fontFamily: T.family, fontSize: 11, color: Q.destructive)),
+                    fontFamily: T.family, fontSize: 12.5, color: Q.destructive)),
           ),
         const SizedBox(height: 18),
         SizedBox(
@@ -416,7 +416,7 @@ class _InterestsStepState extends State<_InterestsStep> {
         const SizedBox(height: 8),
         Text('Seçilib: ${selected.length}/${XpRules.maxInterests}',
             style: const TextStyle(
-                fontFamily: T.family, fontSize: 11, fontWeight: FontWeight.w700)),
+                fontFamily: T.family, fontSize: 12.5, fontWeight: FontWeight.w700)),
         const SizedBox(height: 14),
         for (final c in rolCategories)
           Padding(
@@ -641,7 +641,7 @@ class _PermissionsStepState extends State<_PermissionsStep> {
                 Text(subtitle,
                     style: const TextStyle(
                         fontFamily: T.family,
-                        fontSize: 10,
+                        fontSize: 11.5,
                         height: 1.6,
                         color: Q.mutedFg)),
               ],

@@ -162,7 +162,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontFamily: T.family,
-                          fontSize: 11,
+                          fontSize: 12.5,
                           color: Q.mutedFg)),
                 ],
               ),

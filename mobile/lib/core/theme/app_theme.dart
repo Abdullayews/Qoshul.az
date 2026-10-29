@@ -41,7 +41,10 @@ class Q {
   );
 }
 
-/// Tipografiya — Plus Jakarta Sans, web ölçüləri (mobil breakpoint).
+/// Tipografiya — Plus Jakarta Sans.
+/// v0.7.0 (D-035): web mobil-breakpoint ölçülərindən MÖBİL TƏTBİQ
+/// ölçülərinə keçid — 9-10px mikroyazılar oxunmurdu; minimum 10.5,
+/// gövdə 13.5 (Material/mobil standartlarına uyğunlaşdırıldı).
 class T {
   T._();
 
@@ -50,40 +53,40 @@ class T {
   static const hero = TextStyle(
       fontFamily: family, fontSize: 27, fontWeight: FontWeight.w800, height: 1.3);
   static const h1 = TextStyle(
-      fontFamily: family, fontSize: 25, fontWeight: FontWeight.w800, height: 1.35);
+      fontFamily: family, fontSize: 24, fontWeight: FontWeight.w800, height: 1.35);
   static const h2 = TextStyle(
-      fontFamily: family, fontSize: 18, fontWeight: FontWeight.w800, height: 1.4);
+      fontFamily: family, fontSize: 19, fontWeight: FontWeight.w800, height: 1.4);
   static const h3 = TextStyle(
-      fontFamily: family, fontSize: 12, fontWeight: FontWeight.w800, height: 1.5);
+      fontFamily: family, fontSize: 13, fontWeight: FontWeight.w800, height: 1.5);
   static const eventTitle = TextStyle(
-      fontFamily: family, fontSize: 15, fontWeight: FontWeight.w800, height: 1.5);
+      fontFamily: family, fontSize: 16, fontWeight: FontWeight.w800, height: 1.5);
   static const personName = TextStyle(
-      fontFamily: family, fontSize: 14, fontWeight: FontWeight.w800, height: 1.4);
+      fontFamily: family, fontSize: 15, fontWeight: FontWeight.w800, height: 1.4);
   static const subtitle = TextStyle(
       fontFamily: family,
-      fontSize: 12,
+      fontSize: 13,
       fontWeight: FontWeight.w400,
       height: 1.7,
       color: Q.mutedFg);
-  static const body = TextStyle(fontFamily: family, fontSize: 12, height: 1.7);
-  static const bodySm = TextStyle(fontFamily: family, fontSize: 11, height: 1.6);
+  static const body = TextStyle(fontFamily: family, fontSize: 13.5, height: 1.7);
+  static const bodySm = TextStyle(fontFamily: family, fontSize: 12.5, height: 1.6);
   static const meta = TextStyle(
-      fontFamily: family, fontSize: 10, height: 1.5, color: Q.mutedFg);
+      fontFamily: family, fontSize: 12, height: 1.5, color: Q.mutedFg);
   static const metaSm = TextStyle(
-      fontFamily: family, fontSize: 9, height: 1.5, color: Q.mutedFg);
+      fontFamily: family, fontSize: 10.5, height: 1.5, color: Q.mutedFg);
   static const category = TextStyle(
-      fontFamily: family, fontSize: 9, fontWeight: FontWeight.w700, color: Q.primary);
+      fontFamily: family, fontSize: 10.5, fontWeight: FontWeight.w700, color: Q.primary);
   static const chip = TextStyle(
-      fontFamily: family, fontSize: 10, fontWeight: FontWeight.w500, color: Q.mutedFg);
+      fontFamily: family, fontSize: 11.5, fontWeight: FontWeight.w500, color: Q.mutedFg);
   static const chipActive = TextStyle(
-      fontFamily: family, fontSize: 10, fontWeight: FontWeight.w700, color: Q.primaryFg);
+      fontFamily: family, fontSize: 11.5, fontWeight: FontWeight.w700, color: Q.primaryFg);
   static const button = TextStyle(
-      fontFamily: family, fontSize: 12, fontWeight: FontWeight.w600);
+      fontFamily: family, fontSize: 13, fontWeight: FontWeight.w600);
   static const label = TextStyle(
-      fontFamily: family, fontSize: 11, fontWeight: FontWeight.w600);
-  static const input = TextStyle(fontFamily: family, fontSize: 12, fontWeight: FontWeight.w400);
+      fontFamily: family, fontSize: 12, fontWeight: FontWeight.w600);
+  static const input = TextStyle(fontFamily: family, fontSize: 13.5, fontWeight: FontWeight.w400);
   static const stat = TextStyle(
-      fontFamily: family, fontSize: 21, fontWeight: FontWeight.w800);
+      fontFamily: family, fontSize: 22, fontWeight: FontWeight.w800);
 }
 
 /// ThemeData — Material 3, Qoshul tokenləri ilə.

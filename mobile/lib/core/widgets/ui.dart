@@ -24,7 +24,7 @@ class SectionHeading extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 18, color: Q.primary),
+                  Icon(icon, size: 19, color: Q.primary),
                   const SizedBox(width: 7),
                 ],
                 Flexible(
@@ -33,7 +33,7 @@ class SectionHeading extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: T.family,
-                      fontSize: 18,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -65,14 +65,14 @@ class SectionLink extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 11, color: Q.primary),
+            Icon(icon, size: 13, color: Q.primary),
             const SizedBox(width: 3),
           ],
           Text(
             text,
             style: const TextStyle(
               fontFamily: T.family,
-              fontSize: 10,
+              fontSize: 11.5,
               fontWeight: FontWeight.w600,
               color: Q.primary,
             ),
@@ -91,7 +91,7 @@ class RankBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: Q.rankBadgeBg,
         borderRadius: BorderRadius.circular(Q.rMd),
@@ -99,13 +99,13 @@ class RankBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.emoji_events, size: 12, color: Q.accentFg),
+          const Icon(Icons.emoji_events, size: 13.5, color: Q.accentFg),
           const SizedBox(width: 4),
           Text(
             label,
             style: const TextStyle(
               fontFamily: T.family,
-              fontSize: 10,
+              fontSize: 11.5,
               fontWeight: FontWeight.w700,
               color: Q.accentFg,
             ),
@@ -137,7 +137,7 @@ class XpTrack extends StatelessWidget {
               suffix: ' XP',
               style: const TextStyle(
                   fontFamily: T.family,
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600),
             ),
             Text(
@@ -150,16 +150,16 @@ class XpTrack extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(3),
           child: SizedBox(
-            height: 4,
+            height: 6,
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: target),
               duration: Motion.d4,
               curve: Motion.ease,
               builder: (context, value, _) => LinearProgressIndicator(
                 value: value,
-                minHeight: 4,
+                minHeight: 6,
                 backgroundColor: Q.border,
                 valueColor:
                     const AlwaysStoppedAnimation<Color>(Q.primary),
@@ -187,7 +187,7 @@ class Segmented extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: Q.muted,
-        borderRadius: BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(9),
       ),
       child: Row(
         children: [
@@ -198,11 +198,11 @@ class Segmented extends StatelessWidget {
                 behavior: HitTestBehavior.opaque,
                 child: AnimatedContainer(
                   duration: Motion.d1,
-                  height: 33,
+                  height: 38,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: i == active ? Q.card : Colors.transparent,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: BorderRadius.circular(7),
                     boxShadow: i == active ? [Q.softShadow] : null,
                   ),
                   child: Text(
@@ -210,7 +210,7 @@ class Segmented extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: T.family,
-                      fontSize: 10,
+                      fontSize: 11.5,
                       fontWeight: i == active ? FontWeight.w700 : FontWeight.w500,
                       color: i == active ? Q.primary : Q.mutedFg,
                     ),
@@ -265,11 +265,11 @@ class _SearchBarFieldState extends State<SearchBarField> {
     return AnimatedContainer(
       duration: Motion.d1,
       curve: Motion.ease,
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 13),
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
         color: Q.card,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: focused ? Q.primary : Q.border,
           width: focused ? 1.4 : 1,
@@ -287,8 +287,8 @@ class _SearchBarFieldState extends State<SearchBarField> {
       child: Row(
         children: [
           Icon(Icons.search,
-              size: 17, color: focused ? Q.primary : Q.mutedFg),
-          const SizedBox(width: 9),
+              size: 19, color: focused ? Q.primary : Q.mutedFg),
+          const SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: widget.controller,
@@ -301,7 +301,7 @@ class _SearchBarFieldState extends State<SearchBarField> {
                 hintText: widget.hint,
                 hintStyle: const TextStyle(
                   fontFamily: T.family,
-                  fontSize: 12,
+                  fontSize: 13.5,
                   color: Q.mutedFg,
                 ),
                 counterText: '',
@@ -310,12 +310,12 @@ class _SearchBarFieldState extends State<SearchBarField> {
           ),
           if (widget.onFilter != null)
             SizedBox(
-              width: 36,
-              height: 30,
+              width: 38,
+              height: 32,
               child: IconButton(
                 onPressed: widget.onFilter,
                 padding: EdgeInsets.zero,
-                icon: Icon(Icons.tune, size: 17, color: Q.mutedFg),
+                icon: Icon(Icons.tune, size: 19, color: Q.mutedFg),
               ),
             ),
         ],
@@ -349,8 +349,8 @@ class CategoryChip extends StatelessWidget {
         duration: Motion.d2,
         curve: active ? Motion.enter : Motion.ease,
         child: Container(
-          height: 31,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             color: active ? Q.primary : Q.card,
             border: Border.all(color: active ? Q.primary : Q.border),
@@ -359,8 +359,8 @@ class CategoryChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 13, color: active ? Q.primaryFg : Q.mutedFg),
-              const SizedBox(width: 5),
+              Icon(icon, size: 14.5, color: active ? Q.primaryFg : Q.mutedFg),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: active ? T.chipActive : T.chip,
@@ -402,10 +402,10 @@ class CommunityBanner extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 40,
+            height: 40,
             decoration: const BoxDecoration(color: Q.card, shape: BoxShape.circle),
-            child: Icon(icon, size: 18, color: Q.primary),
+            child: Icon(icon, size: 19, color: Q.primary),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -415,14 +415,14 @@ class CommunityBanner extends StatelessWidget {
                 Text(title,
                     style: const TextStyle(
                         fontFamily: T.family,
-                        fontSize: 12,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: const TextStyle(
                       fontFamily: T.family,
-                      fontSize: 10,
+                      fontSize: 11.5,
                       height: 1.6,
                       color: Q.mutedFg),
                 ),
@@ -473,13 +473,13 @@ class EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 45),
       child: Column(
         children: [
-          Icon(icon, size: 34, color: Q.primary),
-          const SizedBox(height: 12),
+          Icon(icon, size: 38, color: Q.primary),
+          const SizedBox(height: 14),
           Text(
             text,
             textAlign: TextAlign.center,
             style: const TextStyle(
-                fontFamily: T.family, fontSize: 12, height: 1.8, color: Q.mutedFg),
+                fontFamily: T.family, fontSize: 13, height: 1.8, color: Q.mutedFg),
           ),
           if (action != null) ...[const SizedBox(height: 18), action!],
         ],
@@ -499,11 +499,11 @@ class SafetyNote extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.verified_user, size: 13, color: Q.primary),
+          Icon(Icons.verified_user, size: 14.5, color: Q.primary),
           const SizedBox(width: 6),
           Text(
             'Birlikdə daha güvənli, birlikdə daha gözəl.',
-            style: const TextStyle(fontFamily: T.family, fontSize: 10, color: Q.mutedFg),
+            style: const TextStyle(fontFamily: T.family, fontSize: 11, color: Q.mutedFg),
           ),
         ],
       ),
@@ -532,7 +532,7 @@ class FormFieldX extends StatelessWidget {
           if (hint != null) ...[
             const SizedBox(height: 6),
             Text(hint!, style: const TextStyle(
-                fontFamily: T.family, fontSize: 11, color: Q.mutedFg)),
+                fontFamily: T.family, fontSize: 12, color: Q.mutedFg)),
           ],
         ],
       ),
@@ -597,7 +597,7 @@ class ChatBubble extends StatelessWidget {
               sender,
               style: const TextStyle(
                 fontFamily: T.family,
-                fontSize: 9,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w700,
                 color: Q.primary,
               ),
@@ -605,7 +605,7 @@ class ChatBubble extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               body,
-              style: const TextStyle(fontFamily: T.family, fontSize: 12, height: 1.7),
+              style: const TextStyle(fontFamily: T.family, fontSize: 13, height: 1.7),
             ),
             if (mine && status != null) ...[
               const SizedBox(height: 3),
@@ -614,14 +614,14 @@ class ChatBubble extends StatelessWidget {
                 children: [
                   Icon(
                     status == 'oxundu' ? Icons.done_all : Icons.done,
-                    size: 11,
+                    size: 12,
                     color: status == 'oxundu' ? Q.primary : Q.mutedFg,
                   ),
                   const SizedBox(width: 3),
                   Text(
                     status!,
                     style: const TextStyle(
-                        fontFamily: T.family, fontSize: 8, color: Q.mutedFg),
+                        fontFamily: T.family, fontSize: 9.5, color: Q.mutedFg),
                   ),
                 ],
               ),
@@ -659,7 +659,7 @@ class LiveBadge extends StatelessWidget {
           Text(
             text,
             style: const TextStyle(
-                fontFamily: T.family, fontSize: 9,
+                fontFamily: T.family, fontSize: 10,
                 fontWeight: FontWeight.w500, color: Colors.white),
           ),
         ],

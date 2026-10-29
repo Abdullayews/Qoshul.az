@@ -175,7 +175,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 '(+10 XP, gündə max 3).',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontFamily: T.family, fontSize: 11, height: 1.7),
+                    fontFamily: T.family, fontSize: 12.5, height: 1.7),
               ),
             ],
           ),
@@ -222,7 +222,7 @@ class _MatchScreenState extends State<MatchScreen> {
                       Text(text,
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 11,
+                              fontSize: 12.5,
                               height: 1.6,
                               color: Q.mutedFg)),
                     ],
@@ -613,14 +613,14 @@ class _CardFace extends StatelessWidget {
                             : p.city,
                         style: const TextStyle(
                             fontFamily: T.family,
-                            fontSize: 10,
+                            fontSize: 11.5,
                             color: Colors.white70),
                       ),
                       const SizedBox(width: 10),
                       Text('${statusLabel(p.status)} · ${p.org}',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 10,
+                              fontSize: 11.5,
                               color: Colors.white70)),
                     ],
                   ),
@@ -648,7 +648,7 @@ class _CardFace extends StatelessWidget {
                               i,
                               style: TextStyle(
                                   fontFamily: T.family,
-                                  fontSize: 9,
+                                  fontSize: 10.5,
                                   fontWeight: shared.contains(i)
                                       ? FontWeight.w700
                                       : FontWeight.w500,
@@ -671,7 +671,7 @@ class _CardFace extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 fontFamily: T.family,
-                                fontSize: 10,
+                                fontSize: 11.5,
                                 height: 1.5,
                                 color: Colors.white70)),
                       ),

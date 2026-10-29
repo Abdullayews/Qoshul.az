@@ -115,7 +115,7 @@ class _XpCardScreenState extends State<XpCardScreen> {
                             Text(
                               'Səviyyə üçün istifadə olunur — xərclənmir. '
                               'Səviyyən artdıqca Kəşf-də sənə peşəkar aktiviteler önə düşür.',
-                              style: T.meta.copyWith(fontSize: 10, height: 1.5),
+                              style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
                             ),
                           ],
                         ),
@@ -146,7 +146,7 @@ class _XpCardScreenState extends State<XpCardScreen> {
               Text(
                 'XP-nin müddəti yoxdur — balans qazanma − xərcləmədir. '
                 'Kamera işləməsə QR altındakı 6 rəqəmli kodu de.',
-                style: T.meta.copyWith(fontSize: 10, height: 1.6),
+                style: T.meta.copyWith(fontSize: 11.5, height: 1.6),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -206,7 +206,7 @@ class _AccountCard extends StatelessWidget {
                             fontWeight: FontWeight.w800)),
                     const SizedBox(height: 2),
                     Text(account.config.describe(),
-                        style: T.meta.copyWith(fontSize: 10)),
+                        style: T.meta.copyWith(fontSize: 11.5)),
                   ],
                 ),
               ),
@@ -222,7 +222,7 @@ class _AccountCard extends StatelessWidget {
                         color: Q.primary),
                     suffix: ' XP',
                   ),
-                  Text('Endirim XP', style: T.meta.copyWith(fontSize: 9)),
+                  Text('Endirim XP', style: T.meta.copyWith(fontSize: 10.5)),
                 ],
               ),
             ],
@@ -236,11 +236,11 @@ class _AccountCard extends StatelessWidget {
             // — ledger tarixçəsi (L.4-6: hər əməliyyat izlənəndir) —
             Text('Hərəkətlər (ledger)',
                 style: T.meta.copyWith(
-                    fontSize: 10, fontWeight: FontWeight.w700)),
+                    fontSize: 11.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             if (account.recentLedger.isEmpty)
               Text('Hərəkət yoxdur — aktivite keçir, XP qazan.',
-                  style: T.meta.copyWith(fontSize: 10))
+                  style: T.meta.copyWith(fontSize: 11.5))
             else
               for (final e in account.recentLedger.take(4))
                 Padding(
@@ -261,12 +261,12 @@ class _AccountCard extends StatelessWidget {
                             Text(e.note,
                                 style: const TextStyle(
                                     fontFamily: T.family,
-                                    fontSize: 11,
+                                    fontSize: 12.5,
                                     height: 1.4)),
                             Text(
                               '${e.grant ? '+' : '−'}${e.amount} XP · '
                               '${_fmtDate(e.at)} · qalıq ${e.balanceAfter}',
-                              style: T.meta.copyWith(fontSize: 9),
+                              style: T.meta.copyWith(fontSize: 10.5),
                             ),
                           ],
                         ),
@@ -331,14 +331,14 @@ class _DynamicQrSection extends StatelessWidget {
                 children: [
                   Text('Dinamik XP kodu',
                       style: T.meta.copyWith(
-                          fontSize: 10, fontWeight: FontWeight.w700)),
+                          fontSize: 11.5, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Text(
                     valid
                         ? 'Kassaya göstər — $seconds saniyədən sonra yenilənir. '
                           'Kod tək istifadəlikdir: skan ediləndə bir daha işləmir.'
                         : 'Kodun vaxtı bitdi və ya işlənib — yenilə.',
-                    style: T.meta.copyWith(fontSize: 10, height: 1.5),
+                    style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
                   ),
                   const SizedBox(height: 8),
                   // — fallback: 6 rəqəmli kod (kamera işləməyəndə) —

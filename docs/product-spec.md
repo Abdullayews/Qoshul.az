@@ -47,18 +47,24 @@ Seçilmiş kateqoriyalar: kəşf feed-ini, match sırasını və bildirişləri 
 
 **Addım 6.** Başlanğıc XP: qeydiyyatı tamamlayana **+50 XP**.
 
-## C. Əsas naviqasiya (alt tab bar, 5 tab) — v0.6.0 (D-028/D-029/D-031)
+## C. Əsas naviqasiya (alt tab bar 4 tab + ana ekranda daxili tablar) — v0.7.0 (D-034)
 
 Ümumi quruluş: edge-to-edge tam ekran (şəffaf status/nav barlar, məzmun
 barların altından axır — Instagram paradigması); hər tabda ümumi üst header
 (loqo, Tərəfdaşlar, AI köməkçi, bildiriş zəngi); alt nav — şüşə üzən pill.
 
-**TAB 1: KƏŞF (Ana səhifə — Instagram-paradigmalı "Sən üçün" axını)**
-- Ən üstdə SABİT axtarış (pinned — scroll ilə itmir; məkan / insan adı).
+Alt tablar: **Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil** (v0.7.0, D-034:
+"tədbirlər tabı ana ekranda olmalıdır" direktivi — Tədbirlər tab-ı bottom
+nav-dan çıxarıldı, tam tədbir kəşfi Kəşfin daxili tabına keçdi).
+
+**TAB 1: KƏŞF (ANA EKRAN — iki daxili tab: "Sənin üçün" | "Tədbirlər")**
+- Daxili tab zolağı səhifənin ən üstündə sabit (pinned).
+
+*Daxili tab "Sənin üçün" (Instagram-paradigmalı axın):*
+- SABİT axtarış (scroll ilə itmir; məkan / insan adı).
 - Salam, cari XP, səviyyə (rank həbi).
-- "Bu axşam N tədbir var" keçid kartı → Tədbirlər tabına körpü.
+- "Bu axşam N tədbir var" keçid kartı → "Tədbirlər" daxili tabına körpü.
 - Bölmələr: "Populyar məkanlar", "Sənə uyğun insanlar" (match), "Endirimli təkliflər".
-- Tədbir siyahıları bu tabda YOXDUR (D-028 — tədbirlər öz ana tabında, dublikat yoxdur).
 - Hər kartdan detal ekranına keçid.
 
 **TAB 2: XƏRİTƏ (real — OpenStreetMap, D-030)**
@@ -71,9 +77,9 @@ barların altından axır — Instagram paradigması); hər tabda ümumi üst he
   Hamı / Yalnız dostlar / Gizli.
 - "© OpenStreetMap contributors" atribusiyası — məcburi kredit (OSM qaydası).
 
-**TAB 3: TƏDBİRLƏR (tam kəşf mərkəzi — bütün tədbir funksiyaları burada)**
+**Daxili tab "TƏDBİRLƏR" (Kəşf içində — tam kəşf mərkəzi, bütün tədbir funksiyaları)**
 - Ən üstdə SABİT axtarış (pinned — tədbir adı/məkanı/kateqoriyası).
-- Kateqoriya çipləri (maraqlara görə filtr — Kəşfdən buraya köçdü).
+- Kateqoriya çipləri (maraqlara görə filtr).
 - "Sənin səviyyənə görə" peşəkar önəçəkilmə (D-026 L.1 — səviyyən yüksəldikcə
   peşəkar aktiviteler üstdə görünür).
 - Siyahı: "Yaxınlaşan", "Mənim tədbirlərim", "Yaratdığım".
@@ -83,7 +89,7 @@ barların altından axır — Instagram paradigması); hər tabda ümumi üst he
 - Tədbirdə iştirak: məkanda QR/yerləşmə ilə check-in → XP.
 - Tədbirdən sonra: iştirakçıları qiymətləndirmə (1-5 ulduz + qısa rəy), şikayət etmə imkanı.
 
-**TAB 4: CHAT**
+**TAB 3: SÖHBƏTLƏR (CHAT)**
 - Bölmələr: "Şəxsi" və "Qruplar" (tədbir chat-ləri).
 - Şəxsi chat başlamaq: yalnız match olunmuş istifadəçilərlə (qarşılıqlı "Maraqlıyam") və ya eyni tədbir iştirakçıları ilə.
 - Mətn, şəkil, emoji; oxunma statusu ("çatdırıldı", "oxundu"); yazır... göstəricisi.
@@ -91,7 +97,7 @@ barların altından axır — Instagram paradigması); hər tabda ümumi üst he
 - Mesaj göndərmə rate limit-i və spam filtri var.
 - Bloklanan istifadəçi nə mesaj yaza, nə profili görə bilər.
 
-**TAB 5: PROFİL**
+**TAB 4: PROFİL**
 - Öz profilim: şəkillər, bio, maraqlar, XP və səviyyə, nişanlar (badge), rezervlərim, endirim kuponlarım, tədbir tarixçəm.
 - Ayarlar: məxfilik (xəritədə görünmə, məsafə göstərmə), bildirişlər, dil, hesabı təsdiqlə (telefon), bloklananlar siyahısı, hesabı silmək (GDPR/yerli qanun üzrə məlumatın silinməsi).
 

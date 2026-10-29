@@ -88,7 +88,7 @@ class VenueDetailScreen extends StatelessWidget {
                           '-${v.discountPercent}% endirim',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 11,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w800,
                               color: Q.accentFg),
                         ),
@@ -151,7 +151,7 @@ class VenueDetailScreen extends StatelessWidget {
                           Text(r.text,
                               style: const TextStyle(
                                   fontFamily: T.family,
-                                  fontSize: 11,
+                                  fontSize: 12.5,
                                   height: 1.6,
                                   color: Q.mutedFg)),
                         ],

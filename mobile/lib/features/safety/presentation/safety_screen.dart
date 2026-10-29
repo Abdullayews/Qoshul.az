@@ -78,7 +78,7 @@ class SafetyScreen extends StatelessWidget {
                         Text(safetyTips[i].$2,
                             style: const TextStyle(
                                 fontFamily: T.family,
-                                fontSize: 11,
+                                fontSize: 12.5,
                                 height: 1.7,
                                 color: Q.mutedFg)),
                       ],

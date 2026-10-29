@@ -177,7 +177,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text('və ya',
                         style: TextStyle(
                             fontFamily: T.family,
-                            fontSize: 11,
+                            fontSize: 12.5,
                             color: Q.mutedFg)),
                   ),
                   const SizedBox(height: 6),
@@ -224,7 +224,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(error!,
                         style: const TextStyle(
                             fontFamily: T.family,
-                            fontSize: 11,
+                            fontSize: 12.5,
                             color: Q.destructive)),
                   ),
                 if (msg != null)
@@ -233,7 +233,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: Text(msg!,
                         style: const TextStyle(
                             fontFamily: T.family,
-                            fontSize: 11,
+                            fontSize: 12.5,
                             height: 1.6,
                             color: Q.mutedFg)),
                   ),

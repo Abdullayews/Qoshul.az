@@ -1,7 +1,7 @@
 name: qoshul
 description: Qoshul.az — Azərbaycanda yeni tanışlıqlar, birgə planlar və görüşlər.
 publish_to: "none"
-version: 0.6.0+6
+version: 0.7.0+7
 
 environment:
   sdk: ^3.0.0

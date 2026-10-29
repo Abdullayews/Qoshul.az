@@ -101,20 +101,20 @@ class EventCard extends StatelessWidget {
                   ),
                 if (!event.past)
                   Positioned(
-                    right: 9,
-                    top: 9,
+                    right: 10,
+                    top: 10,
                     child: GestureDetector(
                       onTap: () => state.toggleSave(event.id),
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        width: 34,
+                        height: 34,
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           isSaved ? Icons.bookmark : Icons.bookmark_border,
-                          size: 16,
+                          size: 18,
                           color: isSaved ? Q.primary : Q.foreground,
                         ),
                       ),
@@ -126,13 +126,13 @@ class EventCard extends StatelessWidget {
                     bottom: 10,
                     child: Row(
                       children: [
-                        Icon(Icons.location_on, size: 12, color: Colors.white),
+                        Icon(Icons.location_on, size: 13.5, color: Colors.white),
                         const SizedBox(width: 4),
                         Text(
                           '${event.distance} km',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 9,
+                              fontSize: 10.5,
                               color: Colors.white),
                         ),
                       ],
@@ -155,7 +155,7 @@ class EventCard extends StatelessWidget {
                                     event.category == 'Padel'
                                 ? Icons.emoji_events
                                 : Icons.group,
-                        size: 11,
+                        size: 13,
                         color: event.category == 'Qəhvə'
                             ? Q.accentFg
                             : Q.primary,
@@ -167,7 +167,7 @@ class EventCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: T.family,
-                            fontSize: 9,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: event.category == 'Qəhvə'
                                 ? Q.accentFg
@@ -187,7 +187,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 12, color: Q.mutedFg),
+                      Icon(Icons.location_on, size: 13.5, color: Q.mutedFg),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -202,7 +202,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 7),
                   Row(
                     children: [
-                      Icon(Icons.event, size: 12, color: Q.mutedFg),
+                      Icon(Icons.event, size: 13.5, color: Q.mutedFg),
                       const SizedBox(width: 6),
                       Text('${event.date}, ${event.time}', style: T.meta),
                     ],
@@ -217,13 +217,13 @@ class EventCard extends StatelessWidget {
                       children: [
                         // avatar stack (mock iştirakçılar)
                         ..._avatarStack(),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 9),
                         Expanded(
                           child: Text(
                             '${event.participants} nəfər qoşulub · ${event.spotsLeft} yer qalıb',
                             style: const TextStyle(
                                 fontFamily: T.family,
-                                fontSize: 8,
+                                fontSize: 9.5,
                                 color: Q.mutedFg),
                           ),
                         ),
@@ -243,7 +243,7 @@ class EventCard extends StatelessWidget {
 
   Widget _whiteBadge(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5.5),
       decoration: BoxDecoration(
         color: Q.card,
         borderRadius: BorderRadius.circular(5),
@@ -251,13 +251,13 @@ class EventCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: Q.primary),
+          Icon(icon, size: 13.5, color: Q.primary),
           const SizedBox(width: 4),
           Text(
             label,
             style: const TextStyle(
               fontFamily: T.family,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: Q.primary,
             ),
@@ -272,16 +272,16 @@ class EventCard extends StatelessWidget {
     // Web CSS: margin-left: -3px üst-üstə düşmə — Flutter-da Stack + offset ilə.
     return [
       SizedBox(
-        width: 25 + 2 * 22.0,
-        height: 25,
+        width: 26 + 2 * 23.0,
+        height: 26,
         child: Stack(
           children: [
             for (var i = 0; i < 3; i++)
               Positioned(
-                left: i * 22.0,
+                left: i * 23.0,
                 child: Container(
-                  width: 25,
-                  height: 25,
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
                     color: colors[i],
                     shape: BoxShape.circle,
@@ -330,7 +330,7 @@ class EventCard extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return SizedBox(
-      height: 31,
+      height: 34,
       child: FilledButton(
         onPressed: enabled ? onTap ?? () {} : null,
         style: FilledButton.styleFrom(
@@ -338,16 +338,16 @@ class EventCard extends StatelessWidget {
           foregroundColor: secondary ? Q.primary : Q.primaryFg,
           disabledBackgroundColor: Q.secondary,
           disabledForegroundColor: Q.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           minimumSize: Size.zero,
           textStyle: const TextStyle(fontFamily: T.family,
-              fontSize: 10, fontWeight: FontWeight.w600),
+              fontSize: 11.5, fontWeight: FontWeight.w600),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 12),
+              Icon(icon, size: 13.5),
               const SizedBox(width: 4),
             ],
             Text(label),

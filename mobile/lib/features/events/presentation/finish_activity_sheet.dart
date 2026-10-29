@@ -84,7 +84,7 @@ class _FinishSheetState extends State<_FinishSheet> {
                         'Obyektin statik QR-ı → şəkil paylaş → iştirakçıları taq et → '
                         'Endirim XP paylanır (təşkilatçı +${XpRules.organizerXp}, '
                         'hər taq +${XpRules.taggedParticipantXp}).',
-                        style: T.meta.copyWith(fontSize: 10, height: 1.5),
+                        style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
                       ),
                       const SizedBox(height: 16),
                       if (acct == null)
@@ -122,7 +122,7 @@ class _FinishSheetState extends State<_FinishSheet> {
             '${acct.venueName} · obyektin statik QR-ı.\n'
             'Kassada və ya çıxışda oxu — aktivite obyektlə əlaqələnir.',
             textAlign: TextAlign.center,
-            style: T.meta.copyWith(fontSize: 10, height: 1.6),
+            style: T.meta.copyWith(fontSize: 11.5, height: 1.6),
           ),
         ),
         const SizedBox(height: 16),
@@ -145,12 +145,12 @@ class _FinishSheetState extends State<_FinishSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Şəkilləri paylaş',
-            style: T.meta.copyWith(fontSize: 11, fontWeight: FontWeight.w700)),
+            style: T.meta.copyWith(fontSize: 12.5, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(
           'Şəkli yalnız SƏN (təşkilatçı) paylaşa bilərsən — Aktivite şəkilləri '
           'obyektin biznes hesabına düşür (İnstagram-model).',
-          style: T.meta.copyWith(fontSize: 10, height: 1.5),
+          style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
         ),
         const SizedBox(height: 12),
         Row(
@@ -215,13 +215,13 @@ class _FinishSheetState extends State<_FinishSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('İştirakçıları taq et',
-            style: T.meta.copyWith(fontSize: 11, fontWeight: FontWeight.w700)),
+            style: T.meta.copyWith(fontSize: 12.5, fontWeight: FontWeight.w700)),
         const SizedBox(height: 4),
         Text(
           'Taq edilməyən iştirakçı XP almır. Hər taq edilənə '
           '+${XpRules.taggedParticipantXp} XP, sənə təşkilatçı kimi '
           '+${XpRules.organizerXp} XP.',
-          style: T.meta.copyWith(fontSize: 10, height: 1.5),
+          style: T.meta.copyWith(fontSize: 11.5, height: 1.5),
         ),
         const SizedBox(height: 12),
         for (final p in participants)
@@ -263,7 +263,7 @@ class _FinishSheetState extends State<_FinishSheet> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700)),
                         Text('${p.distanceLabel} · ortaq maraq',
-                            style: T.meta.copyWith(fontSize: 9)),
+                            style: T.meta.copyWith(fontSize: 10.5)),
                       ],
                     ),
                   ),
@@ -341,7 +341,7 @@ class _FinishSheetState extends State<_FinishSheet> {
           Icon(icon, size: 14, color: Q.primary),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(label, style: T.meta.copyWith(fontSize: 11)),
+            child: Text(label, style: T.meta.copyWith(fontSize: 12.5)),
           ),
           Text(value,
               style: const TextStyle(
@@ -378,7 +378,7 @@ class _FinishSheetState extends State<_FinishSheet> {
             '${r.taggedCount} iştirakçı taq edildi — hər birinə '
             '+${r.perParticipantXp} Endirim XP yazıldı.',
             textAlign: TextAlign.center,
-            style: T.meta.copyWith(fontSize: 10, height: 1.6),
+            style: T.meta.copyWith(fontSize: 11.5, height: 1.6),
           ),
           const SizedBox(height: 16),
           _kv('Sənə (təşkilatçı)', '+${r.organizerXp} XP · ${r.venueName} bazası'),
@@ -389,7 +389,7 @@ class _FinishSheetState extends State<_FinishSheet> {
             'XP yalnız ${r.venueName} bazasında keçərlidir — digər obyektdən '
             'endirim almaq olmaz (ayrı baza qaydası).',
             textAlign: TextAlign.center,
-            style: T.meta.copyWith(fontSize: 9, height: 1.5),
+            style: T.meta.copyWith(fontSize: 10.5, height: 1.5),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -410,12 +410,12 @@ class _FinishSheetState extends State<_FinishSheet> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(child: Text(k, style: T.meta.copyWith(fontSize: 11))),
+            Expanded(child: Text(k, style: T.meta.copyWith(fontSize: 12.5))),
             const SizedBox(width: 10),
             Text(v,
                 style: const TextStyle(
                     fontFamily: T.family,
-                    fontSize: 11,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: Q.primary)),
           ],

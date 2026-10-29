@@ -280,7 +280,7 @@ class _TileMapViewState extends State<TileMapView> {
                   '© OpenStreetMap contributors',
                   style: TextStyle(
                     fontFamily: T.family,
-                    fontSize: 7,
+                    fontSize: 8.5,
                     color: Q.mutedFg,
                   ),
                 ),

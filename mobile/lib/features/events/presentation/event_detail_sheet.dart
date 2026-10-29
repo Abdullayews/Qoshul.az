@@ -285,7 +285,7 @@ class _DetailSheetState extends State<_DetailSheet> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                   fontFamily: T.family,
-                  fontSize: 11,
+                  fontSize: 12.5,
                   color: Q.mutedFg),
             ),
           ),
@@ -304,7 +304,7 @@ class _DetailSheetState extends State<_DetailSheet> {
               const Icon(Icons.check, size: 12, color: Q.primary),
               const SizedBox(width: 6),
               Text('Rəyin üçün təşəkkürlər! (+${XpRules.reviewXp} XP)',
-                  style: const TextStyle(fontFamily: T.family, fontSize: 11, color: Q.mutedFg)),
+                  style: const TextStyle(fontFamily: T.family, fontSize: 12.5, color: Q.mutedFg)),
             ],
           ),
         );

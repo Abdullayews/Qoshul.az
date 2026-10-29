@@ -9,14 +9,13 @@ import '../../../core/widgets/ui.dart';
 import '../../venues/presentation/venue_detail_screen.dart';
 import 'event_card.dart';
 
-/// Tədbirlər tabı — ROL (product-spec C, TAB 3), v0.6.0 (D-028/D-029):
-/// bütün tədbir kəşfi BURADA mərkəzləşir — sabit axtarış (scroll ilə
-/// itmir), kateqoriya çipləri (Kəşfdən köçdü) və "Yaxınlaşan / Mənim
-/// tədbirlərim / Yaratdığım" siyahıları.
+/// Tədbirlər görünüşü — ROL (product-spec C), v0.7.0 (D-034): Kəşf
+/// (ana ekran) içindəki "Tədbirlər" daxili tabının məzmunu — sabit
+/// axtarış (scroll ilə itmir), kateqoriya çipləri və "Yaxınlaşan /
+/// Mənim tədbirlərim / Yaratdığım" siyahıları.
 ///
-/// D-026 (L.1) — "Sənin səviyyənə görə": peşəkar sıralama Kəşf feed-indən
-/// bu taba köçürüldü (tədbirlər artıq Kəşfdə dublikat edilmir, məntiq
-/// dəyişməz: səviyyən yüksəldikcə peşəkar aktiviteler üstdə önə düşür).
+/// D-026 (L.1) — "Sənin səviyyənə görə": səviyyən yüksəldikcə peşəkar
+/// aktiviteler üstdə önə düşür.
 class EventsScreen extends StatefulWidget {
   final AppState state;
   const EventsScreen({super.key, required this.state});
@@ -98,7 +97,7 @@ class _EventsScreenState extends State<EventsScreen> {
           children: [
             // — sabit axtarış (D-029): tədbir axtarışı həmişə görünür —
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 6),
               child: SearchBarField(
                 controller: searchCtrl,
                 hint: 'Tədbir axtar...',
@@ -106,20 +105,12 @@ class _EventsScreenState extends State<EventsScreen> {
             ),
             Expanded(
               child: ListView(
-                // alt 128px: şüşə nav pill altından axış (extendBody, D-025)
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 128),
+                // alt 132px: şüşə nav pill altından axış (extendBody, D-025)
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 132),
                 children: [
+                  // — kateqoriya çipləri —
                   StaggerIn(
                     index: 0,
-                    child: const ViewHeading(
-                      title: 'Tədbirlər',
-                      subtitle:
-                          'Yaxınlaşan görüşlər, iştirak etdiyin və yaratdıqların.',
-                    ),
-                  ),
-                  // — kateqoriya çipləri (Kəşfdən köçdü, D-028) —
-                  StaggerIn(
-                    index: 1,
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -140,7 +131,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                   ),
                   StaggerIn(
-                    index: 2,
+                    index: 1,
                     child: Segmented(
                       labels: const [
                         'Yaxınlaşan',

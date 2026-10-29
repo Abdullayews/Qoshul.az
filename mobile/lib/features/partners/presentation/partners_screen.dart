@@ -90,7 +90,7 @@ class PartnersScreen extends StatelessWidget {
                     Text(p.category,
                         style: const TextStyle(
                             fontFamily: T.family,
-                            fontSize: 9,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             color: Q.primary)),
                   ],
@@ -121,13 +121,13 @@ class PartnersScreen extends StatelessWidget {
                         Text(p.deal!,
                             style: const TextStyle(
                                 fontFamily: T.family,
-                                fontSize: 11,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w800,
                                 color: Q.primary)),
                         Text(p.hours,
                             style: const TextStyle(
                                 fontFamily: T.family,
-                                fontSize: 11,
+                                fontSize: 12.5,
                                 color: Q.primary)),
                       ],
                     ),

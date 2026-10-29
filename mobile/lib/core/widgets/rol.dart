@@ -41,7 +41,7 @@ class ResvStatusChip extends StatelessWidget {
       child: Text(
         resvStatusLabels[status] ?? '',
         style: TextStyle(
-            fontFamily: T.family, fontSize: 9, fontWeight: FontWeight.w700, color: fg),
+            fontFamily: T.family, fontSize: 10.5, fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -137,7 +137,7 @@ class _QrPainter extends CustomPainter {
 class RatingStars extends StatelessWidget {
   final double rating;
   final double size;
-  const RatingStars({super.key, required this.rating, this.size = 13});
+  const RatingStars({super.key, required this.rating, this.size = 14});
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +175,7 @@ class BadgeChip extends StatelessWidget {
         children: [
           Icon(
             earned ? Icons.military_tech : Icons.military_tech_outlined,
-            size: 14,
+            size: 15.5,
             color: earned ? Q.primary : Q.mutedFg,
           ),
           const SizedBox(width: 6),
@@ -183,7 +183,7 @@ class BadgeChip extends StatelessWidget {
             badge.name,
             style: TextStyle(
               fontFamily: T.family,
-              fontSize: 10,
+              fontSize: 11.5,
               fontWeight: FontWeight.w700,
               color: earned ? Q.primary : Q.mutedFg,
             ),
@@ -220,7 +220,7 @@ class VenueMiniCard extends StatelessWidget {
     return ScaleTap(
       onTap: onTap,
       child: Container(
-        width: 168,
+        width: 174,
         decoration: BoxDecoration(
           color: Q.card,
           border: Border.all(color: Q.border),
@@ -231,7 +231,7 @@ class VenueMiniCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 92,
+              height: 98,
               width: double.infinity,
               child: Stack(
                 fit: StackFit.expand,
@@ -242,7 +242,7 @@ class VenueMiniCard extends StatelessWidget {
                       top: 8,
                       left: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Q.rankBadgeBg,
                           borderRadius: BorderRadius.circular(4),
@@ -251,7 +251,7 @@ class VenueMiniCard extends StatelessWidget {
                           '-$discount%',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 9,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w800,
                               color: Q.accentFg),
                         ),
@@ -261,7 +261,7 @@ class VenueMiniCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(11),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -270,17 +270,17 @@ class VenueMiniCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontFamily: T.family,
-                          fontSize: 12,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      Icon(Icons.star, size: 11, color: Q.accent),
+                      Icon(Icons.star, size: 12.5, color: Q.accent),
                       const SizedBox(width: 3),
                       Text('${rating.toStringAsFixed(1)}',
                           style: const TextStyle(
                               fontFamily: T.family,
-                              fontSize: 10,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(width: 6),
                       Expanded(
@@ -327,8 +327,8 @@ class PersonMiniCard extends StatelessWidget {
     return ScaleTap(
       onTap: onTap,
       child: Container(
-        width: 128,
-        padding: const EdgeInsets.all(10),
+        width: 132,
+        padding: const EdgeInsets.all(11),
         decoration: BoxDecoration(
           color: Q.card,
           border: Border.all(color: Q.border),
@@ -341,14 +341,14 @@ class PersonMiniCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   backgroundImage: AssetImage(image),
-                  radius: 34,
+                  radius: 36,
                   backgroundColor: Q.secondary,
                 ),
                 Positioned(
                   bottom: -4,
                   right: -4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                     decoration: BoxDecoration(
                       color: Q.primary,
                       borderRadius: BorderRadius.circular(5),
@@ -357,7 +357,7 @@ class PersonMiniCard extends StatelessWidget {
                       '$matchPercent%',
                       style: const TextStyle(
                           fontFamily: T.family,
-                          fontSize: 9,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w800,
                           color: Q.primaryFg),
                     ),
@@ -370,7 +370,7 @@ class PersonMiniCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontFamily: T.family, fontSize: 11, fontWeight: FontWeight.w800)),
+                    fontFamily: T.family, fontSize: 12.5, fontWeight: FontWeight.w800)),
             const SizedBox(height: 3),
             Text(distanceLabel, style: T.meta),
           ],
@@ -412,15 +412,15 @@ class OfferCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               color: unlocked ? Q.rankBadgeBg : Q.muted,
               borderRadius: BorderRadius.circular(Q.rMd),
             ),
             child: Icon(
               autoByLevel ? Icons.workspace_premium : Icons.confirmation_number,
-              size: 20,
+              size: 22,
               color: unlocked ? Q.accentFg : Q.mutedFg,
             ),
           ),
@@ -438,12 +438,12 @@ class OfferCard extends StatelessWidget {
                       label,
                       style: const TextStyle(
                           fontFamily: T.family,
-                          fontSize: 13,
+                          fontSize: 14.5,
                           fontWeight: FontWeight.w800),
                     ),
                     if (autoByLevel)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: Q.secondary,
                           borderRadius: BorderRadius.circular(4),
@@ -452,7 +452,7 @@ class OfferCard extends StatelessWidget {
                           'Səviyyən ilə açıq',
                           style: TextStyle(
                               fontFamily: T.family,
-                              fontSize: 8,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.w700,
                               color: Q.primary),
                         ),

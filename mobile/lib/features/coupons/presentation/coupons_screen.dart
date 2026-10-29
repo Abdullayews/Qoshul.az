@@ -59,7 +59,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
                       'Kuponlar obyektin Endirim XP balansından alınır — D-026 ayrı baza qaydası (Xankəndi XP-si yalnız Xankəndidə işləyir)',
                       style: const TextStyle(
                           fontFamily: T.family,
-                          fontSize: 11,
+                          fontSize: 12.5,
                           height: 1.5,
                           fontWeight: FontWeight.w600,
                           color: Q.primary),
