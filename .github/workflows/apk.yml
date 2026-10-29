@@ -153,6 +153,12 @@ jobs:
       - name: Asılılıqlar
         run: flutter pub get
 
+      - name: Web platform faylları (flutter create)
+        run: |
+          set -e
+          flutter create --platforms=web --project-name qoshul .
+          git checkout -- .
+
       - name: Web build (release)
         run: flutter build web --release
 
