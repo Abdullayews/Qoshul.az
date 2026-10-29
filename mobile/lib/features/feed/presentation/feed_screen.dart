@@ -320,7 +320,7 @@ class _ForYouView extends StatelessWidget {
                       icon: Icons.percent, text: 'Hazırda endirim təklifi yoxdur.')
                 else
                   SizedBox(
-                    height: 96,
+                    height: 108,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: discountOffers.length,
@@ -335,7 +335,7 @@ class _ForYouView extends StatelessWidget {
                           child: StaggerIn(
                             index: i,
                             child: Container(
-                              width: 224,
+                              width: 230,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Q.card,
@@ -367,6 +367,8 @@ class _ForYouView extends StatelessWidget {
                                       o.autoByLevel
                                           ? '${o.venueName} · səviyyən ilə açıq'
                                           : '${o.venueName} · ${o.xpPrice} XP',
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                       style: T.meta),
                                 ],
                               ),
