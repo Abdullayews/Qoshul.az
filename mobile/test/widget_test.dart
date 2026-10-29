@@ -177,7 +177,10 @@ void main() {
     expect(find.text('10 km'), findsOneWidget);
 
     // TAB 1 içindəki "Tədbirlər" daxili tabı (D-034) — 3 siyahı +
-    // kateqoriya çipləri + peşəkar sıralama (D-026 L.1)
+    // kateqoriya çipləri + peşəkar sıralama (D-026 L.1).
+    // Nəzərə al: daxili tab YALNIZ Kəşf zamanı görünür → əvvəl geri qayıt.
+    await tester.tap(find.text('Kəşf'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Tədbirlər'));
     await tester.pumpAndSettle();
     expect(find.text('Yaxınlaşan'), findsOneWidget);
