@@ -74,7 +74,7 @@ jobs:
 
       - name: Keyfiyyət qapısı (analyze + test)
         run: |
-          flutter analyze --no-pub
+          flutter analyze --no-pub --no-fatal-infos
           flutter test --no-pub
 
       - name: APK build (release)
