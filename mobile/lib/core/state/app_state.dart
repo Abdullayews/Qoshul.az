@@ -6,6 +6,7 @@ import '../models/models.dart';
 import '../models/moderation.dart';
 import '../models/notification.dart';
 import '../models/reservation.dart';
+import '../models/xp_economy.dart';
 
 /// Tətbiq state-i — UI mərhələsi (D-023/D-024).
 ///
@@ -41,13 +42,12 @@ class AppState extends ChangeNotifier {
   bool phoneVerified = false; // ROL B: sonradan, badge + XP ilə
   bool profileCompleted = false; // 100% bonus XP üçün
 
-  // — ROL TAB 5: məxfilik —
-  bool visibleOnMap = true; // xəritədə görünmə
+  // — ROL TAB 5 + D-027: məxfilik — görünüş 3 seçimli —
+  MapVisibility mapVisibility = MapVisibility.everyone;
   bool showDistance = true; // məsafə göstərilməsi
 
-  // — XP (ROL F): ümumi qazanılan ≠ xərclənə bilən balans —
-  int xp = 320; // ümumi qazanılmış XP (səviyyə bununla hesablanır, düşmür)
-  int xpBalance = 320; // kupon almaq üçün balans
+  // — XP (D-026): 1-ci XP — Peşəkarlıq XP (xərclənmir; səviyyə + Kəşf sırası) —
+  int xp = 320; // ümumi qazanılmış Peşəkarlıq XP-si
   final Set<String> _xpEventIds = <String>{}; // idempotency (ROL F qorunma)
   final Set<String> earnedBadges = <String>{};
   int _matchXpToday = 0;
@@ -55,6 +55,13 @@ class AppState extends ChangeNotifier {
   int _reviewXpThisWeek = 0;
   int loginStreak = 1;
   bool _dailyLoginDone = false;
+
+  // — XP (D-026): 2-ci XP — Endirim XP, obyektə-məxsus ayrı baza (L.2) —
+  /// venueId → hesab. Xankəndi-də qazanılan XP yalnız Xankəndiyə aiddir.
+  final Map<String, VenueXpAccount> venueXp = initialVenueXp();
+  final Set<String> finishedActivities = <String>{}; // bitmiş aktivitelər (L.3)
+  XpCardCode? xpCard; // müştərinin dinamik QR-ı (L.4; 60s TTL)
+  String? xpCardVenueId;
 
   // — tədbirlər —
   final List<QoshulEvent> events = [...mockEvents];
@@ -102,13 +109,14 @@ class AppState extends ChangeNotifier {
 
   // ═══════════ XP mühərriki (ROL F: idempotent + server qaydaları) ═══════════
 
-  /// İdemponent XP mükafatı — eyni açar ikinci dəfə sayılmır (ROL F).
+  /// İdemponent Peşəkarlıq XP mükafatı — eyni açar ikinci dəfə sayılmır.
+  /// D-026: yalnız 1-ci XP-yə yazılır; Endirim XP yalnız obyekt
+  /// axınlarından (L.3) qazanılır.
   bool _award(String key, int amount) {
     if (_xpEventIds.contains(key)) return false;
     _xpEventIds.add(key);
     final beforeRank = rankIndex;
     xp += amount;
-    xpBalance += amount;
     _maybeLevelUp(beforeRank);
     return true;
   }
@@ -238,8 +246,20 @@ class AppState extends ChangeNotifier {
   void finishOnboarding() {
     completeRegistration();
     onboarded = true;
+    _adoptDemoHostedEvent();
     dailyLogin();
     notifyListeners();
+  }
+
+  /// D-026 (L.3): demo "Mafiya oyunu gecəsi" tədbirinin host-u
+  /// real profil adı ilə əvəz olunur — "Yaratdığım" siyahısında
+  /// və "Aktiviteyi bitir" axınında görünməsi üçün (yalnız mock).
+  void _adoptDemoHostedEvent() {
+    for (var i = 0; i < events.length; i++) {
+      if (events[i].id == 'e-mafiya') {
+        events[i] = events[i].copyWith(host: profileName);
+      }
+    }
   }
 
   // Eski imza saxlanılır (yalnız testlər/əvvəlki ekranlar üçün).
@@ -273,6 +293,7 @@ class AppState extends ChangeNotifier {
     if (gSize != null) groupSize = gSize;
     if (bud != null) budget = bud;
     onboarded = true;
+    _adoptDemoHostedEvent();
     notifyListeners();
   }
 
@@ -283,6 +304,7 @@ class AppState extends ChangeNotifier {
     final parts = name.trim().split(RegExp(r'\s+'));
     firstName = parts.isNotEmpty ? parts.first : name;
     lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+    _adoptDemoHostedEvent(); // D-026: demo tədbir host-u profil ilə sinxron
     notifyListeners();
   }
 
@@ -291,8 +313,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setVisibleOnMap(bool v) {
-    visibleOnMap = v;
+  void setMapVisibility(MapVisibility v) {
+    mapVisibility = v;
     notifyListeners();
   }
 
@@ -592,8 +614,9 @@ class AppState extends ChangeNotifier {
       .where((o) => o.autoByLevel ? o.unlockedFor(rankIndex) : true)
       .toList(growable: false);
 
-  /// ROL G-b: XP ilə kupon al — balans xərclənir, ümumi XP düşmür.
-  /// Qaytarır: alınan kupon; balans/və ya səviyyə çatmırsa null.
+  /// D-026 (L.6): XP ilə kupon al — həmin obyektin Endirim XP
+  /// balansından (ayrı baza qaydası). Peşəkarlıq XP-si xərclənmir.
+  /// Qaytarır: alınan kupon; balans/səviyyə çatmırsa null.
   UserCoupon? buyCoupon(String offerId) {
     CouponOffer? offer;
     for (final o in offers) {
@@ -601,8 +624,9 @@ class AppState extends ChangeNotifier {
     }
     if (offer == null || offer.autoByLevel) return null;
     if (!offer.unlockedFor(rankIndex)) return null; // səviyyə yetmir
-    if (xpBalance < offer.xpPrice) return null; // balans yetmir
-    xpBalance -= offer.xpPrice; // ümumi XP (xp) DƏYİŞMİR (ROL G)
+    final acct = venueXp[offer.venueId];
+    if (acct == null || acct.balance < offer.xpPrice) return null; // obyekt balansı yetmir
+    _spendLedger(offer.venueId, offer.xpPrice, 'Kupon alındı: ${offer.label}');
     final coupon = UserCoupon(
       id: 'uc$_couponSeq',
       offerId: offer.id,
@@ -628,6 +652,142 @@ class AppState extends ChangeNotifier {
   /// Bu məkanda rezervə tətbiq edilə bilən aktiv kuponlar (ROL E-3).
   List<UserCoupon> activeCouponsFor(String venueId) =>
       coupons.where((c) => c.isActive && c.venueId == venueId).toList(growable: false);
+
+  // ═══════════ Endirim XP iqtisadiyyatı (D-026, product-spec L) ═══════════
+
+  /// Ümumi Endirim XP (bütün obyekt bazaları cəmi) — profil göstərişi.
+  int get discountXpTotal =>
+      venueXp.values.fold(0, (sum, a) => sum + a.balance);
+
+  VenueXpAccount? venueXpFor(String venueId) => venueXp[venueId];
+
+  /// Ledger qeydi + balans düşüşü (yalnız daxili — validasiya yoxdur).
+  void _spendLedger(String venueId, int amount, String note) {
+    final acct = venueXp[venueId];
+    if (acct == null || amount <= 0) return;
+    acct.balance -= amount;
+    acct.ledger.add(XpLedgerEntry(
+      id: 'xl${_ledgerSeq++}',
+      venueId: venueId,
+      grant: false,
+      amount: amount,
+      balanceAfter: acct.balance,
+      note: note,
+      at: DateTime.now(),
+    ));
+  }
+
+  int _ledgerSeq = 100;
+
+  /// L.4-4: xərcləmə önizləməsi — məzənnə + limit yoxlaması.
+  /// Qaytarır: {ok, discount, error} — error: null / 'balans' / 'minBill' /
+  /// 'cap' / 'hesab'.
+  Map<String, dynamic> previewSpend(String venueId, int xpAmount, double billAzn) {
+    final acct = venueXp[venueId];
+    if (acct == null) return {'ok': false, 'discount': 0.0, 'error': 'hesab'};
+    if (xpAmount <= 0 || billAzn <= 0) {
+      return {'ok': false, 'discount': 0.0, 'error': 'hesab'};
+    }
+    if (acct.balance < xpAmount) return {'ok': false, 'discount': 0.0, 'error': 'balans'};
+    if (acct.config.minBillAzn > 0 && billAzn < acct.config.minBillAzn) {
+      return {'ok': false, 'discount': 0.0, 'error': 'minBill'};
+    }
+    final discount = xpAmount / acct.config.xpPerAzn;
+    final cap = billAzn * acct.config.maxDiscountPercent / 100;
+    if (discount > cap + 0.001) {
+      return {'ok': false, 'discount': cap, 'error': 'cap'};
+    }
+    return {'ok': true, 'discount': discount, 'error': null};
+  }
+
+  /// L.4-5: atomik xərcləmə — balans yoxlanır və düşülür, double-spend
+  /// qadağan (mock-da tək axın; backenddə DB transaksiyası + idempotency).
+  /// Uğursa endirim AZN, əks halda null.
+  double? spendVenueXp(String venueId, int xpAmount, double billAzn,
+      {String note = 'Kassada XP endirimi'}) {
+    final p = previewSpend(venueId, xpAmount, billAzn);
+    if (p['ok'] != true) return null;
+    _spendLedger(venueId, xpAmount, note);
+    final acct = venueXp[venueId]!;
+    _notify(
+      NotifType.couponExpiring,
+      'XP endirimi tətbiq olundu',
+      '${acct.venueName} · $xpAmount XP → ${(xpAmount / acct.config.xpPerAzn).toStringAsFixed(2)} ₼ '
+          'endirim. Receipt ledger-ə yazıldı.',
+    );
+    notifyListeners();
+    return p['discount'] as double;
+  }
+
+  // — L.4-1: müştərinin dinamik XP kartı (60s, tək istifadəlik) —
+
+  void regenerateXpCard(String venueId) {
+    xpCard = XpCardCode.fresh();
+    xpCardVenueId = venueId;
+    notifyListeners();
+  }
+
+  /// Dinamik QR işlənib → təkrar istifadə mümkün deyil (L.4 qorunması).
+  void markXpCardUsed() {
+    if (xpCard != null) xpCard!.used = true;
+    notifyListeners();
+  }
+
+  /// XP kartı etibarlıdırmı (venue uyğun + vaxt bitməyib + işlənməyib).
+  bool xpCardValidFor(String venueId) =>
+      xpCard != null &&
+      xpCardVenueId == venueId &&
+      xpCard!.isValid;
+
+  // — L.3: təşkilatçı bitirmə axını (statik QR → şəkil → taq) —
+
+  bool isActivityFinished(String eventId) => finishedActivities.contains(eventId);
+
+  bool canFinishActivity(QoshulEvent e) =>
+      e.past &&
+      e.venueId != null &&
+      e.host == profileName &&
+      !finishedActivities.contains(e.id);
+
+  /// Aktivite bitir: təşkilatçı +50, hər taq edilən iştirakçı +25 (L.3).
+  /// Mock: yalnız təşkilatçının (cari istifadəçi) balansına yazılır;
+  /// iştirakçı XP-ləri real sistemdə onların ayrı hesablarına düşür.
+  ActivityXpResult? finishActivity(QoshulEvent e, List<String> taggedIds) {
+    if (!canFinishActivity(e) || taggedIds.isEmpty) return null;
+    final acct = venueXp[e.venueId!];
+    if (acct == null) return null;
+    finishedActivities.add(e.id);
+
+    // Təşkilatçı mükafatı — obyekt bazasına grant.
+    acct.balance += XpRules.organizerXp;
+    acct.ledger.add(XpLedgerEntry(
+      id: 'xl${_ledgerSeq++}',
+      venueId: acct.venueId,
+      grant: true,
+      amount: XpRules.organizerXp,
+      balanceAfter: acct.balance,
+      note: 'Təşkilatçı mükafatı — "${e.title}"',
+      at: DateTime.now(),
+    ));
+
+    final result = ActivityXpResult(
+      organizerXp: XpRules.organizerXp,
+      perParticipantXp: XpRules.taggedParticipantXp,
+      taggedCount: taggedIds.length,
+      venueId: acct.venueId,
+      venueName: acct.venueName,
+    );
+
+    _notify(
+      NotifType.levelUp,
+      '+${XpRules.organizerXp} Endirim XP qazandın',
+      '${acct.venueName} · "${e.title}" bitirildi. Şəkillər obyektin '
+          'biznes hesabına düşdü; ${taggedIds.length} iştirakçı taq edildi '
+          '(hər birinə +${XpRules.taggedParticipantXp} XP).',
+    );
+    notifyListeners();
+    return result;
+  }
 
   // ═══════════ Bildirişlər (ROL H) ═══════════
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/data/mock_data.dart';
 import '../../../core/models/models.dart';
+import '../../../core/models/xp_economy.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/motion.dart';
@@ -63,12 +64,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ]),
             _section('Məxfilik'),
             _card([
-              _switchRow(
-                Icons.map,
-                'Xəritədə və match-də görünürəm',
-                state.visibleOnMap,
-                state.setVisibleOnMap,
-              ),
+              // D-027: 3-seçimli görünüş — Hamı / Yalnız dostlar / Gizli.
+              _navRow(Icons.map, 'Xəritədə görünmə', _visibilityDialog,
+                  subtitle: '${state.mapVisibility.label} — ${state.mapVisibility.hint}'),
               _divider(),
               _switchRow(
                 Icons.near_me,
@@ -78,7 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ]),
             Text(
-              'Dəqiq koordinatın heç kimə göstərilmir — yalnız təxmini məsafə.',
+              'Dəqiq koordinatın heç kimə göstərilmir — yalnız təxmini məsafə. XP-nin müddəti yoxdur — balans = qazanma − xərcləmə.',
               style: const TextStyle(
                   fontFamily: T.family, fontSize: 10, height: 1.6, color: Q.mutedFg),
             ),
@@ -235,6 +233,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (p.id == id) return p.fullName;
     }
     return id;
+  }
+
+  /// D-027: xəritə görünüşü seçimi — 3 variant (dialog).
+  Future<void> _visibilityDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Xəritədə görünmə'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final v in MapVisibility.values)
+              InkWell(
+                onTap: () {
+                  widget.state.setMapVisibility(v);
+                  Navigator.pop(d);
+                },
+                borderRadius: BorderRadius.circular(Q.rMd),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        widget.state.mapVisibility == v
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        size: 19,
+                        color: widget.state.mapVisibility == v
+                            ? Q.primary
+                            : Q.mutedFg,
+                      ),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(v.label,
+                                style: const TextStyle(
+                                    fontFamily: T.family,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 2),
+                            Text(v.hint,
+                                style: const TextStyle(
+                                    fontFamily: T.family,
+                                    fontSize: 10,
+                                    height: 1.4,
+                                    color: Q.mutedFg)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _deleteAccountDialog() {

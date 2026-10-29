@@ -207,7 +207,8 @@ Mövcud vəziyyət (D-023/D-024): **UI fazası birinci** — backend m2+ UI tam 
 |---|---|---|
 | UI-1 (v0.2.0) | Web stili birebir: tema, font, əsas ekranlar | ✅ çatdırılıb (APK) |
 | UI-2 (v0.3.0) | ROL strukturu: 5 tab, onboarding, match, rezerv, kupon, XP, bildiriş, moderasiya | ✅ çatdırılıb (APK) |
-| UI-3 (v0.4.0) | Dizayn qatı: Liquid Glass minimal (5 səth) + hərəkət dili bütün bölmələrə (D-025, docs/design-spec.md) | təsdiq gözləyir |
+| UI-3 (v0.4.0) | Dizayn qatı: Liquid Glass minimal (5 səth) + hərəkət dili bütün bölmələrə (D-025, docs/design-spec.md) | ✅ çatdırılıb (APK + beta release) |
+| UI-4 (v0.5.0) | İkitərəfli XP iqtisadiyyatı: XP Kartı, Biznes rejimi, təşkilatçı bitirmə axını, Kəşf peşəkar sıralaması, xəritə 3-seçimli görünüş (D-026/D-027, bölmə L) | ✅ çatdırılıb (APK + beta release) |
 | UI-test | 4 tester tam yoxlama → düzəlişlər | — |
 | **"UI hazır" təsdiqi** | — | **qapı: bundan sonra backend** |
 | m2 | NestJS nüvə | gözləyir |
@@ -218,3 +219,85 @@ Mövcud vəziyyət (D-023/D-024): **UI fazası birinci** — backend m2+ UI tam 
 | 6 | Bildirişlər | gözləyir |
 | 7-8 | Flutter: real backend qoşulması | gözləyir (UI hazır olduğundan) |
 | 9-10 | Launch hazırlığı, monitorinq | gözləyir |
+
+## L. İkitərəfli XP iqtisadiyyatı (D-026 — istifadəçi əlavəsi)
+
+Platformada **iki növ XP** var. Bu bölmə F (XP/səviyyə) və G (endirim/kupon)
+bölmələrinin strukturunu dəyişir — ziddiyyət yarananda **bu bölmə üstün tutulur**.
+
+### L.1. 1-ci XP — Peşəkarlıq XP (xərclənməz)
+
+- Məqsəd: istifadəçinin aktivlikdə peşəkarlıq səviyyəsi. Çox oynayan insanın
+  oyuna dair anlayışı artır; aşağı səviyyəli insanlarla oyunlar maraqsız keçir.
+- Səviyyə pillələri F bölməsindəki kimi saxlanılır (Yeni → Əfsanə).
+- **Xərclənmir** — yalnız səviyyə, nişan və Kəşf sıralaması üçün istifadə olunur.
+- **Kəşf qaydası**: istifadəçinin səviyyəsi nə qədər yüksəkdirsə, Kəşf-də ona
+  önə çıxan aktiviteler bir o qədər peşəkar olur (səviyyə uyğunluğu ilə sıralama).
+
+### L.2. 2-ci XP — Endirim XP (obyektə-məxsus, xərclənən)
+
+- Hər obyektin (restoran, kafe, otel, şirkət) **özünə məxsus ayrı XP bazası**
+  var (İnstagram-model biznes hesabı ilə əlaqəli).
+- **Ayrı baza qaydası**: Xankəndi-də qazanılan XP yalnız Xankəndiyə aiddir;
+  Kokaltı kafesindən endirim almaq olmaz — bir obyekt qazanarkən digərinin
+  ziyanına düşməsinin qarşısını almaq üçün.
+- **XP müddəti YOXDUR** (TTL silinmə işi lazım deyil; balans = bütün grantlar −
+  xərcləmələr, ledger cəmi; limitsiz yığılma biznes qərarı kimi qəbul edilib).
+
+### L.3. Qazanma axını (statik QR — təşkilatçı tərəfi)
+
+1. Aktivite bitəndə təşkilatçı obyektdən çıxışda **obyektin statik QR-ını oxuyur**.
+2. Şəkilləri **yalnız təşkilatçı paylaşa bilər** → obyektin biznes hesabına düşür.
+3. Paylaşarkən təşkilatçı **yalnız iştirakçıları taq edir**:
+   - Təşkilatçı: **+50 XP** (başlanğıc default)
+   - Hər taq edilən iştirakçı: **+25 XP**
+   - Taq edilməyən iştirakçı: XP almır
+4. XP məbləğləri sabit deyil → `xp_config` cədvəli (obyekt başına), işə
+   düşdükdən sonra statistikaya görə tənzimlənəcək.
+
+### L.4. Xərcləmə axını (dinamik QR — müştəri tərəfi, 6 addım)
+
+Prinsip — **iki QR, simmetrik istiqamət**: qazanma obyektin statik QR-ı ilə,
+xərcləmə müştərinin dinamik QR-ı ilə (bilet/loyallıq kartı modeli).
+
+1. Müştəri app-də **"XP kartı"**nı açır → dinamik QR (**60 saniyəlik, tək
+   istifadəlik nonce**; screenshot/kopyalama fırıldaqçılığı qarşısını alır).
+2. Obyekt işçisi (app-in biznes rejimi) QR-ı oxuyur → obyekt bazasında
+   müştərinin balansı görünür.
+3. İşçi hesabın məbləğini yazır.
+4. Sistem endirimi hesablayır (`xp_config` məzənnəsi ilə, məs. 100 XP = 5 AZN).
+5. DB transaksiyası: balans **atomik** yoxlanır və düşülür → double-spend
+   imkansız.
+6. Hər iki tərəfə anında **receipt** (ledger qeydi).
+
+**Obyekt başına konfiqurasiya (xp_config):** məzənnə (obyekt təyin edir),
+maksimum endirim = hesabın X%-i (obyekt ziyanından qorunma), minimum hesab
+məbləği (isteğe bağlı). MVP: müştəri təsdiqsiz, receipt push dərhal; yüksək
+məbləğ üçün obyekt təsdiq tələbi sonradan açıla bilər.
+
+### L.5. Kanal qaydaları
+
+- QR = fiziki obyektlərdə əsas kanal. **Fallback**: QR altında 6 rəqəmli kod
+  (kamera işləməyəndə). Platformadaxili xərclər (gələcək: biletlər) QR-sız,
+  app içi. **NFC → MVP-də yoxdur.**
+
+### L.6. G-b bölməsinə dəyişiklik (kupon alışı)
+
+Köhnə qayda ("ümumi XP balansı ilə kupon al") ləğv olunur: XP ilə alınan
+kuponlar **həmin obyektin Endirim XP balansından** alınır (ayrı baza qaydası).
+Səviyyə-avto endirimlər (G-a) dəyişməz qalır — Peşəkarlıq XP-si ilə açılır.
+
+### L.7. Xəritə görünüşü seçimi (D-027)
+
+ROL TAB 2 məxfilik genişlənməsi — görünüş 3 seçimli olur:
+**Hamı / Yalnız dostlar / Gizli** (köhnə ikili açar əvəzinə). "Yalnız dostlar"
+rejimində yerin yalnız səninlə dost olan istifadəçilərə görünür.
+
+### UI-4 (v0.5.0) əhatəsi
+
+XP Kartı (balanslar + dinamik QR + 6 rəqəmli fallback + tənzimləmələr +
+ledger), Biznes rejimi (işçi: skan → balans → məbləğ → endirim → receipt),
+təşkilatçı bitirmə axını (statik QR → şəkil paylaş + taq → 50/25 paylanma),
+Kəşf peşəkar sıralaması, xəritə 3-seçimli görünüş, profildə ikili XP göstərişi.
+Hər şey mock-data — backend qaydaları (server-only hesab, idempotency,
+atomiklik) m2+ fazasında.

@@ -11,6 +11,7 @@ import '../../coupons/presentation/coupons_screen.dart';
 import '../../events/presentation/event_card.dart';
 import '../../reservations/presentation/reservations_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
+import '../../xp/presentation/xp_card_screen.dart';
 
 /// Profil — web ProfileScreen + MyProfilePanel portu.
 class ProfileScreen extends StatefulWidget {
@@ -194,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
               ],
             ),
-            // — tez keçidlər: rezervlərim / kuponlarım (ROL TAB 5) —
+            // — tez keçidlər: rezervlərim / XP kartım / kuponlarım —
             const SizedBox(height: 16),
             Row(
               children: [
@@ -205,6 +206,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     value: '${state.reservations.length}',
                     onTap: () => Navigator.of(context).push(GlassPageRoute(
                         builder: (_) => ReservationsScreen(state: state))),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _quickCard(
+                    icon: Icons.qr_code,
+                    title: 'XP kartım',
+                    value: '${state.discountXpTotal} XP',
+                    onTap: () => Navigator.of(context).push(GlassPageRoute(
+                        builder: (_) => XpCardScreen(state: state))),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -233,8 +244,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   // Statlar sayğacla artır — XP qazanınca canlı dəyişir (D-025).
-                  _statCount(state.xp, 'Ümumi XP'),
-                  _statCount(state.xpBalance, 'Balans'),
+                  // D-026: iki XP — Peşəkarlıq (səviyyə) və Endirim (obyekt bazaları).
+                  _statCount(state.xp, 'Peşəkar XP'),
+                  _statCount(state.discountXpTotal, 'Endirim XP'),
                   _statCount(state.joined.length, 'Tədbir'),
                   _stat(state.rank, 'Səviyyə'),
                 ],

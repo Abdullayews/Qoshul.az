@@ -12,12 +12,15 @@ class EventCard extends StatelessWidget {
   final QoshulEvent event;
   final AppState state;
   final bool recommended;
+  /// D-026 (L.1): peşəkarlıq səviyyəsi çipini göstər (Kəşf sıralaması).
+  final bool showLevel;
 
   const EventCard({
     super.key,
     required this.event,
     required this.state,
     this.recommended = false,
+    this.showLevel = false,
   });
 
   @override
@@ -72,6 +75,22 @@ class EventCard extends StatelessWidget {
                     child: _whiteBadge(
                       Icons.auto_awesome,
                       'Tədbir təklifi',
+                    ),
+                  ),
+                // D-026 (L.1): peşəkarlıq səviyyəsi — sağ alt çip.
+                if (showLevel &&
+                    !event.past &&
+                    (event.level == 'Peşəkar' ||
+                        event.level == 'Orta' ||
+                        event.level == 'Başlanğıc'))
+                  Positioned(
+                    left: 12,
+                    bottom: 12,
+                    child: _whiteBadge(
+                      event.level == 'Peşəkar'
+                          ? Icons.military_tech
+                          : Icons.school,
+                      event.level!,
                     ),
                   ),
                 if (event.past)

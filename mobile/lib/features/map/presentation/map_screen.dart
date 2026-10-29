@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/data/mock_data.dart';
 import '../../../core/models/models.dart';
+import '../../../core/models/xp_economy.dart';
 import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass.dart';
@@ -62,9 +63,16 @@ class _MapScreenState extends State<MapScreen> {
           if (e.distance <= distanceKm) _MapPin.event(e),
     ];
     // — insan pinləri (ROL: yalnız razılıq verənlər; bloklananlar gizli) —
+    // D-027: görünüş 3 seçimlidir — Hamı (bütün razılıq verənlər),
+    // Yalnız dostlar (yalnız qəbul olunmuş dostların yeri görünür),
+    // Gizli (insan pinləri tam gizli).
     final peoplePins = <_MapPin>[
       for (final p in state.matchCandidates)
-        if (p.distanceKm <= distanceKm) _MapPin.person(p),
+        if (p.distanceKm <= distanceKm)
+          if (state.mapVisibility == MapVisibility.everyone ||
+              (state.mapVisibility == MapVisibility.friends &&
+                  state.friendships[p.id] == 'accepted'))
+            _MapPin.person(p),
     ];
     final pins = [...venuePins, ...eventPins, ...peoplePins];
 
@@ -192,6 +200,36 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
         ),
+        // — D-027: görünüş rejimi göstəricisi (şüşə həb) —
+        if (state.mapVisibility != MapVisibility.everyone)
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: GlassPill(
+              dense: true,
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    state.mapVisibility == MapVisibility.friends
+                        ? Icons.group
+                        : Icons.visibility_off,
+                    size: 12,
+                    color: Q.primary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    state.mapVisibility == MapVisibility.friends
+                        ? 'Yalnız dostlar görünür'
+                        : 'Gizli rejim',
+                    style: glassText(
+                        size: 10, w: FontWeight.w600, color: Q.foreground),
+                  ),
+                ],
+              ),
+            ),
+          ),
         // — seçilmiş pinin şüşə alt kartı (D-025 səth #3) —
         if (selected != null)
           Align(

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:qoshul/core/data/mock_data.dart';
 import 'package:qoshul/core/models/notification.dart';
+import 'package:qoshul/core/models/xp_economy.dart';
 import 'package:qoshul/core/state/app_state.dart';
 import 'package:qoshul/core/widgets/rol.dart';
 import 'package:qoshul/features/events/presentation/event_detail_sheet.dart';
@@ -28,6 +29,28 @@ void main() {
       await tester.drag(scrollable, Offset(0, up ? 400 : -350));
       await tester.pumpAndSettle();
     }
+  }
+
+  /// Hədəfi həm GÖRÜNƏN, həm şüşə nav pill-in ALTINA düşməyən mövqedə
+  /// üzə çıxar və toxun (D-026 feed uzandığı üçün mövqe nəzarəti lazımdır).
+  Future<void> revealAndTap(
+      WidgetTester tester, Finder target, Finder scrollable) async {
+    for (var i = 0; i < 26; i++) {
+      if (tester.any(target)) {
+        final dy = tester.getTopLeft(target.first).dy;
+        if (dy >= 0 && dy < 1060) {
+          await tester.tap(target.first);
+          await tester.pumpAndSettle();
+          return;
+        }
+        await tester.drag(
+            scrollable, Offset(0, dy < 0 ? 150 : -150));
+      } else {
+        await tester.drag(scrollable, const Offset(0, -150));
+      }
+      await tester.pumpAndSettle();
+    }
+    fail('revealAndTap: hədəf tapılmadı');
   }
 
   /// Uzağa scroll olmuş siyahını yuxarı qaytar (TextField-lər geri gəlsin).
@@ -174,10 +197,13 @@ void main() {
     await boot(tester, state);
 
     expect(find.text('Salam, Dost!'), findsOneWidget);
-    expect(find.text('Yaxınında olan tədbirlər'), findsOneWidget);
-
-    // Aşağıdakı bölmələr lazy — drag ilə aç
+    // D-026 (L.1): yeni "Sənin səviyyənə görə" bölməsi feed-i uzadıb —
+    // aşağıdakı başlıqlar artıq drag ilə açılır.
     final feed = find.byType(ListView).first;
+    await dragUntilFound(tester, find.text('Yaxınında olan tədbirlər'), feed);
+    expect(find.text('Yaxınında olan tədbirlər'), findsOneWidget);
+    expect(find.text('Sənin səviyyənə görə'), findsOneWidget);
+
     await dragUntilFound(tester, find.text('Populyar məkanlar'), feed);
     expect(find.text('Populyar məkanlar'), findsOneWidget);
 
@@ -203,9 +229,7 @@ void main() {
     await boot(tester, state);
 
     final feed = find.byType(ListView).first;
-    await dragUntilFound(tester, find.text('Hamısına bax'), feed);
-    await tester.tap(find.text('Hamısına bax'));
-    await tester.pumpAndSettle();
+    await revealAndTap(tester, find.text('Hamısına bax'), feed);
     expect(find.text('Tanış ol'), findsWidgets);
     // 3 namizəd kart var (ROL D) — hamısında eyni düymə
     expect(find.text('Maraqlıyam'), findsWidgets);
@@ -252,6 +276,9 @@ void main() {
     final state = AppState()
       ..signIn()
       ..onboarded = true;
+    // D-026: kupon obyektin öz bazasından alınır — Coffee Lab balansı
+    // boot-dan əvvəl seed edilir ki, düymə enabled qurulsun.
+    state.venueXp['v2']!.balance = 400;
     await boot(tester, state);
 
     await tester.tap(find.text('Profil'));
@@ -261,15 +288,15 @@ void main() {
     await tester.tap(find.text('Kuponlarım'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('XP balansın'), findsOneWidget);
-    final balBefore = state.xpBalance;
+    expect(find.textContaining('Endirim XP balansından'), findsOneWidget);
+    final balBefore = state.venueXp['v2']!.balance;
     final totalBefore = state.xp;
 
-    // o1 Coffee Lab 15% (200 XP) — balans 320 → alınır
+    // o1 Coffee Lab 15% (200 XP) — v2 bazasından alınır
     await tester.tap(find.text('XP ilə al').first);
     await tester.pumpAndSettle();
-    expect(state.xpBalance, balBefore - 200);
-    expect(state.xp, totalBefore); // ümumi XP düşmür (ROL G)
+    expect(state.venueXp['v2']!.balance, balBefore - 200);
+    expect(state.xp, totalBefore); // Peşəkarlıq XP-si düşmür (D-026)
 
     // Kuponlarım tabına keç
     await tester.tap(find.text('Kuponlarım').first);
@@ -316,15 +343,26 @@ void main() {
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pumpAndSettle();
 
-    expect(find.text('Xəritədə və match-də görünürəm'), findsOneWidget);
-    expect(state.visibleOnMap, isTrue);
+    // D-027: 3-seçimli görünüş — Hamı / Yalnız dostlar / Gizli.
+    expect(find.text('Xəritədə görünmə'), findsOneWidget);
+    expect(state.mapVisibility, MapVisibility.everyone);
 
-    // Switch-in özünə toxun
-    await tester.tap(find.byType(Switch).first);
+    // Dialog aç → "Gizli" seç
+    await tester.tap(find.text('Xəritədə görünmə'));
     await tester.pumpAndSettle();
-    expect(state.visibleOnMap, isFalse);
+    await tester.tap(find.text('Gizli'));
+    await tester.pumpAndSettle();
+    expect(state.mapVisibility, MapVisibility.off);
 
-    await tester.tap(find.byType(Switch).at(1));
+    // "Yalnız dostlar" seç
+    await tester.tap(find.text('Xəritədə görünmə'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yalnız dostlar'));
+    await tester.pumpAndSettle();
+    expect(state.mapVisibility, MapVisibility.friends);
+
+    // Məsafə switch-i (indi ilk Switch) söndür
+    await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
     expect(state.showDistance, isFalse);
   });

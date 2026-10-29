@@ -28,6 +28,8 @@ class QoshulEvent {
   final bool approval;
   final String recurring;
   final List<String> tags;
+  /// D-026 (L.3): təşkilatçı bitirmə axını üçün partnyor obyekt id-si.
+  final String? venueId;
 
   const QoshulEvent({
     required this.id,
@@ -54,10 +56,40 @@ class QoshulEvent {
     this.approval = false,
     this.recurring = 'Bir dəfəlik',
     this.tags = const [],
+    this.venueId,
   });
 
   int get spotsLeft => capacity - participants < 0 ? 0 : capacity - participants;
   bool get isFull => participants >= capacity;
+
+  /// D-026: host dəyişimi üçün nüsxə (onboarding-də demo tədbir götürülür).
+  QoshulEvent copyWith({String? host}) => QoshulEvent(
+        id: id,
+        title: title,
+        category: category,
+        image: image,
+        city: city,
+        location: location,
+        lat: lat,
+        lng: lng,
+        distance: distance,
+        time: time,
+        date: date,
+        past: past,
+        capacity: capacity,
+        participants: participants,
+        host: host ?? this.host,
+        description: description,
+        price: price,
+        ageLimit: ageLimit,
+        language: language,
+        level: level,
+        format: format,
+        approval: approval,
+        recurring: recurring,
+        tags: tags,
+        venueId: venueId,
+      );
 }
 
 class Person {
@@ -213,6 +245,22 @@ class XpRules {
 
   // — check-in qorunması (ROL F) —
   static const int checkInMaxDistanceM = 200;
+
+  // — D-026: Endirim XP (product-spec L.3) —
+  static const int organizerXp = 50; // təşkilatçıya (statik QR + taq)
+  static const int taggedParticipantXp = 25; // hər taq edilən iştirakçıya
+  static const int xpCardTtlSeconds = 60; // dinamik QR ömrü
+  static const int fallbackCodeDigits = 6; // QR fallback kodu
+
+  /// Kəşf peşəkar sıralaması (L.1): tədbirin "level" etiketindən
+  /// peşəkarlıq çəkisi — istifadəçi səviyyəsi nə qədər yüksəkdirsə,
+  /// çəkisi yüksək aktiviteler Kəşf-də daha üstdə görünür.
+  static int proWeight(String? level) => switch (level) {
+        'Peşəkar' => 3,
+        'Orta' => 2,
+        'Başlanğıc' => 1,
+        _ => 0, // 'Hamı üçün' və s.
+      };
 
   // — səviyyələr (ROL F) —
   static const List<int> rankMax = [99, 299, 699, 1499, 2999];

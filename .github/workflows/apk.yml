@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   build:
-    name: Release APK (v0.4.0 — Liquid Glass + Motion)
+    name: Release APK (v0.5.0 — İkitərəfli XP)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -69,3 +69,46 @@ jobs:
           name: qoshul-apk
           path: mobile/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+  # NOTE-1 direktivi: hər versiya YALNIZ action artifaktı kimi deyil,
+  # həmçinin GitHub beta (pre-release) release kimi paylaşılır.
+  release:
+    name: Beta Release (GitHub)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Kodu çıxar (pubspec versiyası üçün)
+        uses: actions/checkout@v4
+
+      - name: Versiyanı oxu
+        id: ver
+        run: |
+          V=$(grep '^version:' mobile/pubspec.yaml | sed 's/version: //' | cut -d '+' -f 1)
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Artifaktı endir
+        uses: actions/download-artifact@v4
+        with:
+          name: qoshul-apk
+          path: apk
+
+      - name: APK adını dəyiş
+        run: mv apk/app-release.apk "apk/Qoshul.az-v${{ steps.ver.outputs.version }}.apk"
+
+      - name: Beta release paylaş (pre-release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}-beta
+          name: Qoshul.az v${{ steps.ver.outputs.version }} (Beta)
+          prerelease: true
+          generate_release_notes: true
+          files: apk/Qoshul.az-v${{ steps.ver.outputs.version }}.apk
+          body: |
+            Qoshul.az v${{ steps.ver.outputs.version }} — beta test build (UI mərhələsi, mock data).
+
+            **Quraşdırma:** APK-nı endirib birbaşa quraşdırın (debug imza).
+
+            Bu release CI tərəfindən avtomatik yaradılır — hər build artifacts
+            səhifəsində də mövcuddur.

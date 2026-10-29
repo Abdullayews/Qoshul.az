@@ -6,6 +6,7 @@ import '../../../core/state/app_state.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/ui.dart';
 import '../../events/presentation/create_event_sheet.dart';
+import 'business_mode_sheet.dart';
 
 /// Tərəfdaşlar — web PartnersScreen portu (AppShell-dən push olunur).
 class PartnersScreen extends StatelessWidget {
@@ -41,6 +42,14 @@ class PartnersScreen extends StatelessWidget {
             subtitle: 'Biznes kimi qeydiyyatdan keç, yeni müştərilər qazan.',
             trailing: Icon(Icons.north_east, size: 20, color: Q.primary),
             onTap: () {},
+          ),
+          // D-026 (L.4): işçi tərəfi — müştərinin dinamik QR-ını oxuyur.
+          CommunityBanner(
+            icon: Icons.qr_code_scanner,
+            title: 'Biznes rejimi — XP endirimi ver',
+            subtitle: 'İşçi modu: müştəri XP kodunu oxu, hesabı yaz, endirim ver.',
+            trailing: Icon(Icons.north_east, size: 20, color: Q.primary),
+            onTap: () => showBusinessModeSheet(context, state),
           ),
           const CommunityBanner(
             icon: Icons.handshake,

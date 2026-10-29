@@ -56,7 +56,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'XP balansın: ${state.xpBalance} XP (ümumi ${state.xp} — səviyyə xərcləməklə düşmür)',
+                      'Kuponlar obyektin Endirim XP balansından alınır — D-026 ayrı baza qaydası (Xankəndi XP-si yalnız Xankəndidə işləyir)',
                       style: const TextStyle(
                           fontFamily: T.family,
                           fontSize: 11,
@@ -104,7 +104,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
             label: o.label,
             requirement: o.autoByLevel
                 ? 'Səviyyə: ${XpRules.rankNames[o.minRankIndex]}+ (avtomatik aktiv)'
-                : '${o.xpPrice} XP · ${XpRules.rankNames[o.minRankIndex]}+',
+                : '${o.xpPrice} XP · balansın: ${state.venueXp[o.venueId]?.balance ?? 0} XP',
             autoByLevel: o.autoByLevel,
             unlocked: o.unlockedFor(state.rankIndex),
             action: o.autoByLevel
@@ -113,7 +113,7 @@ class _CouponsScreenState extends State<CouponsScreen> {
                     : null)
                 : FilledButton(
                     onPressed: (o.unlockedFor(state.rankIndex) &&
-                            state.xpBalance >= o.xpPrice)
+                            (state.venueXp[o.venueId]?.balance ?? 0) >= o.xpPrice)
                         ? () => _buy(context, state, o)
                         : null,
                     style: FilledButton.styleFrom(
