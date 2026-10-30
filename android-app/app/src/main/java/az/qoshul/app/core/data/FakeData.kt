@@ -72,18 +72,9 @@ object FakeQoshulDataSource : QoshulDataSource {
             "Digər")),
     )
 
-    val allCategories: List<String> = categoryGroups.flatMap { it.items }
-
-    fun groupOf(category: String): String =
-        categoryGroups.firstOrNull { it.items.contains(category) }?.group ?: "Səyahət və digər"
-
-    /** Şəkil seçimi: kateqoriya qrupuna görə (web seed davranışı). */
-    fun imageForCategory(category: String): String = when (groupOf(category)) {
-        "İdman", "Təbiət" -> imgPadel
-        "Yemək və içki" -> imgCoffee
-        "Texnologiya", "Biznes və karyera", "Təhsil" -> imgTech
-        else -> imgFriends
-    }
+    // allCategories / groupOf / imageForCategory / findCity / statusLabel —
+    // D-050-dən etibarən QoshulDataSource interfeysinin default-metodlarıdır
+    // (taksonomiya = tətbiq məzmunu, hər iki rejimdə eyni).
 
     // ── Şəhərlər — web cities.ts (birebir) ──
     override val cities = listOf(
@@ -114,7 +105,7 @@ object FakeQoshulDataSource : QoshulDataSource {
         City("Xankəndi", "Qarabağ", 39.8181, 46.7529),
     )
 
-    fun findCity(name: String): City = cities.firstOrNull { it.name == name } ?: cities.first()
+    // findCity — interfeys default-metodudur (City?; çağıran fallback edir).
 
     // ── Mock tədbirlər — realistik Azərbaycan məzmunu (birebir port) ──
     override val events = listOf(
@@ -382,7 +373,7 @@ object FakeQoshulDataSource : QoshulDataSource {
         "freelancer" to "Frilanserəm", "other" to "Digər",
     )
 
-    fun statusLabel(id: String?): String = if (id == null) "" else (statusLabels[id] ?: "")
+    // statusLabel — interfeys default-metodudur (statusLabels xəritəsindən).
 
     override val statuses = listOf(
         "school", "student", "working", "job_seeking", "entrepreneur", "freelancer", "other"
@@ -461,25 +452,10 @@ object FakeQoshulDataSource : QoshulDataSource {
         "v4" to listOf("12:00", "14:00", "16:00", "18:00", "20:00"),
     )
 
-    /** Növbəti 7 günün etiketləri (Bu gün / Sabah / Ay Gün). */
-    fun nextDateLabels(count: Int = 7): List<String> {
-        val months = listOf(
-            "Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"
-        )
-        return (0 until count).map { i ->
-            val d = today.plusDays(i.toLong())
-            when (i) {
-                0 -> "Bu gün"
-                1 -> "Sabah"
-                else -> "${months[d.monthValue - 1]} ${d.dayOfMonth}"
-            }
-        }
-    }
+    // nextDateLabels → core/data/DateLabels.kt (tarix hesablaması, mənbəyə aid deyil)
 
-    /** Məkan rəyləri (ROL E). */
-    data class VenueReview(val author: String, val stars: Int, val text: String)
-
-    val mockVenueReviews = mapOf(
+    /** Məkan rəyləri (ROL E) — model DataSource.kt-də (VenueReview). */
+    override val mockVenueReviews = mapOf(
         "v1" to listOf(
             VenueReview("Elnur K.", 5, "Meydanlar əla, səhər saatları endirim həqiqətən işləyir."),
             VenueReview("Sara M.", 4, "Təşkilat yaxşıdır, yalnız qaraj yer axtarmaq lazım oldu."),

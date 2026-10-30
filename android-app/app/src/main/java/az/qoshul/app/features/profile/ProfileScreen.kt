@@ -53,7 +53,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.badgeDefs
@@ -147,7 +146,7 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                 }
                 Spacer(Modifier.height(9.dp))
                 Text(
-                    st.city + " · " + FakeQoshulDataSource.statusLabel(st.status) +
+                    st.city + " · " + engine.statusLabel(st.status) +
                         (if (st.university.isNotEmpty()) " · ${st.university}"
                          else if (st.workField.isNotEmpty()) " · ${st.workField}" else ""),
                     style = T.subtitle, modifier = Modifier.padding(horizontal = 20.dp),
@@ -182,7 +181,7 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                     subtitle = st.personality!!.summary,
                 )
                 Spacer(Modifier.height(10.dp))
-                TraitBars(st.personality!!.traits)
+                TraitBars(st.personality!!.traits, engine.dataSource.traitLabels)
             }
         }
         // nişanlar
@@ -365,9 +364,9 @@ private fun QuickCard(
 }
 
 @Composable
-private fun TraitBars(traits: Map<String, Int>) {
+private fun TraitBars(traits: Map<String, Int>, labels: Map<String, String>) {
     Column {
-        FakeQoshulDataSource.traitLabels.forEach { (key, label) ->
+        labels.forEach { (key, label) ->
             traits[key]?.let { v ->
                 Column(Modifier.padding(bottom = 10.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

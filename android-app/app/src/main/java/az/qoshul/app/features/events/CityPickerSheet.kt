@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.Q
@@ -40,7 +39,7 @@ import az.qoshul.app.core.ui.SheetScaffold
 fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
     var query by remember { mutableStateOf("") }
     val st by engine.state.collectAsState()
-    val list = FakeQoshulDataSource.cities.filter {
+    val list = engine.dataSource.cities.filter {
         it.name.lowercase().contains(query.lowercase())
     }
 
@@ -49,7 +48,7 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
             Text("Şəhərini seç", style = androidx.compose.ui.text.TextStyle(
                 fontFamily = JakartaSans, fontSize = 18.sp, fontWeight = FontWeight.W800))
             Spacer(Modifier.height(4.dp))
-            Text("Azərbaycanın ${FakeQoshulDataSource.cities.size} şəhər və rayon mərkəzindən birini seç.",
+            Text("Azərbaycanın ${engine.dataSource.cities.size} şəhər və rayon mərkəzindən birini seç.",
                 style = T.subtitle)
             Spacer(Modifier.height(12.dp))
             // axtarış sətri

@@ -1,5 +1,6 @@
 package az.qoshul.app.core.engine
 
+import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.QoshulDataSource
 import az.qoshul.app.core.model.ActivityXpResult
@@ -283,6 +284,33 @@ class AppEngine(
         emit()
     }
 
+    /**
+     * PLACEHOLDER rejimi (D-050): vahid hardcoded demo hesabı — bir toxunuşla
+     * dolu profil. Onboarding keçilir (qeydiyyat XP + demo host adoptu + günlük
+     * giriş), bütün funksiyalar dərhal görünür. Yalnız PLACEHOLDER rejimində
+     * çağırılmalı (AuthScreen qapısı təmin edir).
+     */
+    fun signInDemo() {
+        val demo = AppConfig.DemoAccount
+        firstNameV = demo.FIRST_NAME
+        lastNameV = demo.LAST_NAME
+        profileNameV = demo.FULL_NAME
+        cityV = demo.CITY
+        bioV = demo.BIO
+        statusV = "student"
+        universityV = "Bakı Dövlət Universiteti"
+        languagesV = listOf("Azərbaycan dili", "İngilis dili")
+        interestsV = listOf("Qəhvə", "Yürüş", "Stolüstü oyunlar", "Foto-gəzinti")
+        goalsV = listOf("Yeni tanışlıqlar", "Hobbi paylaşmaq")
+        groupSizeV = "Kiçik qrup (3–6)"
+        budgetV = "10 AZN-ə qədər"
+        birthDateV = java.time.LocalDate.of(2000, 1, 1)
+        photoCountV = 1
+        signedInV = true
+        if (!onboardedV) finishOnboarding()
+        emit()
+    }
+
     fun signOut() {
         signedInV = false
         emit()
@@ -406,15 +434,15 @@ class AppEngine(
         recurring: String = "Bir dəfəlik", tags: List<String> = emptyList(),
         lat: Double? = null, lng: Double? = null,
     ) {
-        val c = FakeQoshulDataSource.findCity(city)
+        val c = dataSource.findCity(city) // D-050: naməlum şəhər → Bakı mərkəzi
         val id = "c${eventsV.size + 1}-${now().nano / 1_000_000 % 100000}"
         eventsV.add(
             0,
             QoshulEvent(
                 id = id, title = title, category = category,
-                image = FakeQoshulDataSource.imageForCategory(category),
+                image = dataSource.imageForCategory(category),
                 city = city, location = if (format == "Onlayn") "Onlayn görüş" else location,
-                lat = lat ?: c.lat, lng = lng ?: c.lng, distance = 0.0,
+                lat = lat ?: c?.lat ?: 40.4093, lng = lng ?: c?.lng ?: 49.8671, distance = 0.0,
                 time = time, date = date, epochDay = epochDay, past = false,
                 capacity = capacity, participants = 1, host = profileNameV,
                 description = description,
@@ -897,8 +925,8 @@ class AppEngine(
         }
         if (lower.contains("idman") || lower.contains("spor")) {
             val sport = upcoming.filter {
-                FakeQoshulDataSource.groupOf(it.category) == "İdman" ||
-                    FakeQoshulDataSource.groupOf(it.category) == "Təbiət"
+                dataSource.groupOf(it.category) == "İdman" ||
+                    dataSource.groupOf(it.category) == "Təbiət"
             }.take(3)
             if (sport.isEmpty()) return "İdman tədbirləri hələ azdır — ilk idman görüşünü sən yarat!"
             return "Aktiv idman tədbirləri:\n\n" +
@@ -940,8 +968,20 @@ class AppEngine(
         return list.mapIndexed { i, e -> e to reasons.getOrElse(i) { "" } }
     }
 
-    /** Şəkil/qrup köməkçiləri UI üçün. */
-    fun statusLabel(id: String): String = FakeQoshulDataSource.statusLabel(id)
+    /** Şəkil/qrup köməkçiləri UI üçün (D-050: mənbəyə yönəldilmiş). */
+    fun statusLabel(id: String): String = dataSource.statusLabel(id)
+
+    /** Bütün məkanlar (server rejimində serverdən gələn siyahı). */
+    val partners: List<Partner> get() = dataSource.partners
+
+    /** Məkan ID ilə (server rejimində server siyahısından). */
+    fun venueById(id: String): Partner? = dataSource.partners.firstOrNull { it.id == id }
+
+    /** Məkan rəyləri (D-050: fake yalnız PLACEHOLDER rejimində doludur). */
+    fun venueReviews(venueId: String) = dataSource.mockVenueReviews[venueId] ?: emptyList()
+
+    /** Məkan rezerv slotları. */
+    fun venueSlots(venueId: String) = dataSource.venueSlotTimes[venueId] ?: emptyList()
 }
 
 /** UI-nin oxuduğu immutabl snapshot. */

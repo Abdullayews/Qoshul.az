@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 // Apple ikonu: material-icons-da yoxdur — PlaceHolder istifadə olunur
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.GMobiledata
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.data.AppConfig
+import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
@@ -54,13 +57,18 @@ import kotlinx.coroutines.launch
  * Mock: "Google ilə davam et", "Apple ilə davam et", email + şifrə →
  * 6 rəqəmli təsdiq kodu (istənilən 6 rəqəm).
  *
+ * D-050 (PLACEHOLDER rejimi): [engine] verildikdə vəhdət hardcoded DEMO
+ * hesabı düyməsi göstərilir — bir toxunuşla dolu profillə tam tətbiq açılır
+ * (bütün funksiyaların görünməsi üçün). Manual axın da qalır (onboarding
+ * sınağı üçün).
+ *
  * Qeyd (qayda ③): bu MOCK autentifikasiyadır — heç bir real təhlükəsizlik
  * iddiası yoxdur; backend fazasında custom JWT (product-spec B) gələcək.
  */
 private enum class AuthMode { ENTER, UP, FORGOT, CODE }
 
 @Composable
-fun AuthScreen(onSignedIn: () -> Unit) {
+fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     var mode by remember { mutableStateOf(AuthMode.ENTER) }
     var email by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
@@ -71,6 +79,17 @@ fun AuthScreen(onSignedIn: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     var msg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    /** D-050: vahid demo hesabı — anında dolu profillə daxil ol. */
+    fun demoSignIn() {
+        scope.launch {
+            busy = true
+            delay(450)
+            engine?.signInDemo()
+            busy = false
+            onSignedIn()
+        }
+    }
 
     fun submit() {
         error = null
@@ -151,6 +170,39 @@ fun AuthScreen(onSignedIn: () -> Unit) {
         Spacer(Modifier.height(4.dp))
         Text(subtitle, style = T.subtitle)
         Spacer(Modifier.height(22.dp))
+
+        // — D-050: vahid hardcoded demo hesabı (yalnız PLACEHOLDER rejimi) —
+        val demo = AppConfig.DemoAccount
+        if (AppConfig.isPlaceholder && engine != null) {
+            Button(
+                onClick = { if (!busy) demoSignIn() },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rMd.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Q.primary, contentColor = Q.primaryFg),
+            ) {
+                Icon(Icons.Filled.Bolt, null, modifier = Modifier.height(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Demo hesabı ilə davam et", style = T.button)
+                    Text(
+                        demo.EMAIL,
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = JakartaSans, fontSize = 10.5.sp, color = Q.primaryFg),
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Demo rejimi: bütün funksiyalar nümunə məlumatla doludur.",
+                textAlign = TextAlign.Center,
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 11.sp, color = Q.mutedFg),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(14.dp))
+        }
 
         if (mode == AuthMode.CODE) {
             FormFieldX("6 rəqəmli təsdiq kodu") {

@@ -66,6 +66,8 @@ import az.qoshul.app.core.ui.SheetScaffold
 /**
  * Tədbir detalı — Flutter event_detail_sheet.dart portu (bottom sheet).
  * A3 düzəlişi: "Qrup söhbətinə keç" artıq real keçid callback-i alır.
+ * D-050: "Yol göstər" aktivləşdi (xəritə fazası gəldi — D-048 MapLibre):
+ * [onShowOnMap] xəritə tabına keçib tədbir pininə uçur.
  */
 @Composable
 fun EventDetailSheet(
@@ -73,6 +75,7 @@ fun EventDetailSheet(
     event: QoshulEvent,
     onDismiss: () -> Unit,
     onFinishActivity: (QoshulEvent) -> Unit = {},
+    onShowOnMap: (QoshulEvent) -> Unit = {},
 ) {
     var rating by remember { mutableIntStateOf(5) }
     var comment by remember { mutableStateOf("") }
@@ -193,18 +196,19 @@ fun EventDetailSheet(
             }
             if (event.format != "Onlayn") {
                 Spacer(Modifier.height(12.dp))
-                // A3: "Yol göstər" — backend gözləyir, deaktiv + izah
+                // D-050: "Yol göstər" AKTİV — xəritəyə keçib tədbir pininə uçur
+                // (A3-ün "xəritə fazasında" qeydi D-048 MapLibre ilə bağlandı)
                 OutlinedButton(
-                    onClick = {}, enabled = false,
+                    onClick = { onDismiss(); onShowOnMap(event) },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
                     shape = RoundedCornerShape(Q.rMd.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        disabledContainerColor = Q.card, disabledContentColor = Q.mutedFg),
+                        containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {
-                    Icon(Icons.Filled.LocationOn, null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.LocationOn, null, tint = Q.primary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Yol göstər (${event.distance} km) — xəritə fazasında", style = T.button)
+                    Text("Yol göstər (${event.distance} km)", style = T.button)
                 }
             }
             if (isJoined && !event.past) {

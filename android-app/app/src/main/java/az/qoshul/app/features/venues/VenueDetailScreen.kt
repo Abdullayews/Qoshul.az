@@ -57,7 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
+import az.qoshul.app.core.data.nextDateLabels
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.theme.Q
@@ -69,6 +69,7 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CategoryChip
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
+import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.RatingStars
@@ -83,15 +84,17 @@ import kotlinx.coroutines.launch
 /**
  * Məkan detal + Rezerv axını — Flutter venue_detail_screen.dart +
  * reserve_sheet.dart portu (ROL E). Onlayn ödəniş YOXDUR.
+ * D-050: "Yol tap" aktivdir — xəritəyə keçib məkan pininə uçur ([focus]).
  */
 @Composable
-fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String) {
+fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
+    focus: MapFocusState = MapFocusState()) {
     val st by engine.state.collectAsState()
-    val venue = FakeQoshulDataSource.partners.firstOrNull { it.id == venueId } ?: return
+    val venue = engine.venueById(venueId) ?: return
     var reserveOpen by remember { mutableStateOf(false) }
     val hour = remember { java.time.LocalDateTime.now().hour }
     val openNow = venue.isOpenAt(hour)
-    val reviews = FakeQoshulDataSource.mockVenueReviews[venue.id] ?: emptyList()
+    val reviews = engine.venueReviews(venue.id)
 
     Column(Modifier.fillMaxSize().background(Q.background)) {
         // — şəkil başlıq (SliverAppBar portu) —
@@ -197,16 +200,16 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String) {
             }
             Spacer(Modifier.height(6.dp))
             Row {
-                // A3: "Yol tap" — xəritə fazasında
+                // D-050: "Yol tap" AKTİV — xəritəyə keçib məkan pininə uçur
                 OutlinedButton(
-                    onClick = {}, enabled = false,
+                    onClick = { nav.pop(); focus.venue(venue.id) },
                     modifier = Modifier.weight(1f).height(46.dp),
                     shape = RoundedCornerShape(Q.rMd.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        disabledContainerColor = Q.card, disabledContentColor = Q.mutedFg),
+                        containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {
-                    Icon(Icons.Filled.NearMe, null, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.NearMe, null, tint = Q.primary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Yol tap", style = T.button)
                 }
@@ -258,8 +261,8 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
     var couponCode by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<az.qoshul.app.core.model.Reservation?>(null) }
     val st by engine.state.collectAsState()
-    val dates = remember { FakeQoshulDataSource.nextDateLabels() }
-    val slots = FakeQoshulDataSource.venueSlotTimes[venue.id] ?: emptyList()
+    val dates = remember { nextDateLabels() }
+    val slots = engine.venueSlots(venue.id)
     val myCoupons = engine.activeCouponsFor(venue.id)
     val canConfirm = date != null && time != null
 

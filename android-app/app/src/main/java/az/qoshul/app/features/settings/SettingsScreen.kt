@@ -54,7 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.BuildConfig
-import az.qoshul.app.core.data.FakeQoshulDataSource
+import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.theme.Q
@@ -94,6 +94,11 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     RowItem(Icons.Filled.LocationCity, "Şəhər", st.city)
                     DividerLine()
                     RowItem(Icons.Filled.WorkspacePremium, "Səviyyə", st.rank)
+                    DividerLine()
+                    RowItem(
+                        Icons.Filled.Tune, "Məlumat rejimi", AppConfig.modeLabel,
+                        valueColor = if (AppConfig.isPlaceholder) Q.accentFg else Q.primary,
+                    )
                     DividerLine()
                     NavRow(
                         Icons.Filled.VerifiedUser, "Hesabı təsdiqlə (telefon)",
@@ -149,7 +154,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     NavRow(Icons.Filled.Language, "Dil", null, subtitle = "Azərbaycan dili")
                     DividerLine()
                     NavRow(Icons.Filled.Info, "Haqqında (v${BuildConfig.VERSION_NAME})", null,
-                        subtitle = "Native (Compose) — mock data ilə")
+                        subtitle = "Native (Compose) — ${AppConfig.modeLabel}")
                     DividerLine()
                     NavRow(Icons.Filled.Description, "Şərtlər və məxfilik", null)
                 }
@@ -231,7 +236,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             text = {
                 Column {
                     st.blocked.forEach { id ->
-                        val name = FakeQoshulDataSource.people.firstOrNull { it.id == id }?.fullName ?: id
+                        val name = engine.dataSource.people.firstOrNull { it.id == id }?.fullName ?: id
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -326,7 +331,8 @@ private fun SettingsCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun RowItem(icon: ImageVector, label: String, value: String) {
+private fun RowItem(icon: ImageVector, label: String, value: String,
+    valueColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
@@ -335,7 +341,7 @@ private fun RowItem(icon: ImageVector, label: String, value: String) {
         Spacer(Modifier.padding(6.dp))
         Text(label, Modifier.weight(1f),
             style = androidx.compose.ui.text.TextStyle(fontFamily = JakartaSans, fontSize = 12.sp))
-        Text(value, style = T.meta.copy(fontSize = 12.5.sp))
+        Text(value, style = T.meta.copy(fontSize = 12.5.sp), color = valueColor)
     }
 }
 

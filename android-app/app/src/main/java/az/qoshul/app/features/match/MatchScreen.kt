@@ -58,7 +58,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.glass.GlassPill
 import az.qoshul.app.core.model.Person
@@ -413,7 +412,7 @@ private fun CardFace(
                 Spacer(Modifier.width(3.dp))
                 Text(
                     (if (st.showDistance) "${person.distanceLabel} · ${person.city}" else person.city) +
-                        "    ${FakeQoshulDataSource.statusLabel(person.status)} · ${person.org}",
+                        "    ${engine.statusLabel(person.status)} · ${person.org}",
                     style = androidx.compose.ui.text.TextStyle(
                         fontFamily = JakartaSans, fontSize = 11.5.sp,
                         color = Color.White.copy(alpha = 0.7f)),

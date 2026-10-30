@@ -55,7 +55,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.engine.AppUiState
 import az.qoshul.app.core.theme.Q
@@ -64,6 +63,7 @@ import az.qoshul.app.core.motion.StaggerIn
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.EmptyState
+import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.RankBadge
 import az.qoshul.app.core.ui.Route
@@ -80,9 +80,11 @@ import az.qoshul.app.features.events.EventsScreen
 /**
  * Kəşf (ANA EKRAN) — Flutter feed_screen.dart portu (ROL TAB 1, D-034):
  * "Sənin üçün | Tədbirlər" daxili tabları; axtarış pinned (D-029).
+ * D-050: bütün kart bağlantıları canlıdır (məkan → detal, insan → Match,
+ * endirim → Kuponlar) — ölü onClick-lər aradan qaldırıldı.
  */
 @Composable
-fun FeedScreen(engine: AppEngine) {
+fun FeedScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var view by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
 
@@ -98,10 +100,10 @@ fun FeedScreen(engine: AppEngine) {
             label = "feedTabs",
         ) { v ->
             if (v == 0) {
-                ForYouView(engine, search = search, onSearchChange = { search = it },
+                ForYouView(engine, nav, search = search, onSearchChange = { search = it },
                     onOpenEvents = { view = 1 })
             } else {
-                EventsScreen(engine)
+                EventsScreen(engine, nav, focus)
             }
         }
     }
@@ -156,6 +158,7 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
 @Composable
 private fun ForYouView(
     engine: AppEngine,
+    nav: NavState,
     search: String,
     onSearchChange: (String) -> Unit,
     onOpenEvents: () -> Unit,
@@ -209,7 +212,7 @@ private fun ForYouView(
                 }
             }
             // — Populyar məkanlar —
-            val venues = FakeQoshulDataSource.partners.filter { v ->
+            val venues = engine.partners.filter { v ->
                 v.city == st.city && (search.isEmpty() ||
                     "${v.name} ${v.category} ${v.address}".lowercase().contains(search.lowercase()))
             }
@@ -227,7 +230,7 @@ private fun ForYouView(
                                 imageKey = v.image, name = v.name, category = v.category,
                                 priceRange = v.priceRange, rating = v.rating,
                                 discount = v.discountPercent,
-                                onClick = { /* məkan detal — Route.VenueDetail */ },
+                                onClick = { nav.push(Route.VenueDetail(v.id)) },
                             )
                         }
                     }
@@ -240,7 +243,7 @@ private fun ForYouView(
                     title = "Sənə uyğun insanlar", icon = Icons.Filled.FavoriteBorder,
                     trailing = {
                         SectionLink(text = "Hamısına bax", icon = Icons.Filled.NorthEast, onClick = {
-                            /* Route.Match */
+                            nav.push(Route.Match)
                         })
                     },
                 )
@@ -265,7 +268,7 @@ private fun ForYouView(
                                 imageKey = p.image, name = p.firstName, age = p.age,
                                 distanceLabel = if (st.showDistance) p.distanceLabel else p.city,
                                 matchPercent = p.match,
-                                onClick = { /* Route.Match */ },
+                                onClick = { nav.push(Route.Match) },
                             )
                         }
                     }
@@ -278,7 +281,7 @@ private fun ForYouView(
                     title = "Endirimli təkliflər", icon = Icons.Filled.Percent,
                     trailing = {
                         SectionLink(text = "Bütün endirimlər", icon = Icons.Filled.NorthEast, onClick = {
-                            /* Route.Coupons */
+                            nav.push(Route.Coupons)
                         })
                     },
                 )
@@ -294,6 +297,7 @@ private fun ForYouView(
                                 label = o.label,
                                 venueLine = if (o.autoByLevel) "${o.venueName} · səviyyən ilə açıq"
                                 else "${o.venueName} · ${o.xpPrice} XP",
+                                onClick = { nav.push(Route.Coupons) },
                             )
                         }
                     }

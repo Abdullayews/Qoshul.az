@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.XpRules
@@ -407,7 +406,7 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
             ),
         )
         Spacer(Modifier.height(14.dp))
-        FakeQoshulDataSource.rolCategories.forEach { c ->
+        engine.dataSource.rolCategories.forEach { c ->
             val isSel = c in selected.value
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -437,7 +436,7 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
                     Text(c, style = androidx.compose.ui.text.TextStyle(
                         fontFamily = JakartaSans, fontSize = 13.sp, fontWeight = FontWeight.W700))
                     Spacer(Modifier.height(2.dp))
-                    Text(FakeQoshulDataSource.rolCategoryHints[c] ?: "", style = T.meta)
+                    Text(engine.dataSource.rolCategoryHints[c] ?: "", style = T.meta)
                 }
                 if (isSel) Icon(Icons.Filled.CheckCircle, null, tint = Q.primary, modifier = Modifier.size(19.dp))
             }

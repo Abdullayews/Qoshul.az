@@ -53,7 +53,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.VenueXpAccount
@@ -113,7 +112,7 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     subtitle = "Tərəfdaş məkanlarda daha çox fürsət.",
                 )
             }
-            itemsIndexed(FakeQoshulDataSource.partners) { _, p ->
+            itemsIndexed(engine.partners) { _, p ->
                 PartnerCard(p, onCreate = { onOpenCreateAtVenue(p) })
                 Spacer(Modifier.height(20.dp))
             }
@@ -211,7 +210,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     Text("Obyekt", style = T.meta.copy(fontWeight = FontWeight.W700))
                     Spacer(Modifier.height(8.dp))
                     Column {
-                        FakeQoshulDataSource.partners.filter { engine.venueXpFor(it.id) != null }
+                        engine.partners.filter { engine.venueXpFor(it.id) != null }
                             .forEach { v ->
                                 val sel = venueId == v.id
                                 Text(

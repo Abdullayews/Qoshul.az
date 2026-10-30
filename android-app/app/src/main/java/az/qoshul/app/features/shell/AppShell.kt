@@ -80,19 +80,34 @@ import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.Wordmark
+import androidx.compose.runtime.LaunchedEffect
 
 /**
  * Əsas tətbiq qabığı — Flutter app_shell.dart portu (ROL C + D-034):
  * 4 tab alt paneli: Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil.
  * Kəşf = ana ekran; içində "Sənin üçün | Tədbirlər" daxili tabları.
  * Edge-to-edge (D-031): məzmun şəffaf barların altından axır.
+ *
+ * D-050: [focus] — xəritə fokus istəyi gələndə avtomatik Xəritə tabına
+ * keçilir ("Yol göstər"/"Yol tap" düymələri, MapFocusState).
  */
 @Composable
-fun AppShell(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) {
+fun AppShell(
+    engine: AppEngine,
+    nav: NavState,
+    onOpenCreate: () -> Unit,
+    focus: MapFocusState = remember { MapFocusState() },
+) {
     var index by remember { mutableStateOf(0) }
+
+    // "Yol göstər / Yol tap" → xəritə tabına keç (D-050)
+    LaunchedEffect(focus.request) {
+        if (focus.request != null) index = 1
+    }
 
     Column(
         Modifier
@@ -118,8 +133,8 @@ fun AppShell(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) {
                 label = "tabs",
             ) { i ->
                 when (i) {
-                    0 -> FeedScreen(engine)
-                    1 -> MapScreen(engine)
+                    0 -> FeedScreen(engine, nav, focus)
+                    1 -> MapScreen(engine, nav, focus)
                     2 -> ChatsScreen(engine)
                     else -> ProfileScreen(engine, nav)
                 }

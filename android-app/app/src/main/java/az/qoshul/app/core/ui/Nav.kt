@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -121,11 +122,12 @@ fun PushScreenScaffold(
             .fillMaxSize()
             .background(Q.background)
     ) {
-        // AppBar
+        // AppBar (D-050 düzəlişi: fillMaxSize → fillMaxWidth — sətir hündürlüyü
+        // height(56) ilə sabitlənir, amma semantika düzgün olmalı idi)
         androidx.compose.foundation.layout.Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .background(Q.card)
                 .height(56.dp)
                 .padding(horizontal = 4.dp),
@@ -148,7 +150,7 @@ fun PushScreenScaffold(
         // Alt haşiyə
         Box(
             Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .height(1.dp)
                 .background(Q.border)
         ) { }

@@ -74,7 +74,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
@@ -87,6 +86,9 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CategoryChip
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
+import az.qoshul.app.core.ui.MapFocusState
+import az.qoshul.app.core.ui.NavState
+import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.SafetyNote
 import az.qoshul.app.core.ui.SearchBarField
 import az.qoshul.app.core.ui.SectionHeading
@@ -101,7 +103,7 @@ import kotlinx.coroutines.launch
  * Yaxınlaşan / Mənim tədbirlərim / Yaratdığım + D-026 L.1 sıralama.
  */
 @Composable
-fun EventsScreen(engine: AppEngine) {
+fun EventsScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var tab by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Hamısı") }
@@ -162,7 +164,7 @@ fun EventsScreen(engine: AppEngine) {
                 }
                 val createdByMe = st.events.filter { it.host == st.profileName && ok(it.title, it.location) }
                 val base = when (tab) { 0 -> upcoming; 1 -> mine; else -> createdByMe }
-                val list = base.filter { category == "Hamısı" || FakeQoshulDataSource.groupOf(it.category) == category }
+                val list = base.filter { category == "Hamısı" || engine.dataSource.groupOf(it.category) == category }
 
                 // D-026 (L.1): "Sənin səviyyənə görə"
                 val proRanked = list.sortedByDescending {
@@ -237,7 +239,7 @@ fun EventsScreen(engine: AppEngine) {
                             icon = Icons.Filled.TableRestaurant,
                             title = "Tədbir yoxdur? Məkan rezerv et",
                             subtitle = "Partnyor məkanlarda stol ayır, QR al və iştirakla XP qazan.",
-                            onClick = { /* VenueDetail — məkan rezerv axını */ },
+                            onClick = { nav.push(Route.Partners) },
                             trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
                         )
                     }
@@ -247,7 +249,11 @@ fun EventsScreen(engine: AppEngine) {
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
         detailEvent?.let { ev ->
-            EventDetailSheet(engine, ev, onDismiss = { detailEvent = null })
+            EventDetailSheet(
+                engine, ev,
+                onDismiss = { detailEvent = null },
+                onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
+            )
         }
     }
 }

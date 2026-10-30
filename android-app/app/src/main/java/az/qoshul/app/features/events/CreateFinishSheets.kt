@@ -45,7 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
+import az.qoshul.app.core.data.nextDateLabels
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.ActivityXpResult
 import az.qoshul.app.core.theme.Q
@@ -86,7 +86,7 @@ fun CreateEventSheet(
         mutableStateOf(presetCity.ifEmpty { venue?.city ?: engine.state.value.city })
     }
     var category by remember {
-        mutableStateOf(if (FakeQoshulDataSource.allCategories.contains(initial?.category)) initial!!.category else "Qəhvə")
+        mutableStateOf(if (engine.dataSource.allCategories.contains(initial?.category)) initial!!.category else "Qəhvə")
     }
     var format by remember { mutableStateOf("Oflayn") }
     var date by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
@@ -180,7 +180,7 @@ fun CreateEventSheet(
             }
             FormLine("Kateqoriya") {
                 DropdownLine(
-                    options = FakeQoshulDataSource.allCategories,
+                    options = engine.dataSource.allCategories,
                     selected = category, onSelect = { category = it },
                 )
             }
@@ -194,7 +194,7 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine("Şəhər") {
                         DropdownLine(
-                            options = FakeQoshulDataSource.cities.map { it.name },
+                            options = engine.dataSource.cities.map { it.name },
                             selected = city, onSelect = { city = it },
                         )
                     }
@@ -210,10 +210,10 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine("Tarix") {
                         DropdownLine(
-                            options = FakeQoshulDataSource.nextDateLabels(14),
+                            options = nextDateLabels(14),
                             selected = "%02d.%02d".format(date.dayOfMonth, date.monthValue),
                             onSelect = { sel ->
-                                val idx = FakeQoshulDataSource.nextDateLabels(14).indexOf(sel)
+                                val idx = nextDateLabels(14).indexOf(sel)
                                 if (idx >= 0) date = LocalDate.now().plusDays(idx.toLong())
                             },
                         )
@@ -399,7 +399,7 @@ fun FinishActivitySheet(
     var result by remember { mutableStateOf<ActivityXpResult?>(null) }
     val st by engine.state.collectAsState()
     val acct = engine.venueXpFor(event.venueId ?: "")
-    val participants = FakeQoshulDataSource.people.take(event.participants.coerceIn(1, 5))
+    val participants = engine.dataSource.people.take(event.participants.coerceIn(1, 5))
 
     SheetScaffold(onDismiss = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp)) {

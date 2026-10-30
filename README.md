@@ -141,6 +141,21 @@ predictive-back opt-in, müvəqqəti brend nişanı (web favicon motivi — ham�
 Xəritə (D-048): **MapLibre Compose 0.20 + OpenFreeMap** — GPU vektor render, hamar
 pinch/pan/fırlanma, stil qatları pinlər, açarsız və pulsuz (istifadəçi direktivi
 "MapLibre yaxşıdırsa onu işlət"; D-038-in öz-renderer seçimi ləğv edildi).
+
+**İkili versiya (D-050, v0.9.0/4 — 81 test):** iki branch, iki rejim —
+`AppConfig.MODE` ilə:
+- **`main` = PLACEHOLDER**: bütün funksiyalar fake/demo məlumatla dolu görünür +
+  **vahid hardcoded demo hesabı** (`engine.signInDemo()` — bir toxunuşla dolu profil).
+  UI sınağı, investor demo, marketinq üçün.
+- **`server-only` = SERVER_ONLY**: serverə qoşulana qədər HEÇ BİR məlumat yoxdur —
+  giriş yalnız real server auth (`POST /auth/login`) ilə, mənbə siyahıları boş,
+  `applicationId az.qoshul.app.server` (paralel quraşdırma), ad "Qoshul Server".
+  Fake data koda sızmır: bütün UI `engine.dataSource` kontraktından oxuyur.
+
+v0.9.0 mükəmməlləşdirmə turu (D-051): bütün ölü naviqasiya düymələri canlandı —
+feed kartları (məkan → detal, insan → Match, endirim → Kuponlar), xəritə alt kartının
+"Ətraflı/Rezerv et/Tanış ol" düymələri, "Yol göstər"/"Yol tap" (xəritəyə uçur —
+`MapFocusState`), "Məkan rezerv et" bannerı.
 | 9 | AI assistant proxy (per-user limits) | ⬜ |
 | 10 | Infra: Caddy prod, multi-arch CI, backups, monitoring | ⬜ |
 

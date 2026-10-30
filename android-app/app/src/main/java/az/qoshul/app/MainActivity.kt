@@ -20,6 +20,7 @@ import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.model.parseAssistantEvent
 import az.qoshul.app.core.ui.GlassNavHost
+import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.rememberNavState
@@ -64,6 +65,8 @@ class MainActivity : ComponentActivity() {
  * Kök — Flutter main.dart portu: Auth → Onboarding → AppShell (4 tab).
  * Mühərrik tətbiq miqyasındadır (composition-da bir dəfə yaradılır);
  * push-ekranlar GlassNavHost ilə (GlassPageRoute pariteti).
+ * D-050: xəritə fokus vəziyyəti (MapFocusState) burada sahiblənir —
+ * AppShell (tab keçidi) və push-ekranlar (VenueDetail "Yol tap") paylaşır.
  */
 @Composable
 fun QoshulApp() {
@@ -71,6 +74,7 @@ fun QoshulApp() {
     val engine = remember { AppEngine(scope = scope) }
     val st by engine.state.collectAsState()
     val nav = rememberNavState()
+    val focus = remember { MapFocusState() }
 
     // modal sheet vəziyyətləri
     var createOpen by remember { mutableStateOf(false) }
@@ -80,7 +84,7 @@ fun QoshulApp() {
 
     Box(Modifier.fillMaxSize()) {
         when {
-            !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() })
+            !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() }, engine = engine)
             !st.onboarded -> OnboardingScreen(engine)
             else -> GlassNavHost(
                 nav = nav,
@@ -89,6 +93,7 @@ fun QoshulApp() {
                         engine = engine,
                         nav = nav,
                         onOpenCreate = { createOpen = true },
+                        focus = focus,
                     )
                 },
             ) { route ->
@@ -96,6 +101,7 @@ fun QoshulApp() {
                     route = route,
                     engine = engine,
                     nav = nav,
+                    focus = focus,
                     onOpenCreateAtVenue = { v -> createVenue = v; createOpen = true },
                     onOpenAssistantCreate = { proposal ->
                         assistantProposal = proposal; createOpen = true
@@ -129,6 +135,7 @@ private fun RouteScreen(
     route: Route,
     engine: AppEngine,
     nav: NavState,
+    focus: MapFocusState,
     onOpenCreateAtVenue: (Partner) -> Unit,
     onOpenAssistantCreate: (EventProposal) -> Unit,
 ) {
@@ -143,7 +150,7 @@ private fun RouteScreen(
         Route.XpCard -> XpCardScreen(engine, nav)
         Route.Settings -> SettingsScreen(engine, nav)
         Route.Safety -> SafetyScreen(nav)
-        is Route.VenueDetail -> VenueDetailScreen(engine, nav, route.venueId)
+        is Route.VenueDetail -> VenueDetailScreen(engine, nav, route.venueId, focus)
     }
 }
 

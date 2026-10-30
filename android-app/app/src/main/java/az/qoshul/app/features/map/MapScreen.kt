@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +57,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.glass.GlassPill
 import az.qoshul.app.core.glass.GlassSurface
@@ -67,7 +67,12 @@ import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.ui.MapFocusState
+import az.qoshul.app.core.ui.NavState
+import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.imagePaint
+import az.qoshul.app.features.events.EventDetailSheet
+import az.qoshul.app.features.venues.ReserveSheet
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -144,20 +149,23 @@ private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject
 )
 
 @Composable
-fun MapScreen(engine: AppEngine) {
+fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     val st by engine.state.collectAsState()
     var category by remember { mutableStateOf("Hamısı") }
     var distanceKm by remember { mutableStateOf(10) }
     var openNow by remember { mutableStateOf(false) }
     var withDiscount by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<MapPin?>(null) }
+    var reserveVenue by remember { mutableStateOf<Partner?>(null) }
+    var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
+    var pendingCamera by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     val hour = remember { java.time.LocalDateTime.now().hour }
 
     val myLat = 40.4093
     val myLng = 49.8671
 
     // — pinlər (filtrlərlə, D-027 görünüş rejimi) —
-    val venuePins = FakeQoshulDataSource.partners.filter { v ->
+    val venuePins = engine.partners.filter { v ->
         v.city == st.city && (category == "Hamısı" || v.category == category) &&
             (!openNow || v.isOpenAt(hour)) && (!withDiscount || v.hasDiscount)
     }.map { MapPin.Venue(it) }
@@ -178,6 +186,22 @@ fun MapScreen(engine: AppEngine) {
 
     val scope = rememberCoroutineScope()
 
+    // — D-050: xəritə fokus istəyi ("Yol göstər"/"Yol tap") — pin seç + kameraya al
+    LaunchedEffect(focus.request) {
+        when (val t = focus.request) {
+            is MapFocusState.Target.Venue ->
+                venuePins.find { it.v.id == t.venueId }?.let {
+                    selected = it; pendingCamera = it.lng to it.lat
+                }
+            is MapFocusState.Target.Event ->
+                eventPins.find { it.e.id == t.eventId }?.let {
+                    selected = it; pendingCamera = it.lng to it.lat
+                }
+            null -> Unit
+        }
+        focus.consume()
+    }
+
     Box(Modifier.fillMaxSize().background(Q.tileFallback)) {
         if (!isJvmTest) {
             val mapState = rememberMapState(
@@ -194,6 +218,19 @@ fun MapScreen(engine: AppEngine) {
                     selectedKey = selected?.key(),
                     onPinTap = { selected = it },
                 )
+            }
+
+            // D-050: fokus istəyi → kameranı pinə uçur (zoom ≥ 15)
+            LaunchedEffect(pendingCamera) {
+                val pos = pendingCamera ?: return@LaunchedEffect
+                mapState.animateCamera(
+                    CameraUpdate(
+                        center = Position(longitude = pos.first, latitude = pos.second),
+                        zoom = maxOf(mapState.cameraPosition.zoom, 15.0),
+                    ),
+                    CameraAnimation.Ease.Standard,
+                )
+                pendingCamera = null
             }
 
             // — REAL xəritə: MapLibre vektor render (D-048) —
@@ -331,9 +368,27 @@ fun MapScreen(engine: AppEngine) {
                 sigma = 18.dp,
                 luminance = 0.58f,
             ) {
-                BottomCardContent(pin)
+                BottomCardContent(
+                    pin = pin,
+                    onVenueDetail = { nav.push(Route.VenueDetail(it.id)); selected = null },
+                    onReserve = { reserveVenue = it },
+                    onEventDetail = { detailEvent = it },
+                    onMeetPerson = { nav.push(Route.Match); selected = null },
+                )
             }
         }
+    }
+
+    // — alt kartın açdığı sheetlər (D-050: ölü düymələr canlandı) —
+    reserveVenue?.let { v ->
+        ReserveSheet(engine, v, onDismiss = { reserveVenue = null })
+    }
+    detailEvent?.let { ev ->
+        EventDetailSheet(
+            engine, ev,
+            onDismiss = { detailEvent = null },
+            onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
+        )
     }
 }
 
@@ -496,9 +551,15 @@ private fun QoshulPinLayers(
     )
 }
 
-/** Alt kart məzmunu — pin tipinə görə. */
+/** Alt kart məzmunu — pin tipinə görə (D-050: bütün düymələr canlıdır). */
 @Composable
-private fun BottomCardContent(pin: MapPin) {
+private fun BottomCardContent(
+    pin: MapPin,
+    onVenueDetail: (Partner) -> Unit,
+    onReserve: (Partner) -> Unit,
+    onEventDetail: (QoshulEvent) -> Unit,
+    onMeetPerson: () -> Unit,
+) {
     when (pin) {
         is MapPin.Venue -> {
             val v = pin.v
@@ -530,10 +591,9 @@ private fun BottomCardContent(pin: MapPin) {
                 }
                 Spacer(Modifier.height(12.dp))
                 Row {
-                    // A3: düymələr "tezliklə" vəziyyətində deyil — real klik (boş) saxlanılıb
-                    BottomCardButton("Ətraflı", primary = false, onClick = {})
+                    BottomCardButton("Ətraflı", primary = false, onClick = { onVenueDetail(v) })
                     Spacer(Modifier.width(8.dp))
-                    BottomCardButton("Rezerv et", primary = true, onClick = {})
+                    BottomCardButton("Rezerv et", primary = true, onClick = { onReserve(v) })
                 }
             }
         }
@@ -544,7 +604,7 @@ private fun BottomCardContent(pin: MapPin) {
                 Spacer(Modifier.height(4.dp))
                 Text("${e.category} · ${e.date}, ${e.time} · ~${e.distance} km", style = T.meta)
                 Spacer(Modifier.height(12.dp))
-                BottomCardButton("Ətraflı", primary = true, onClick = {}, fill = true)
+                BottomCardButton("Ətraflı", primary = true, onClick = { onEventDetail(e) }, fill = true)
             }
         }
         is MapPin.PersonP -> {
@@ -564,7 +624,7 @@ private fun BottomCardContent(pin: MapPin) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                BottomCardButton("Tanış ol", primary = true, onClick = {}, fill = true)
+                BottomCardButton("Tanış ol", primary = true, onClick = onMeetPerson, fill = true)
             }
         }
     }
