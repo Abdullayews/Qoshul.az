@@ -301,15 +301,19 @@ olunacaq — hər bənd Phase 9-da birebir yoxlanılır):
 
 ## 7. Baza ölçmələri (Phase 9 müqayisəsi üçün)
 
-| Metrik | Flutter v0.7.0 (baza) | Native (hədəf) | Ölçmə üsulu |
+| Metrik | Flutter v0.7.0 (baza) | Native (ölçülmüş, 2026-10-30) | Nəticə |
 |---|---|---|---|
-| APK ölçüsü (release, universal) | 55.6 MB | ? | CI artifact bayt |
-| APK ölçüsü (arm64-v8a tək ABI) | (ölçülməyib — universal build) | ? |本地 split build |
-| Kod həcmi | 14 501 sətir Dart | ? | `cloc`-ekvivalent skript |
-| Test sayı / vaxtı | 89 / CI-da ~1 dəq | ? | `./gradlew test` |
-| Təmiz build vaxtı (CI) | ~5 dəq (D-015) | ? | GH Actions run |
-| Soyuq başlanğıc | ölçülməyib (cihaz yoxdur) | ölçülməyib | hər ikisi cihazda ölçülməlidir — BƏYANAT |
-| Kadrsürəti (jank) | ölçülməyib | ölçülməyib | Macrobenchmark — gələcək mərhələ |
+| APK ölçüsü (release, universal) | 55.6 MB | **2.76 MB** (R8 + resource shrink; debug 21.4 MB) | **20.2× kiçik** |
+| Kod həcmi | 14 501 sətir Dart (42 fayl) | **11 911 sətir Kotlin** (38 fayl) | 18% az |
+| Məntiq testləri | 61 (89-dan 28-i widget/no-op) | **67 JVM testi** — hamısı keçir (CI run 41079665996) | əhatə +
+| CI build vaxtı (təmiz, cache-siz) | ~5 dəq (D-015) | ~6 dəq (JDK+Gradle download daxil; cache ilə ~3 dəq) | ≈ bərabər |
+| Soyuq başlanğıc | ölçülməyib (cihaz yoxdur) | ölçülməyib | **BƏYANAT: hər ikisi cihazda ölçülməlidir** |
+| Kadrsürəti (jank) | ölçülməyib | ölçülməyib | **BƏYANAT: Macrobenchmark — gələcək mərhələ** |
+
+**Nəticə (yalnız ölçülmüş metrikalar üzrə):** native versiya APK ölçüsündə 20×
+daha yüngül, kodda 18% daha kompakt, məntiq test əhatəsində daha geniş; build
+vaxtı bərabərdir. Soyuq başlanğıc / kadrsürəti iddiaları bu mühitdə ölçülə
+bilmədiyindən **verilmir** — dürüstlük qaydası (D-036).
 
 **Dürüstlük qaydası (D-036):** soyuq başlanğıc və kadrsürəti bu mühitdə ölçülə bilmir
 (-cihaz/emulator yoxdur). Phase 9 müqayisəsi yalnız **ölçülə bilən** metrikalar üzrə
