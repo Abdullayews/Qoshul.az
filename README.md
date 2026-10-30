@@ -129,14 +129,18 @@ Qoshul.az/
 `android-app/` — Flutter tətbiqinin **Kotlin + Jetpack Compose** native portu: eyni məhsul
 məntiqi (ROL B–I + D-026 XP iqtisadiyyatı), eyni vizual dil (Q/T tokenləri, Liquid Glass
 minimal, hərəkət dili). Baza auditi: `docs/audit-flutter-v0.7.0.md`.
-Müqayisə (ölçülə bilən metrikalar): **release APK 2.39 MB** (Flutter universal 55.6 MB),
-kod 11 911+ sətir Kotlin, **77 JVM testi** (67 məntiq + 7 QR-sübut + 3 Robolectric UI).
+Müqayisə (ölçülə bilən metrikalar): release APK **27.4 MB** (arm64-v8a + armeabi-v7a —
+MapLibre vektor xəritə nüvəsi daxil; öz-renderer dövründə 2.5 MB idi), kod 11 900+ sətir Kotlin,
+**77 JVM testi** (67 məntiq + 7 QR-sübut + 3 Robolectric UI).
 Paritet təsdiqi + owner razılığına qədər hər iki tətbiq mövcuddur; CI:
 `.github/workflows/native.yml`. Optimizasiya qatı (D-041..D-046): **real skan edilən QR**
 (Nayuki vendored + ZXing sübut testi), başlanğıc baseline profile + profileinstaller,
 font subsetting (484→327 KB, AZ qlifləri proqramla yoxlanılıb), şəkillər WebP (625→439 KB,
 PSNR >38 dB), R8 full mode + resource optimization, Gradle configuration cache,
 predictive-back opt-in, müvəqqəti brend nişanı (web favicon motivi — hamısı dəyişəcək).
+Xəritə (D-048): **MapLibre Compose 0.20 + OpenFreeMap** — GPU vektor render, hamar
+pinch/pan/fırlanma, stil qatları pinlər, açarsız və pulsuz (istifadəçi direktivi
+"MapLibre yaxşıdırsa onu işlət"; D-038-in öz-renderer seçimi ləğv edildi).
 | 9 | AI assistant proxy (per-user limits) | ⬜ |
 | 10 | Infra: Caddy prod, multi-arch CI, backups, monitoring | ⬜ |
 
