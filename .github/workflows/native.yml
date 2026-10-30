@@ -1,0 +1,59 @@
+# Qoshul.az native (Kotlin + Compose) CI — D-036/D-040.
+# Mövcud Flutter pipeline-i (apk.yml) toxunulmaz; bu job paralel işləyir.
+name: Native
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/native.yml"
+      - "android-app/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Native (Kotlin + Compose) — test + APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Vahid testlər (JVM — məntiq pariteti, Phase 7)
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Test nəticələri (artifact)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-test-results
+          path: android-app/app/build/test-results/
+          if-no-files-found: error
+
+      - name: Release APK (R8 + resource shrink)
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK artifaktı
+        uses: actions/upload-artifact@v4
+        with:
+          name: qoshul-native-apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

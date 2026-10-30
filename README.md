@@ -51,7 +51,7 @@ every technical decision written down and sourced in
 
 | Layer | Technology |
 |---|---|
-| Mobile | **Flutter** (Dart, Clean Architecture + BLoC, feature-first, freezed, json_serializable) |
+| Mobile | **Native Kotlin + Jetpack Compose** (`android-app/` — D-036; AGP 9.5, Compose BOM 2026.09, saf-Kotlin mühərrik + StateFlow) · köhnə: Flutter (`mobile/`, paritet təsdiqinə qədər) |
 | API contract | OpenAPI schema → generated Dart client |
 | Backend | **NestJS** (TypeScript) — modular monolith (no microservices / gRPC) |
 | Realtime | **Socket.IO + Redis adapter** |
@@ -95,7 +95,8 @@ AI provider · SMTP provider (OCI blocks port 25) · DNS.
 Qoshul.az/
 ├── README.md · Makefile · .env.example · .editorconfig
 ├── docs/            architecture.md · runbook.md · decisions.md
-├── mobile/          Flutter — core/ + features/<name>/{data, domain, presentation}
+├── android-app/     Native (Kotlin + Compose) — D-036 yenidən yazma (beta)
+├── mobile/          Flutter — core/ + features/<name>/{data, domain, presentation} (paritet təsdiqinə qədər saxlanılır)
 │                    features: auth · profile · match · map · chats · feed · events
 │                             venues · partners · coupons · reservations · safety
 │                             notifications · onboarding · settings · assistant · shell
@@ -122,6 +123,15 @@ Qoshul.az/
 | 6 | Notifications: FCM + BullMQ | ⬜ |
 | 7 | Flutter: skeleton, OpenAPI client, auth + profile screens | ⬜ |
 | 8 | Flutter: map, chat, notifications | ⬜ |
+
+### Native yenidən yazma (D-036, 2026-10-30)
+
+`android-app/` — Flutter tətbiqinin **Kotlin + Jetpack Compose** native portu: eyni məhsul
+məntiqi (ROL B–I + D-026 XP iqtisadiyyatı), eyni vizual dil (Q/T tokenləri, Liquid Glass
+minimal, hərəkət dili), 67 JVM testi. Baza auditi: `docs/audit-flutter-v0.7.0.md`.
+Müqayisə (ölçülə bilən metrikalar): **release APK 2.76 MB** (Flutter universal 55.6 MB),
+kod 11 911 sətir Kotlin (Flutter 14 501 sətir Dart). Paritet təsdiqi + owner razılığına
+qədər hər iki tətbiq mövcuddur; CI: `.github/workflows/native.yml`.
 | 9 | AI assistant proxy (per-user limits) | ⬜ |
 | 10 | Infra: Caddy prod, multi-arch CI, backups, monitoring | ⬜ |
 
