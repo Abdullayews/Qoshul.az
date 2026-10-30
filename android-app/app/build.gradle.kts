@@ -11,8 +11,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.7.0"
+        versionCode = 3
+        versionName = "0.8.0"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -26,6 +26,10 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+            // MapLibre nüvə .so ~13.4 MB/ABI (D-048): release-da real telefon ABI-ları;
+            // x86_64 (yalnız emulator) buraxılır — debug variantında qalır.
+            // Play-də app bundle per-device çatdırır; birbaşa APK üçün universal phone build.
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
     }
 
@@ -79,6 +83,11 @@ dependencies {
     // Baseline profile quraşdırıcısı — API 24-27-də profile install üçün (D-043);
     // transitive 1.4.0 gəlirdi, açıq pin 1.4.1 (son stable)
     implementation(libs.androidx.profileinstaller)
+
+    // Vektor xəritə — MapLibre Compose 0.20 (D-048): OpenFreeMap stili, açarsız;
+    // FFI nüvə .so ~1 MB/ABI, OpenGL backend (Vulkan runtime-a ehtiyac yoxdur)
+    implementation(libs.maplibre.compose.android)
+    runtimeOnly(libs.maplibre.compose.runtime.opengl.android)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

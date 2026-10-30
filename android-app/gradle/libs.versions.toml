@@ -16,6 +16,7 @@ desugar = "2.1.5"
 profileinstaller = "1.4.1"
 robolectric = "4.17"
 zxing = "3.5.4"          # YALNIZ test: QR generasiyasının skan oluna bilməsi sübutu (D-041)
+maplibreCompose = "0.20.0" # MapLibre Compose — vektor xəritə (D-048); FFI nüvə 0.202610.0
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,8 @@ robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+maplibre-compose-android = { group = "org.maplibre.compose", name = "maplibre-compose-android", version.ref = "maplibreCompose" }
+maplibre-compose-runtime-opengl-android = { group = "org.maplibre.compose", name = "maplibre-compose-runtime-opengl-android", version.ref = "maplibreCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

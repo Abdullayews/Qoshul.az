@@ -1,13 +1,12 @@
 package az.qoshul.app.features.map
 
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Percent
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
@@ -39,31 +37,23 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.foundation.layout.offset
-import kotlin.math.roundToInt
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.data.FakeQoshulDataSource
@@ -73,39 +63,56 @@ import az.qoshul.app.core.glass.GlassSurface
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.model.Person
+import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
-import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
-import az.qoshul.app.core.ui.NavState
-import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.imagePaint
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.pow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import org.maplibre.compose.camera.CameraAnimation
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.CameraUpdate
+import org.maplibre.compose.expressions.dsl.asString
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.expressions.dsl.eq
+import org.maplibre.compose.expressions.dsl.feature
+import org.maplibre.compose.expressions.dsl.image
+import org.maplibre.compose.expressions.value.SymbolAnchor
+import org.maplibre.compose.interaction.ClickResult
+import org.maplibre.compose.interaction.MapInteractions
+import org.maplibre.compose.layers.CircleLayer
+import org.maplibre.compose.layers.FeaturesClickHandler
+import org.maplibre.compose.layers.SymbolLayer
+import org.maplibre.compose.map.MapUiOptions
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.rememberMapState
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.spatialk.geojson.Feature
+import org.maplibre.spatialk.geojson.FeatureCollection
+import org.maplibre.spatialk.geojson.Point
+import org.maplibre.spatialk.geojson.Position
 
 /**
- * Xəritə tabı — Flutter map_screen.dart + tile_map.dart portu (ROL TAB 2,
- * D-027/D-030). Öz OSM tile renderer (Phase 8 qərarı: D-038 — bax
- * docs/decisions.md): Web Mercator, pinch/pan, diskret zoom commit,
- * sabit ölçülü pinlər, OSM atribusiyası.
+ * Xəritə tabı (ROL TAB 2, D-027/D-030/D-048): MapLibre Compose 0.20 +
+ * OpenFreeMap "liberty" vektor stili — pulsuz, API açarı və hesablaşma YOX
+ * (D-038-in "ağır SDK" rəddi 2026 FFI nəsli ilə köhnəldi: nüvə .so cəmi
+ * ~1 MB/ABI). GPU vektor render, hamar pinch/pan/fırlanma, kamera animasiyası.
+ *
+ * Pinlər stil qatlarındadır (Circle + Symbol): məkan = yaşal dot + storefront
+ * qlifi, tədbir = narıncı dot + təqvim qlifi, insan = adın baş hərfi.
+ * Seçim halosu, boş toxunma = seçimi buraxır. OSM atribusiyası saxlanılıb.
  */
-private const val TILE_SIZE = 256f
+private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 
-// ── Web Mercator riyaziyyatı (slippy) ──
-private fun worldSize(zoom: Int): Float = TILE_SIZE * (1 shl zoom)
-private fun lngToX(lng: Double, ws: Float): Float = ((lng + 180.0) / 360.0 * ws).toFloat()
-private fun latToY(lat: Double, ws: Float): Float {
-    val l = lat.coerceIn(-85.05112878, 85.05112878)
-    val r = Math.toRadians(l)
-    return ((1.0 - Math.log(Math.tan(r) + 1.0 / Math.cos(r)) / Math.PI) / 2.0 * ws).toFloat()
-}
-private fun xToLng(x: Float, ws: Float): Double = x / ws * 360.0 - 180.0
-private fun yToLat(y: Float, ws: Float): Double {
-    val n = Math.PI - 2.0 * Math.PI * y / ws
-    return Math.toDegrees(Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))))
-}
+/** Liberty stilinin qlif şrifti (initial hərflər üçün). */
+private const val STYLE_TEXT_FONT = "Noto Sans Regular"
 
 /** Xəritə pin modeli. */
 sealed interface MapPin {
@@ -115,6 +122,26 @@ sealed interface MapPin {
     data class Event(val e: QoshulEvent) : MapPin { override val lat = e.lat; override val lng = e.lng }
     data class PersonP(val p: Person) : MapPin { override val lat = p.mapLat; override val lng = p.mapLng }
 }
+
+/** Qat kliklərində pini tapmaq üçün stabil açar. */
+private fun MapPin.key(): String = when (this) {
+    is MapPin.Venue -> "v${v.id}"
+    is MapPin.Event -> "e${e.id}"
+    is MapPin.PersonP -> "p${p.id}"
+}
+
+/** Pin siyahısından GeoJSON feature kolleksiyası. */
+private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject> = FeatureCollection(
+    pins.map { pin ->
+        Feature(
+            geometry = Point(Position(longitude = pin.lng, latitude = pin.lat)),
+            properties = buildJsonObject {
+                put("key", pin.key())
+                if (pin is MapPin.PersonP) put("initial", pin.p.firstName.take(1))
+            },
+        )
+    },
+)
 
 @Composable
 fun MapScreen(engine: AppEngine) {
@@ -145,15 +172,88 @@ fun MapScreen(engine: AppEngine) {
         }.map { MapPin.PersonP(it) }
     val pins = venuePins + eventPins + peoplePins
 
+    // Robolectric (JVM test): FFI .so yüklənə bilməz → xəritə səthi yoxdur;
+    // UI smoke-testləri qalan qatları (çiplər, kartlar) yoxlayır.
+    val isJvmTest = remember { Build.FINGERPRINT.contains("robolectric", ignoreCase = true) }
+
+    val scope = rememberCoroutineScope()
+
     Box(Modifier.fillMaxSize().background(Q.tileFallback)) {
-        // — REAL xəritə (OSM tile-lar) —
-        TileMapView(
-            initLat = myLat, initLng = myLng, initZoom = 13,
-            pins = pins,
-            myLat = myLat, myLng = myLng,
-            onBackgroundTap = { selected = null },
-            onPinTap = { selected = it },
-        )
+        if (!isJvmTest) {
+            val mapState = rememberMapState(
+                baseStyle = BaseStyle.Uri(MAP_STYLE_URL),
+                initialCameraPosition = CameraPosition(
+                    center = Position(longitude = myLng, latitude = myLat),
+                    zoom = 13.0,
+                ),
+            ) {
+                QoshulPinLayers(
+                    pins = pins,
+                    myLat = myLat,
+                    myLng = myLng,
+                    selectedKey = selected?.key(),
+                    onPinTap = { selected = it },
+                )
+            }
+
+            // — REAL xəritə: MapLibre vektor render (D-048) —
+            MaplibreMap(
+                state = mapState,
+                modifier = Modifier.fillMaxSize(),
+                uiOptions = MapUiOptions { loadColor = Q.tileFallback },
+                interactions = MapInteractions {
+                    callbacks {
+                        click {
+                            // heç bir qat tutmadı → seçimi burax
+                            onUnhandled { selected = null; ClickResult.Pass }
+                        }
+                    }
+                },
+            )
+
+            // — zoom həbləri (şüşə, D-030) — kamera animasiyası ilə —
+            Column(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 170.dp, end = 12.dp)
+            ) {
+                GlassPill(dense = true, horizontal = 7.dp, vertical = 7.dp) {
+                    Icon(Icons.Filled.Add, "Yaxınlaşdır", tint = Q.foreground,
+                        modifier = Modifier.size(16.dp).clickable {
+                            scope.launch {
+                                mapState.animateCamera(
+                                    CameraUpdate(zoom = (mapState.cameraPosition.zoom + 1.0).coerceAtMost(18.0)),
+                                    CameraAnimation.Ease.Standard,
+                                )
+                            }
+                        })
+                }
+                Spacer(Modifier.height(8.dp))
+                GlassPill(dense = true, horizontal = 7.dp, vertical = 7.dp) {
+                    Icon(Icons.Filled.Remove, "Uzaqlaşdır", tint = Q.foreground,
+                        modifier = Modifier.size(16.dp).clickable {
+                            scope.launch {
+                                mapState.animateCamera(
+                                    CameraUpdate(zoom = (mapState.cameraPosition.zoom - 1.0).coerceAtLeast(3.0)),
+                                    CameraAnimation.Ease.Standard,
+                                )
+                            }
+                        })
+                }
+            }
+
+            // — OSM atribusiyası (istifadə qaydası — məcburi kredit) —
+            Text(
+                "© OpenStreetMap contributors",
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 8.5.sp, color = Q.mutedFg),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 6.dp, bottom = 6.dp)
+                    .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+            )
+        }
 
         // — şüşə filtr paneli (D-025 səth #2) —
         GlassSurface(
@@ -235,6 +335,165 @@ fun MapScreen(engine: AppEngine) {
             }
         }
     }
+}
+
+/**
+ * Pin qatları — MapLibre stil kompozisiyası (rememberMapState content).
+ *
+ * Render ardıcıllığı (elan sırası): seçim halosu → məkan dot+qlif →
+ * tədbir dot+qlif → insan dot+baş hərf → "mənim yerim" dotu.
+ */
+@Composable
+private fun QoshulPinLayers(
+    pins: List<MapPin>,
+    myLat: Double,
+    myLng: Double,
+    selectedKey: String?,
+    onPinTap: (MapPin) -> Unit,
+) {
+    val pinByKey = remember(pins) { pins.associateBy { it.key() } }
+
+    // Qat klikləri: feature "key" xassəsindən pin tapılır
+    val pinClick: FeaturesClickHandler = { feats ->
+        feats.firstNotNullOfOrNull { f ->
+            pinByKey[f.properties?.get("key")?.jsonPrimitive?.contentOrNull]
+        }?.let(onPinTap)
+        ClickResult.Consume
+    }
+
+    val venues = pins.filterIsInstance<MapPin.Venue>()
+    val events = pins.filterIsInstance<MapPin.Event>()
+    val people = pins.filterIsInstance<MapPin.PersonP>()
+
+    val allSource = rememberGeoJsonSource(
+        remember(pins) { GeoJsonData.Features(pinFeatures(pins)) },
+    )
+    val venueSource = rememberGeoJsonSource(
+        remember(venues) { GeoJsonData.Features(pinFeatures(venues)) },
+    )
+    val eventSource = rememberGeoJsonSource(
+        remember(events) { GeoJsonData.Features(pinFeatures(events)) },
+    )
+    val peopleSource = rememberGeoJsonSource(
+        remember(people) { GeoJsonData.Features(pinFeatures(people)) },
+    )
+    val meSource = rememberGeoJsonSource(
+        remember(myLat, myLng) {
+            GeoJsonData.Features(
+                FeatureCollection(
+                    listOf(
+                        Feature(
+                            geometry = Point(Position(longitude = myLng, latitude = myLat)),
+                            properties = null,
+                        ),
+                    ),
+                ),
+            )
+        },
+    )
+
+    // — seçilmiş pinin halosu —
+    if (selectedKey != null) {
+        CircleLayer(
+            id = "qoshul-selected-halo",
+            source = allSource,
+            filter = feature["key"] eq const(selectedKey),
+            radius = const(24.dp),
+            color = const(Color.White.copy(alpha = 0.30f)),
+            blur = const(0.65f),
+        )
+    }
+
+    // — məkan pinləri (yaşal dot + storefront qlifi) —
+    if (venues.isNotEmpty()) {
+        CircleLayer(
+            id = "qoshul-venue-dot",
+            source = venueSource,
+            radius = const(17.dp),
+            color = const(Q.primary),
+            strokeColor = const(Color.White),
+            strokeWidth = const(2.5.dp),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+        SymbolLayer(
+            id = "qoshul-venue-glyph",
+            source = venueSource,
+            iconImage = image(
+                rememberVectorPainter(Icons.Filled.Storefront),
+                size = DpSize(16.dp, 16.dp),
+                colorFilter = ColorFilter.tint(Color.White),
+            ),
+            iconAllowOverlap = const(true),
+            iconIgnorePlacement = const(true),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+    }
+
+    // — tədbir pinləri (narıncı dot + təqvim qlifi) —
+    if (events.isNotEmpty()) {
+        CircleLayer(
+            id = "qoshul-event-dot",
+            source = eventSource,
+            radius = const(17.dp),
+            color = const(Q.accent),
+            strokeColor = const(Color.White),
+            strokeWidth = const(2.5.dp),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+        SymbolLayer(
+            id = "qoshul-event-glyph",
+            source = eventSource,
+            iconImage = image(
+                rememberVectorPainter(Icons.Filled.Event),
+                size = DpSize(16.dp, 16.dp),
+                colorFilter = ColorFilter.tint(Color.White),
+            ),
+            iconAllowOverlap = const(true),
+            iconIgnorePlacement = const(true),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+    }
+
+    // — insan pinləri (tünd dot + adın baş hərfi) —
+    if (people.isNotEmpty()) {
+        CircleLayer(
+            id = "qoshul-people-dot",
+            source = peopleSource,
+            radius = const(17.dp),
+            color = const(Q.foreground),
+            strokeColor = const(Color.White),
+            strokeWidth = const(2.5.dp),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+        SymbolLayer(
+            id = "qoshul-people-initial",
+            source = peopleSource,
+            textField = feature["initial"].asString(),
+            textFont = const(listOf(STYLE_TEXT_FONT)),
+            textSize = const(13.sp),
+            textAnchor = const(SymbolAnchor.Center),
+            textColor = const(Color.White),
+            textAllowOverlap = const(true),
+            textIgnorePlacement = const(true),
+            onClick = pinClick,
+            hitPadding = 6.dp,
+        )
+    }
+
+    // — "mənim yerim" (üst qat) —
+    CircleLayer(
+        id = "qoshul-me-dot",
+        source = meSource,
+        radius = const(10.dp),
+        color = const(Q.myLocation),
+        strokeColor = const(Color.White),
+        strokeWidth = const(3.dp),
+    )
 }
 
 /** Alt kart məzmunu — pin tipinə görə. */
@@ -360,264 +619,3 @@ private fun Modifier.androidxChipBg(active: Boolean): Modifier = this.then(
             RoundedCornerShape(Q.rMd.dp),
         )
 )
-
-// ═══════════════════ TileMapView — öz OSM renderer ═══════════════════
-
-/**
- * OSM raster tile renderer — Flutter tile_map.dart portu (D-030/D-038).
- *
- * Model: float zoom (zoomF) + mərkəz (lat/lng). Tile-lar tam zoomda
- * yüklənir, qat viewport mərkəzinə görə k = 2^(zoomF − zoom) miqyasında
- * çəkilir → pinch fasiləsiz, tam zoom pilləsinə keçid səssiz.
- * Pinç mərkəzi (centroid) coğrafi sabit nöqtədə saxlanılır.
- */
-@Composable
-fun TileMapView(
-    initLat: Double,
-    initLng: Double,
-    initZoom: Int,
-    pins: List<MapPin>,
-    myLat: Double,
-    myLng: Double,
-    onBackgroundTap: () -> Unit,
-    onPinTap: (MapPin) -> Unit,
-) {
-    var zoomF by remember { mutableStateOf(initZoom.toFloat()) }
-    var centerLat by remember { mutableStateOf(initLat) }
-    var centerLng by remember { mutableStateOf(initLng) }
-    var viewport by remember { mutableStateOf(IntSize.Zero) }
-
-    val zoom = zoomF.roundToInt().coerceIn(3, 18)
-    val k = 2.0.pow((zoomF - zoom).toDouble()).toFloat()          // qat miqyası
-    val ws = worldSize(zoom)                          // tam zoom dünya ölçüsü
-    val cxW = lngToX(centerLng, ws)                   // mərkəz (dünya px)
-    val cyW = latToY(centerLat, ws)
-
-    // görünən dünya sərhədləri
-    val halfW = (viewport.width / 2f) / k
-    val halfH = (viewport.height / 2f) / k
-
-    Box(
-        Modifier
-            .fillMaxSize()
-            .onSizeChanged { viewport = it }
-            .pointerInput(Unit) {
-                detectTransformGestures { centroid, pan, gestureZoom, _ ->
-                    val wsCur = worldSize(zoomF.roundToInt().coerceIn(3, 18))
-                    val kCur = 2.0.pow((zoomF - zoomF.roundToInt()).toDouble()).toFloat()
-                    // — pan: mərkəzi əks istiqamətə sürüşdür —
-                    var ncx = lngToX(centerLng, wsCur) - pan.x / kCur
-                    var ncy = latToY(centerLat, wsCur) - pan.y / kCur
-                    // — pinch: centroid altındaki coğrafi nöqtə saxlanılır —
-                    if (gestureZoom != 1f) {
-                        val oldZoomF = zoomF
-                        val newZoomF = (zoomF + (ln(gestureZoom.toDouble()) / ln(2.0)).toFloat())
-                            .coerceIn(3f, 18f)
-                        // centroid altındaki dünya nöqtəsi (tam-zoom koordinatında)
-                        val wcx = ncx + (centroid.x - viewport.width / 2f) / kCur
-                        val wcy = ncy + (centroid.y - viewport.height / 2f) / kCur
-                        // yeni k
-                        val newIntZoom = newZoomF.roundToInt().coerceIn(3, 18)
-                        val newK = 2.0.pow((newZoomF - newIntZoom).toDouble()).toFloat()
-                        // eyni dünya nöqtəsi eyni ekranda qalsın:
-                        // mərkəz = wPoint − (centroid − viewport/2)/k'
-                        val newWs = worldSize(newIntZoom)
-                        ncx = (wcx - (centroid.x - viewport.width / 2f) / newK) *
-                            (wsCur / newWs)
-                        ncy = (wcy - (centroid.y - viewport.height / 2f) / newK) *
-                            (wsCur / newWs)
-                        zoomF = newZoomF
-                        // world ölçüsü dəyişə bilər — yeni tam zoomda yenidən hesabla
-                        val finalWs = worldSize(zoomF.roundToInt().coerceIn(3, 18))
-                        val geoLng = xToLng(ncx, wsCur)
-                        val geoLat = yToLat(ncy, wsCur)
-                        ncx = lngToX(geoLng, finalWs)
-                        ncy = latToY(geoLat, finalWs)
-                    }
-                    centerLng = xToLng(ncx, wsCur)
-                    centerLat = yToLat(ncy, wsCur)
-                }
-            }
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { onBackgroundTap() })
-            }
-    ) {
-        // — tile qatı —
-        val tileN = (1 shl zoom)
-        val x0 = ((cxW - halfW) / TILE_SIZE).toInt()
-        val x1 = ((cxW + halfW) / TILE_SIZE).toInt()
-        val y0 = max(0, ((cyW - halfH) / TILE_SIZE).toInt())
-        val y1 = min(tileN - 1, ((cyW + halfH) / TILE_SIZE).toInt())
-        for (tx in x0..x1) {
-            for (ty in y0..y1) {
-                val wx = ((tx % tileN) + tileN) % tileN
-                // screen pos: viewport/2 + (worldPos − center)*k
-                val left = viewport.width / 2f + (tx * TILE_SIZE - cxW) * k
-                val top = viewport.height / 2f + (ty * TILE_SIZE - cyW) * k
-                TileImage(
-                    url = "https://tile.openstreetmap.org/$zoom/$wx/$ty.png",
-                    left = left, top = top, sizePx = TILE_SIZE * k,
-                )
-            }
-        }
-
-        // — pin qatı (sabit ekran ölçüsü) —
-        pins.forEach { pin ->
-            val px = viewport.width / 2f + (lngToX(pin.lng, ws) - cxW) * k
-            val py = viewport.height / 2f + (latToY(pin.lat, ws) - cyW) * k
-            PinWidget(
-                pin = pin,
-                leftPx = px,
-                topPx = py,
-                onTap = { onPinTap(pin) },
-            )
-        }
-
-        // — mənim yerim —
-        val mx = viewport.width / 2f + (lngToX(myLng, ws) - cxW) * k
-        val my = viewport.height / 2f + (latToY(myLat, ws) - cyW) * k
-        Box(
-            Modifier
-                .offsetPx(mx.toInt() - 10, my.toInt() - 10)
-                .size(20.dp)
-                .background(Q.myLocation, CircleShape)
-                .border(3.dp, Color.White, CircleShape)
-        )
-
-        // — zoom həbləri (şüşə, D-030) —
-        Column(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 170.dp, end = 12.dp)
-        ) {
-            GlassPill(dense = true, horizontal = 7.dp, vertical = 7.dp) {
-                Icon(Icons.Filled.Add, "Yaxınlaşdır", tint = Q.foreground,
-                    modifier = Modifier.size(16.dp).androidxZoom {
-                        zoomF = (zoomF + 1f).coerceIn(3f, 18f)
-                    })
-            }
-            Spacer(Modifier.height(8.dp))
-            GlassPill(dense = true, horizontal = 7.dp, vertical = 7.dp) {
-                Icon(Icons.Filled.Remove, "Uzaqlaşdır", tint = Q.foreground,
-                    modifier = Modifier.size(16.dp).androidxZoom {
-                        zoomF = (zoomF - 1f).coerceIn(3f, 18f)
-                    })
-            }
-        }
-
-        // — OSM atribusiyası (istifadə qaydası — məcburi kredit) —
-        Text(
-            "© OpenStreetMap contributors",
-            style = androidx.compose.ui.text.TextStyle(
-                fontFamily = JakartaSans, fontSize = 8.5.sp, color = Q.mutedFg),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 6.dp, bottom = 6.dp)
-                .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 3.dp),
-        )
-    }
-}
-
-/** Pixel dəqiqliyli offset (lambda versiyası px qəbul edir). */
-private fun Modifier.offsetPx(x: Int, y: Int): Modifier =
-    this.then(Modifier.offset { androidx.compose.ui.unit.IntOffset(x, y) })
-
-private fun Modifier.androidxZoom(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
-
-/** Xəritə pini — tipə görə rəng/ikon; 34–40px, ağ haşiyə. */
-@Composable
-private fun PinWidget(
-    pin: MapPin,
-    leftPx: Float,
-    topPx: Float,
-    onTap: () -> Unit,
-) {
-    val color = when (pin) {
-        is MapPin.Venue -> Q.primary
-        is MapPin.Event -> Q.accent
-        is MapPin.PersonP -> Q.foreground
-    }
-    val icon = when (pin) {
-        is MapPin.Venue -> Icons.Filled.Storefront
-        is MapPin.Event -> Icons.Filled.Event
-        is MapPin.PersonP -> null
-    }
-    val label = when (pin) {
-        is MapPin.Venue -> pin.v.name
-        is MapPin.Event -> pin.e.title
-        is MapPin.PersonP -> pin.p.firstName
-    }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .offsetPx(leftPx.toInt() - 17, topPx.toInt() - 40)
-            .androidxPinTap(onTap),
-    ) {
-        Box(
-            Modifier
-                .size(34.dp)
-                .background(color, CircleShape)
-                .border(2.5.dp, Color.White, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (icon != null) {
-                Icon(icon, label, tint = Color.White, modifier = Modifier.size(16.dp))
-            } else {
-                Text(label.take(1), style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 13.sp,
-                    fontWeight = FontWeight.W800, color = Color.White))
-            }
-        }
-        Box(Modifier.width(2.5.dp).height(11.dp).background(color))
-    }
-}
-
-private fun Modifier.androidxPinTap(onTap: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onTap))
-
-/** OSM tile şəkli — URL-dən yüklə, fallback rəng (offline/test). */
-@Composable
-private fun TileImage(url: String, left: Float, top: Float, sizePx: Float) {
-    val context = LocalContext.current
-    val bitmap = remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    val loaded = remember(url) { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(url) {
-        runCatching {
-            val conn = java.net.URL(url).openConnection() as java.net.HttpURLConnection
-            conn.connectTimeout = 8000
-            conn.readTimeout = 8000
-            // OSM tile policy: identifikasiya edən UA tələbi (D-030)
-            conn.setRequestProperty(
-                "User-Agent",
-                "Qoshul.az/0.1.0 (beta; https://qoshul.az; native-rewrite)",
-            )
-            if (conn.responseCode == 200) {
-                conn.inputStream.use { ins ->
-                    bitmap.value = android.graphics.BitmapFactory.decodeStream(ins)
-                }
-            }
-        }
-        loaded.value = true
-    }
-    val density = LocalDensity.current
-    val sizeDp = with(density) { sizePx.toDp() }
-    val leftDp = with(density) { left.toDp() }
-    val topDp = with(density) { top.toDp() }
-    Box(
-        Modifier
-            .offset(leftDp, topDp)
-            .size(sizeDp)
-            .background(Q.tileFallback)
-    ) {
-        bitmap.value?.let { bmp ->
-            Image(
-                bitmap = bmp.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.FillBounds,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
