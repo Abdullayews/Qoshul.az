@@ -242,7 +242,7 @@ ilkin söhbətlər (e1×3, e5×2, p2×2).
 ## 5. Tapılan qüsurlar (auditin əsas dəyəri)
 
 | # | Qüsur | Yeri | Ağırlıq | Native planda |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | A1 | **Köhnə versiya sətri** "Haqqında (v0.3.0)" — v0.7.0-da belə | settings_screen | kosmetik | düzəldiləcək (BuildConfig-dən) |
 | A2 | **Həftəlik rəy limiti heç vaxt sıfırlanmır** — `_reviewXpThisWeek` yalnız artır; "həftədə max 3" qaydası ilk həftədən sonra ölür | app_state | məntiq | həftə dönüşü əlavə olunacaq |
 | A3 | **Ölü düymələr**: "Qrup söhbətinə keç" (event detail, boş onPressed), "Yol göstər/Yol tap" (yalnız snackbar), çat başlığında təqvim ikonu (boş) | event_detail, venue_detail, chats | UX | Söhbətlər tabına keçid gerçekləşdiriləcək; yol/təqvim "tezliklə" işarəsi ilə deaktiv |
@@ -301,18 +301,21 @@ olunacaq — hər bənd Phase 9-da birebir yoxlanılır):
 
 ## 7. Baza ölçmələri (Phase 9 müqayisəsi üçün)
 
-| Metrik | Flutter v0.7.0 (baza) | Native (ölçülmüş, 2026-10-30) | Nəticə |
+| Metrik | Flutter v0.7.0 (baza) | Native (ölçülmüş, 2026-10-30) | Optimizasiya sonrası (2026-10-31, D-041..D-047) | Nəticə |
 |---|---|---|---|
-| APK ölçüsü (release, universal) | 55.6 MB | **2.76 MB** (R8 + resource shrink; debug 21.4 MB) | **20.2× kiçik** |
-| Kod həcmi | 14 501 sətir Dart (42 fayl) | **11 911 sətir Kotlin** (38 fayl) | 18% az |
-| Məntiq testləri | 61 (89-dan 28-i widget/no-op) | **67 JVM testi** — hamısı keçir (CI run 41079665996) | əhatə +
-| CI build vaxtı (təmiz, cache-siz) | ~5 dəq (D-015) | ~6 dəq (JDK+Gradle download daxil; cache ilə ~3 dəq) | ≈ bərabər |
+| APK ölçüsü (release, universal) | 55.6 MB | **2.76 MB** (R8 + resource shrink; debug 21.4 MB) | **2.39 MB** (2 505 265 bayt) — font subset −157 KB, WebP −196 KB, QR+profileinstaller əlavə olmasına baxmayaraq | **23.2× kiçik** |
+| Kod həcmi | 14 501 sətir Dart (42 fayl) | **11 911 sətir Kotlin** (38 fayl) | +~200 sətir tətbiq kodu (QR qatı, logo) + testlər; Nayuki vendored ayrıca 1 322 sətir Java | 18% az (tətbiq kodu) |
+| Məntiq testləri | 61 (89-dan 28-i widget/no-op) | **67 JVM testi** — hamısı keçir (CI run 41079665996) | **77 JVM testi** (67 məntiq + 7 QR-skan-sübut + 3 Robolectric UI) — hamısı keçir | əhatə + (widget boşluğu qismən bağlandı) |
+| Real QR | dekorativ placeholder (skan edilMİR) | dekorativ placeholder | **skan edilə bilən QR** — ZXing dekod testi ilə SÜBUT (D-041) | xəta aradan qaldırıldı |
+| Başlanğıc baseline profile | yox | yox (yalnız kitabxana profilləri, 5 854 B) | tətbiq başlanğıc yolu + profileinstaller 1.4.1 (7 109 B) — təsir cihazda ölçülməlidir (D-043) | əlavə olundu |
+| CI build vaxtı (təmiz, cache-siz) | ~5 dəq (D-015) | ~6 dəq (JDK+Gradle download daxil; cache ilə ~3 dəq) | bərabər + configuration cache (2-ci run-dan) + Robolectric ~/.m2 keşi | ≈ bərabər |
 | Soyuq başlanğıc | ölçülməyib (cihaz yoxdur) | ölçülməyib | **BƏYANAT: hər ikisi cihazda ölçülməlidir** |
 | Kadrsürəti (jank) | ölçülməyib | ölçülməyib | **BƏYANAT: Macrobenchmark — gələcək mərhələ** |
 
-**Nəticə (yalnız ölçülmüş metrikalar üzrə):** native versiya APK ölçüsündə 20×
+**Nəticə (yalnız ölçülmüş metrikalar üzrə):** native versiya APK ölçüsündə 23×
 daha yüngül, kodda 18% daha kompakt, məntiq test əhatəsində daha geniş; build
-vaxtı bərabərdir. Soyuq başlanğıc / kadrsürəti iddiaları bu mühitdə ölçülə
+vaxtı bərabərdir. Optimizasiya qatı (2026-10-31) əlavə −0.37 MB APK və +10 test
+gətirdi. Soyuq başlanğıc / kadrsürəti iddiaları bu mühitdə ölçülə
 bilmədiyindən **verilmir** — dürüstlük qaydası (D-036).
 
 **Dürüstlük qaydası (D-036):** soyuq başlanğıc və kadrsürəti bu mühitdə ölçülə bilmir

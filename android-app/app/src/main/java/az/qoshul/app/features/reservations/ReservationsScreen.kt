@@ -51,7 +51,7 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
-import az.qoshul.app.core.ui.QrPlaceholder
+import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.ResvStatusChip
 import az.qoshul.app.core.ui.SafetyNote
 import az.qoshul.app.core.ui.imagePaint
@@ -177,7 +177,7 @@ fun ReservationsScreen(engine: AppEngine, nav: NavState) {
                     Spacer(Modifier.height(4.dp))
                     Text("${r.date}, ${r.time} · ${r.party} nəfər", style = T.meta)
                     Spacer(Modifier.height(14.dp))
-                    QrPlaceholder(code = r.qrCode)
+                    QrCode(payload = r.qrCode)
                     Spacer(Modifier.height(8.dp))
                     Text(r.qrCode, style = androidx.compose.ui.text.TextStyle(
                         fontFamily = JakartaSans, fontSize = 12.sp, fontWeight = FontWeight.W700))

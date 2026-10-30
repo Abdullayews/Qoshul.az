@@ -44,6 +44,7 @@ import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.FormFieldX
+import az.qoshul.app.core.ui.LogoMark
 import az.qoshul.app.core.ui.Wordmark
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -142,6 +143,8 @@ fun AuthScreen(onSignedIn: () -> Unit) {
             .imePadding(),
     ) {
         Spacer(Modifier.height(44.dp))
+        LogoMark(size = 64.dp)
+        Spacer(Modifier.height(18.dp))
         Wordmark(fontSize = 27)
         Spacer(Modifier.height(20.dp))
         Text(title, style = T.h1)

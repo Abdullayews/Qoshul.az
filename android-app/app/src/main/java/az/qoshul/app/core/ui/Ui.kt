@@ -559,62 +559,6 @@ fun ResvStatusChip(status: ResvStatus) {
     )
 }
 
-/** QR placeholder — koddan deterministik naxış (real QR backend fazasında). */
-@Composable
-fun QrPlaceholder(code: String, size: Dp = 132.dp) {
-    val shape = RoundedCornerShape(Q.rLg.dp)
-    Box(
-        Modifier
-            .size(size)
-            .background(Color.White, shape)
-            .border(1.dp, Q.border, shape)
-            .padding(8.dp)
-    ) {
-        Canvas(Modifier.size(size - 16.dp)) {
-            val n = 11f
-            val cell = this.size.width / n
-            // künc "gözləri"
-            val eyes = listOf(0f to 0f, n - 3f to 0f, 0f to (n - 3f))
-            for ((ox, oy) in eyes) {
-                drawRoundRect(
-                    color = Q.foreground,
-                    topLeft = androidx.compose.ui.geometry.Offset(ox * cell, oy * cell),
-                    size = androidx.compose.ui.geometry.Size(3 * cell, 3 * cell),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f, 2f),
-                )
-                drawRoundRect(
-                    color = Color.White,
-                    topLeft = androidx.compose.ui.geometry.Offset((ox + 0.6f) * cell, (oy + 0.6f) * cell),
-                    size = androidx.compose.ui.geometry.Size(1.8f * cell, 1.8f * cell),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1f, 1f),
-                )
-                drawRoundRect(
-                    color = Q.foreground,
-                    topLeft = androidx.compose.ui.geometry.Offset((ox + 1.05f) * cell, (oy + 1.05f) * cell),
-                    size = androidx.compose.ui.geometry.Size(0.9f * cell, 0.9f * cell),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1f, 1f),
-                )
-            }
-            // deterministik hücrələr — Dart _cell(x,y) portu
-            for (x in 0 until n.toInt()) {
-                for (y in 0 until n.toInt()) {
-                    val inEye = (x < 4 && y < 4) || (x > n - 5 && y < 4) || (x < 4 && y > n - 5)
-                    if (inEye) continue
-                    val v = (code[(x * 7 + y * 13) % code.length].code + x * 31 + y * 17) % 5
-                    if (v == 0) {
-                        drawRoundRect(
-                            color = Q.foreground,
-                            topLeft = androidx.compose.ui.geometry.Offset(x * cell + 1, y * cell + 1),
-                            size = androidx.compose.ui.geometry.Size(cell - 2, cell - 2),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(1f, 1f),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 /** Ulduz reytingi (yalnız göstəriş). */
 @Composable
 fun RatingStars(rating: Double, size: Dp = 14.dp) {
@@ -807,6 +751,21 @@ fun OfferCard(
 }
 
 // ═══════════════════ Brend (brand.dart portu) ═══════════════════
+
+/**
+ * Brend nişanı (D-046, müvəqqəti) — web favicon motivinin portu: yaşıl
+ * kvadrat + iki ağ birləşən halqa ("qoshul" = qoşul). Auth/Onboarding
+ * ekranlarında wordmark üzərində. Bütün brend gələcəkdə dəyişəcək
+ * (istifadəçi direktivi) — mənbə: Amin099015/qoshul favicon.svg.
+ */
+@Composable
+fun LogoMark(size: Dp = 56.dp) {
+    Image(
+        painter = painterResource(R.drawable.ic_logo_mark),
+        contentDescription = null,
+        modifier = Modifier.size(size),
+    )
+}
 
 /** "qoshul.az" wordmark — Link ikonu -12°, qoshul yaşıl + .az tünd. */
 @Composable

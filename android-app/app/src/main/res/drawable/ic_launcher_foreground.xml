@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Brend işarəsi: zəncir halqası (web wordmark-ın Link ikonu, -12° fırlanma) -->
+<!--
+  Müvəqqəti brend işarəsi (D-046): web tətbiqinin favicon motivi —
+  iki birləşən halqa ("qoshul" = qoşul/birləş). Mənbə: Amin099015/qoshul
+  public/favicon.svg (D-023 stil mənbəyi). Rəng: Q.primary #00A63E
+  (dizayn tokenləri — favicon-dakı #16a34a deyil, sistem rəngi üstünlük).
+  Hamısı sonradan dəyişəcək (istifadəçi direktivi).
+  Safe zone: motiv mərkəzdə, ~34dp enində (108dp viewport-da).
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -7,16 +14,22 @@
     android:viewportHeight="108">
     <group
         android:translateX="54"
-        android:translateY="54"
-        android:rotation="-12">
-        <group
-            android:scaleX="2"
-            android:scaleY="2"
-            android:translateX="-12"
-            android:translateY="-12">
-            <path
-                android:fillColor="#FFFFFF"
-                android:pathData="M3.9,12c0,-1.71 1.39,-3.1 3.1,-3.1h4V7H7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5h4v-1.9H7c-1.71,0 -3.1,-1.39 -3.1,-3.1zM8,13h8v-2H8v2zM17,7h-4v1.9h4c1.71,0 3.1,1.39 3.1,3.1s-1.39,3.1 -3.1,3.1h-4V17h4c2.76,0 5,-2.24 5,-5s-2.24,-5 -5,-5z" />
+        android:translateY="54">
+        <group android:scaleX="0.42" android:scaleY="0.42">
+            <group android:translateX="-32" android:translateY="-32">
+                <path
+                    android:pathData="M36,18 h-7 a12,12 0 0 0 0,24 h7"
+                    android:strokeColor="#FFFFFF"
+                    android:strokeWidth="6.5"
+                    android:strokeLineCap="round"
+                    android:fillColor="#00000000" />
+                <path
+                    android:pathData="M28,22 h7 a12,12 0 0 1 0,24 h-7"
+                    android:strokeColor="#FFFFFF"
+                    android:strokeWidth="6.5"
+                    android:strokeLineCap="round"
+                    android:fillColor="#00000000" />
+            </group>
         </group>
     </group>
 </vector>

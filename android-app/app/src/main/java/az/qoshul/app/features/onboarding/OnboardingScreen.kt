@@ -81,6 +81,7 @@ import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.FormFieldX
+import az.qoshul.app.core.ui.LogoMark
 import az.qoshul.app.core.ui.Wordmark
 import az.qoshul.app.features.auth.QoshulTextField
 import kotlinx.coroutines.launch
@@ -141,6 +142,10 @@ private fun WelcomeStep(onNext: () -> Unit) {
             onClick = onNext,
             modifier = Modifier.align(Alignment.End).padding(end = 12.dp),
         ) { Text("Keç", style = androidx.compose.ui.text.TextStyle(fontFamily = JakartaSans, fontSize = 12.sp)) }
+        // Müvəqqəti brend nişanı (D-046) — tanışlıq slaydları üzərində
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            PopIn { LogoMark(size = 60.dp) }
+        }
         HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { page ->
             val (icon, title, text) = slides[page]
             PopIn(key = title) {

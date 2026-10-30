@@ -70,7 +70,7 @@ import az.qoshul.app.core.ui.CategoryChip
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.NavState
-import az.qoshul.app.core.ui.QrPlaceholder
+import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.RatingStars
 import az.qoshul.app.core.ui.ResvStatusChip
 import az.qoshul.app.core.ui.SectionHeading
@@ -396,7 +396,7 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                             ResvStatusChip(status = r.status)
                             Spacer(Modifier.height(14.dp))
-                            PopIn { QrPlaceholder(code = r.qrCode) }
+                            PopIn { QrCode(payload = r.qrCode) }
                             Spacer(Modifier.height(8.dp))
                             Text(r.qrCode, style = androidx.compose.ui.text.TextStyle(
                                 fontFamily = JakartaSans, fontSize = 12.sp,

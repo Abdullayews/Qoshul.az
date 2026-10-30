@@ -37,7 +37,16 @@ jobs:
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Vahid testlər (JVM — məntiq pariteti, Phase 7)
+      - name: Robolectric android-all keşi (D-042)
+        # android-all jarları (~130 MB) ~/.m2-də qlobal keşlənir — hər run-da
+        # yenidən yüklənməsin; açar = Robolectric versiyası (libs.versions.toml)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-androidall-${{ hashFiles('android-app/gradle/libs.versions.toml') }}
+          restore-keys: robolectric-androidall-
+
+      - name: Vahid testlər (JVM — məntiq + QR sübutu + Robolectric UI, D-041/D-042)
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Test nəticələri (artifact)

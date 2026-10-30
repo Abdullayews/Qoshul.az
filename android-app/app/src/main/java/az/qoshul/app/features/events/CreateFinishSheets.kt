@@ -58,7 +58,7 @@ import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.AiBox
 import az.qoshul.app.core.ui.EmptyState
-import az.qoshul.app.core.ui.QrPlaceholder
+import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.SheetScaffold
 import az.qoshul.app.features.auth.QoshulTextField
 import kotlinx.coroutines.delay
@@ -421,7 +421,7 @@ fun FinishActivitySheet(
                     // — statik QR —
                     PopIn {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            QrPlaceholder(code = "STATIC-${acct.venueId}-${acct.venueName}", size = 148.dp)
+                            QrCode(payload = "STATIC-${acct.venueId}-${acct.venueName}", size = 148.dp)
                         }
                     }
                     Spacer(Modifier.height(12.dp))

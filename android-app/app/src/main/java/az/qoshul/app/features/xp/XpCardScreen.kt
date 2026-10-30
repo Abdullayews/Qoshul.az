@@ -52,7 +52,7 @@ import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
-import az.qoshul.app.core.ui.QrPlaceholder
+import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.ViewHeading
 import az.qoshul.app.core.ui.XpBar
 
@@ -238,8 +238,8 @@ private fun DynamicQrSection(account: VenueXpAccount, engine: AppEngine) {
         Row(verticalAlignment = Alignment.Top) {
             Box(contentAlignment = Alignment.Center) {
                 PopIn(key = card?.nonce ?: "yox") {
-                    QrPlaceholder(
-                        code = card?.nonce ?: "expired", size = 124.dp,
+                    QrCode(
+                        payload = card?.nonce ?: "expired", size = 124.dp,
                     )
                 }
                 Box(Modifier.alphaReduced(if (valid) 1f else 0.35f))

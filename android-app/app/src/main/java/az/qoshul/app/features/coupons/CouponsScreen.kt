@@ -50,7 +50,7 @@ import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.OfferCard
 import az.qoshul.app.core.ui.PushScreenScaffold
-import az.qoshul.app.core.ui.QrPlaceholder
+import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.Segmented
 
 /**
@@ -201,7 +201,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                     Text(c.venueName, style = androidx.compose.ui.text.TextStyle(
                         fontFamily = JakartaSans, fontSize = 14.sp, fontWeight = FontWeight.W800))
                     Spacer(Modifier.height(10.dp))
-                    QrPlaceholder(code = c.code)
+                    QrCode(payload = c.code)
                     Spacer(Modifier.height(8.dp))
                     Text(c.code, style = T.meta)
                 }
