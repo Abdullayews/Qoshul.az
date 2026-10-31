@@ -29,12 +29,16 @@ fun dayLabel(d: LocalDate, today: LocalDate = LocalDate.now()): String =
  * D-051 fix: yaradılan tədbirlər ISO tarix ("2026-11-02") yerinə fake data
  * ilə eyni SADƏ etiket alır ("Bu gün" / "Sabah" / "Noy 2") — kartlarda
  * göstərim və "Bu axşam" sayğısı (FeedScreen) tutarlı olur.
+ *
+ * D-061 "nə olar əgər": epochDay aralığın xaricində olsa (korlanmış
+ * dəyər) LocalDate.ofEpochDay atır — Safety.of "—" placeholder-i qaytarır.
  */
-fun dateLabelFor(epochDay: Long, today: LocalDate = LocalDate.now()): String {
-    val d = LocalDate.ofEpochDay(epochDay)
-    return when (d) {
-        today -> "Bu gün"
-        today.plusDays(1) -> "Sabah"
-        else -> dayLabel(d, today)
+fun dateLabelFor(epochDay: Long, today: LocalDate = LocalDate.now()): String =
+    az.qoshul.app.core.safety.Safety.of(tag = "date-label", fallback = "—") {
+        val d = LocalDate.ofEpochDay(epochDay)
+        when (d) {
+            today -> "Bu gün"
+            today.plusDays(1) -> "Sabah"
+            else -> dayLabel(d, today)
+        }
     }
-}

@@ -143,7 +143,9 @@ fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit =
                         }
                     }
                     // üst kart — dartılabilir
-                    val top = deck.first()
+                    // D-061: first() əvəzinə firstOrNull — dəstə boşalsa
+                    // (nə olar əgər) üst kart sadəcə çizilmir, çökmür.
+                    val top = deck.firstOrNull() ?: return@Box
                     SwipeCard(
                         person = top,
                         engine = engine,

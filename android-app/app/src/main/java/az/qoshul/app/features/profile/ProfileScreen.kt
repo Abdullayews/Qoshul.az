@@ -204,13 +204,18 @@ fun ProfileScreen(
         } else {
             item {
                 Spacer(Modifier.height(16.dp))
-                CommunityBanner(
-                    icon = Icons.Filled.AutoAwesome,
-                    title = st.personality!!.type,
-                    subtitle = st.personality!!.summary,
-                )
-                Spacer(Modifier.height(10.dp))
-                TraitBars(st.personality!!.traits, engine.dataSource.traitLabels)
+                // D-061: !! əvəzinə yerli dəyişən — personality recompose
+                // arasında null olsa (nə olar əgər) banner sadəcə gizlənir.
+                val pr = st.personality
+                if (pr != null) {
+                    CommunityBanner(
+                        icon = Icons.Filled.AutoAwesome,
+                        title = pr.type,
+                        subtitle = pr.summary,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    TraitBars(pr.traits, engine.dataSource.traitLabels)
+                }
             }
         }
         // nişanlar (D-054: FlowRow — yan-yana, alt-alta YOX)

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -85,4 +86,54 @@ fun GlassPill(
             content()
         }
     }
+}
+
+/**
+ * D-060: "0.1x liquid glass" (istifadəçi direktivi 2026-11-01: "bottom
+ * navigation bar boyları normaldır amma şəffaflıq səhv deyiləcək qədər
+ * çoxdur. 0.1x liquid glass efekti də əlavə et ona").
+ *
+ * Şəffaflıq geri çəkildi: fon indi demək olar OPAX ağdır — [intensity]=0.1
+ * üçün alfa 0.962→0.938 (əvvəl 0.62→0.38 idi — məzmun barın içindən
+ * görünürdü). Şüşə dili yalnız 10% gücdə yaşayır: zərif diaqonal işıq
+ * qradiyenti + spekulyar kənar (0.55 → 0.22 alfa) + yumşaq kölgə.
+ *
+ * [intensity] 0..1 aralığında "şüşələnmə" dərəcəsi: 0 = tam solid ağ
+ * həb, 0.1 = alt nav rejimi (bu direktiv), 1.0 = köhnə GlassSurface-ə
+ * bərabər şəffaflıq. Ölçülər (hündürlük/padding/ikon) DİYİŞDİRİLMİR —
+ * direktivdə "boyları normaldır".
+ */
+@Composable
+fun LiquidGlassSurface(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(24.dp),
+    intensity: Float = 0.1f,
+    content: @Composable () -> Unit,
+) {
+    val g = intensity.coerceIn(0f, 1f)
+    // Solid ağ (1.0) → köhnə şüşə (0.62/0.38) arası xətti qarışım.
+    val baseHi = 1f - 0.38f * g   // 0.1 → 0.962
+    val baseLo = 1f - 0.62f * g   // 0.1 → 0.938
+    val rim = 0.18f + 0.37f * g   // 0.1 → 0.217 (spekulyar kənar)
+    Box(
+        modifier = modifier
+            .shadow(
+                elevation = (8.dp + 16.dp * g), // 0.1 → 9.6dp yumşaq kölgə
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = 0.10f),
+                spotColor = Color.Black.copy(alpha = 0.14f),
+            )
+            .background(
+                Brush.linearGradient(
+                    start = Offset.Zero,
+                    end = Offset.Infinite,
+                    colors = listOf(
+                        Color.White.copy(alpha = baseHi),
+                        Color.White.copy(alpha = baseLo),
+                    ),
+                ),
+                shape,
+            )
+            .border(1.dp, Color.White.copy(alpha = rim), shape)
+    ) { content() }
 }

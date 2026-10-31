@@ -381,8 +381,14 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = {
+                            // D-061 "nə olar əgər": canConfirm (enabled) vizual
+                            // qapadır; daxili müdafiə də — null olsa rezerv
+                            // yaranmır, çökmür (əlçatımlıq xidmətləri üçün də).
+                            val d = date
+                            val t = time
+                            if (d == null || t == null) return@Button
                             val r = engine.createReservation(
-                                venue = venue, date = date!!, time = time!!, party = party,
+                                venue = venue, date = d, time = t, party = party,
                                 note = note.trim(), couponCode = couponCode,
                             )
                             if (r == null) {

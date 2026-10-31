@@ -73,7 +73,7 @@ import az.qoshul.app.features.chats.ChatsScreen
 import az.qoshul.app.features.feed.FeedScreen
 import az.qoshul.app.features.map.MapScreen
 import az.qoshul.app.features.profile.ProfileScreen
-import az.qoshul.app.core.glass.GlassSurface
+import az.qoshul.app.core.glass.LiquidGlassSurface
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
@@ -234,7 +234,12 @@ private fun Header(
     }
 }
 
-/** Şüşə alt panel — Liquid Glass üzən pill (D-025 səth #1, D-037 vizual). */
+/**
+ * Şüşə alt panel — D-025 səth #1; D-037 vizual; D-060 "0.1x liquid glass":
+ * fon demək olar opaq (şəffaflıq istifadəçi direktivi ilə geri çəkildi),
+ * şüşə aksentləri (spekulyar kənar + işıq qradiyenti + yumşaq kölgə)
+ * yalnız 10% gücdə. Ölçülər dəyişməz (68dp hündürlük, 24dp radius).
+ */
 @Composable
 private fun GlassNav(
     index: Int,
@@ -250,13 +255,12 @@ private fun GlassNav(
         Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
     )
 
-    GlassSurface(
+    LiquidGlassSurface(
         modifier = modifier
             .padding(horizontal = 12.dp)
             .navigationBarsPadding(),
         shape = RoundedCornerShape(24.dp),
-        sigma = 18.dp,
-        luminance = 0.52f,
+        intensity = 0.1f,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

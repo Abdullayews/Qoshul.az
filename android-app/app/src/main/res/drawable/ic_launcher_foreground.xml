@@ -5,7 +5,11 @@
   public/favicon.svg (D-023 stil mənbəyi). Rəng: Q.primary #00A63E
   (dizayn tokenləri — favicon-dakı #16a34a deyil, sistem rəngi üstünlük).
   Hamısı sonradan dəyişəcək (istifadəçi direktivi).
-  Safe zone: motiv mərkəzdə, ~34dp enində (108dp viewport-da).
+  D-059 (istifadəçi direktivi 2026-11-01: "app icon çox kiçik görünür,
+  onu 50% zoom edib"): miqyas 0.42 → 0.63 (+50%) — motiv indi ~23 en
+  vahidindədir (108 viewport-da; əvvəl ~15 idi — launcher maskasında
+  gözləniləndən xeyli kiçik təsir bağışlayırdı). Safe zone (66dp dairə)
+  içində qalır (yarıçap 33 > motiv künc diaqonalı ~16).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -15,7 +19,7 @@
     <group
         android:translateX="54"
         android:translateY="54">
-        <group android:scaleX="0.42" android:scaleY="0.42">
+        <group android:scaleX="0.63" android:scaleY="0.63">
             <group android:translateX="-32" android:translateY="-32">
                 <path
                     android:pathData="M36,18 h-7 a12,12 0 0 0 0,24 h7"

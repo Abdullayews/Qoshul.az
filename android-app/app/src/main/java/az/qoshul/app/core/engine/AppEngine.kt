@@ -29,6 +29,7 @@ import az.qoshul.app.core.model.XpCardCode
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.badgeDefs
 import az.qoshul.app.core.model.isQuietHours
+import az.qoshul.app.core.safety.Safety
 import az.qoshul.app.core.model.parseAssistantEvent
 import java.time.LocalDateTime
 import kotlinx.coroutines.CoroutineScope
@@ -682,6 +683,11 @@ class AppEngine(
         if (xpAmount <= 0 || billAzn <= 0) {
             return SpendPreview(false, 0.0, "hesab")
         }
+        // D-061 "nə olar əgər": xp_per_azn konfiqurasiyası 0/negativ gəlsə
+        // (gələcək server xp_config cədvəli) sıfıra bölmə/Infinity olmasın.
+        if (acct.config.xpPerAzn <= 0) {
+            return SpendPreview(false, 0.0, "hesap")
+        }
         if (acct.balance < xpAmount) return SpendPreview(false, 0.0, "balans")
         if (acct.config.minBillAzn > 0 && billAzn < acct.config.minBillAzn) {
             return SpendPreview(false, 0.0, "minBill")
@@ -701,7 +707,9 @@ class AppEngine(
     ): Double? {
         val p = previewSpend(venueId, xpAmount, billAzn)
         if (!p.ok) return null
-        val acct = venueXp[venueId]!!
+        // D-061 "nə olar əgər" — preview ilə spend arası hesab yoxa çıxsa
+        // (gələcək server sinxronu) !! əvəzinə təyin olunmuş null qayıdışı.
+        val acct = venueXp[venueId] ?: return null
         acct.spend(xpAmount, note, "xl${ledgerSeq++}")
         notify(
             NotifType.COUPON_EXPIRING,
@@ -730,7 +738,8 @@ class AppEngine(
 
     /** XP kartı etibarlıdırmı (venue uyğun + vaxt bitməyib + işlənməyib). */
     fun xpCardValidFor(venueId: String): Boolean =
-        xpCardV != null && xpCardVenueIdV == venueId && xpCardV!!.isValid
+        // D-061: !! zənciri əvəzinə null-safe (vəziyyət paralel dəyişə bilər)
+        xpCardV?.let { card -> xpCardVenueIdV == venueId && card.isValid } == true
 
     // — L.3: təşkilatçı bitirmə axını (statik QR → şəkil → taq) —
 
@@ -743,7 +752,10 @@ class AppEngine(
     /** Aktivite bitir: təşkilatçı +50, hər taq edilən iştirakçı +25 (L.3). */
     fun finishActivity(e: QoshulEvent, taggedIds: List<String>): ActivityXpResult? {
         if (!canFinishActivity(e) || taggedIds.isEmpty()) return null
-        val acct = venueXp[e.venueId!!] ?: return null
+        // D-061: canFinishActivity venueId-ni yoxlayır, amma müdafiə
+        // qatında təkrar null-check (gələcəkdə şərtlər dəyişərsə çökmə YOX)
+        val venueId = e.venueId ?: return null
+        val acct = venueXp[venueId] ?: return null
         finishedActivitiesV.add(e.id)
 
         // Təşkilatçı mükafatı — obyekt bazasına grant.
@@ -935,8 +947,11 @@ class AppEngine(
                 // Yazı simulyasiyası: 24ms-də 2 simvol (Flutter pariteti).
                 var shown = ""
                 assistantMsgsV.add(ChatMessage("Köməkçi", ""))
-                val idx = assistantMsgsV.size - 1
+                var idx = assistantMsgsV.size - 1
                 while (shown.length < reply.length && assistantBusyV) {
+                    // D-061: siyahı paralel dəyişsə (idx artıq keçərsə)
+                    // yazı simulyasiyası yeni elementə keçir, çökmür.
+                    idx = idx.coerceAtMost(assistantMsgsV.size - 1)
                     shown = reply.substring(0, minOf(shown.length + 2, reply.length))
                     assistantMsgsV[idx] = ChatMessage("Köməkçi", shown)
                     emit()
@@ -999,11 +1014,17 @@ class AppEngine(
         s.replace("I", "ı").replace("İ", "i").lowercase()
 
     private fun nextSaturdayIso(): String {
+        // D-061: nə olar əgər saat/vaxt mənbəyi nasazdırsa — limitsiz
+        // dövr qadağanı (7 gündən çox fırlanma mantıq xətası deməkdir).
         var d = LocalDate.now()
-        while (d.dayOfWeek != java.time.DayOfWeek.SATURDAY || !d.isAfter(LocalDate.now())) {
+        var guard = 0
+        while ((d.dayOfWeek != java.time.DayOfWeek.SATURDAY || !d.isAfter(LocalDate.now())) && guard < 400) {
             d = d.plusDays(1)
+            guard++
         }
-        return "%04d-%02d-%02d".format(d.year, d.monthValue, d.dayOfMonth)
+        return Safety.of("next-saturday", "2026-01-01") {
+            "%04d-%02d-%02d".format(d.year, d.monthValue, d.dayOfMonth)
+        }
     }
 
     /** "AI ilə seç" (Sənin üçün) — mock tövsiyə səbəbləri. */

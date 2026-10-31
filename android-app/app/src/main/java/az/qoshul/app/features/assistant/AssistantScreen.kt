@@ -128,17 +128,20 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                             modifier = Modifier.padding(top = 14.dp).size(16.dp))
                     }
                 }
-                if (proposal != null && !st.assistantBusy) {
+                // D-061: !! əvəzinə yerli dəyişən — təklif state-i
+                // paralel dəyişsə belə (nə olar əgər) çökmür.
+                val confirmed = proposal
+                if (confirmed != null && !st.assistantBusy) {
                     item {
                         AiBox {
                             Column {
-                                Text("Təsdiqləndi: ${proposal!!.title}",
+                                Text("Təsdiqləndi: ${confirmed.title}",
                                     style = androidx.compose.ui.text.TextStyle(
                                         fontFamily = JakartaSans, fontSize = 13.sp,
                                         fontWeight = FontWeight.W600))
                                 Spacer(Modifier.height(6.dp))
-                                Text("${proposal!!.date} ${proposal!!.time} · " +
-                                    "${proposal!!.location} · ${proposal!!.capacity} nəfər",
+                                Text("${confirmed.date} ${confirmed.time} · " +
+                                    "${confirmed.location} · ${confirmed.capacity} nəfər",
                                     style = androidx.compose.ui.text.TextStyle(
                                         fontFamily = JakartaSans, fontSize = 12.5.sp,
                                         color = Q.mutedFg))

@@ -11,8 +11,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.11.0"
+        versionCode = 10
+        versionName = "0.12.0"
         vectorDrawables { useSupportLibrary = true }
     }
 

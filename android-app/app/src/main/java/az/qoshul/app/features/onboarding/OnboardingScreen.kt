@@ -336,10 +336,13 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                         error = "Qoshul 18+ platformadır. (Rəsmi yaş həddi təsdiq gözləyir)"
                     else -> {
                         val parts = name.trim().split(Regex("\\s+"))
+                        // D-061: when-şöbəsi artıq null-u yoxlayır; yerli dəyişən
+                        // ilə !! tam aradan qalxır (nə olar əgər recompose yarışsa).
+                        val b = birth ?: return@Button
                         engine.setProfileCreation(
                             first = parts.first(),
                             last = if (parts.size > 1) parts.subList(1, parts.size).joinToString(" ") else "",
-                            birth = birth!!,
+                            birth = b,
                             gdr = gender,
                             bioText = bio.trim(),
                             photos = photos,

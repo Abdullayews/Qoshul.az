@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalCafe
@@ -43,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +71,7 @@ import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
@@ -96,6 +100,7 @@ import org.maplibre.compose.layers.FeaturesClickHandler
 import org.maplibre.compose.layers.SymbolLayer
 import org.maplibre.compose.map.MapUiOptions
 import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.map.StyleLoadState
 import org.maplibre.compose.map.rememberMapState
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
@@ -160,6 +165,9 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var reserveVenue by remember { mutableStateOf<Partner?>(null) }
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
     var pendingCamera by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    // D-061: stil yüklənmə uğursuzsa "Yenidən dənə" bütün xəritə qatını
+    // (key dəyişdiyi üçün state də daxil) sıfırdan qurur — təkrar cəhd.
+    var mapRetry by remember { mutableStateOf(0) }
     val hour = remember { java.time.LocalDateTime.now().hour }
 
     val myLat = 40.4093
@@ -205,6 +213,9 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
 
     Box(Modifier.fillMaxSize().background(Q.tileFallback)) {
         if (!isJvmTest) {
+            // D-061: key(mapRetry) — "Yenidən dənə" bütün xəritə alt-ağacını
+            // (rememberMapState daxil) söküb yenidən qurur: təzə stil yükləmə cəhdi.
+            key(mapRetry) {
             val mapState = rememberMapState(
                 baseStyle = BaseStyle.Uri(MAP_STYLE_URL),
                 initialCameraPosition = CameraPosition(
@@ -219,6 +230,19 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     selectedKey = selected?.key(),
                     onPinTap = { selected = it },
                 )
+            }
+
+            // D-061 "nə olar əgər...": stil yüklənməsə (ofiayn/DNS/paltar
+            // 503) xəritə səthi boş qalmır — aydın vəziyyət + təkrar cəhd.
+            // loadState sadə property-dir (reaktiv deyil) — ucuz polling
+            // (1.5s) ilə izlənir; mapRetry dəyişəndə key() bütün qatı
+            // yenidən qurduğundan polling də təzədən başlayır.
+            var styleFailed by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                while (true) {
+                    styleFailed = mapState.style.loadState is StyleLoadState.Failed
+                    kotlinx.coroutines.delay(1500)
+                }
             }
 
             // D-050: fokus istəyi → kameranı pinə uçur (zoom ≥ 15)
@@ -293,6 +317,18 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
+
+            // D-061: stil yüklenmə xətası — fallback kart ("nə olar əgər"
+            // vəziyyətinin UI placeholder-i; log sellənməsi MapLogGate-də kəsilir)
+            if (styleFailed) {
+                MapLoadFailedCard(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 32.dp),
+                    onRetry = { mapRetry++ },
+                )
+            }
+            } // key(mapRetry)
         }
 
         // — şüşə filtr paneli (D-025 səth #2) —
@@ -399,6 +435,52 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             onDismiss = { detailEvent = null },
             onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
         )
+    }
+}
+
+/**
+ * D-061: xəritə stili yüklənməyəndə fallback kart — "nə olar əgər internet
+ * yoxdur / OpenFreeMap çatılmırdı" vəziyyətinin UI placeholder-i.
+ * Filtr həbləri və sayğac işləməyə davam edir (data lokaldır); yalnız tile
+ * səthi boşdur — kart bunu aydın deyir və təkrar cəhd verir.
+ * (MapLibre-nin retry sellənməsi MapLogGate ilə logcat-də kəsilib.)
+ */
+@Composable
+private fun MapLoadFailedCard(
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .background(Q.card, RoundedCornerShape(Q.rXl.dp))
+            .border(1.dp, Q.border, RoundedCornerShape(Q.rXl.dp))
+            .padding(horizontal = 26.dp, vertical = 20.dp),
+    ) {
+        Icon(Icons.Filled.CloudOff, null, tint = Q.destructive, modifier = Modifier.size(28.dp))
+        Spacer(Modifier.height(10.dp))
+        Text("Xəritə yüklənmədi", style = T.h2)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "İnternet bağlantısı yoxdur və ya xəritə serveri cavab vermir. " +
+                "Məkan və tədbir siyahıları işləyir — bağlantı gələndə yenidən yoxla.",
+            style = T.meta.copy(fontSize = 11.5.sp, lineHeight = 17.sp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Spacer(Modifier.height(14.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .scaleTap(interaction)
+                .clickable(interactionSource = interaction, indication = null, onClick = onRetry)
+                .background(Q.primary, RoundedCornerShape(Q.rPill))
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+        ) {
+            Icon(Icons.Filled.Refresh, null, tint = Q.primaryFg, modifier = Modifier.size(15.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Yenidən dənə", style = T.button.copy(color = Q.primaryFg, fontSize = 13.sp))
+        }
     }
 }
 

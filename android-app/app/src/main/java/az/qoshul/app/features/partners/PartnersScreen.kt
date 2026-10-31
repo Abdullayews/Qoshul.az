@@ -63,6 +63,7 @@ import az.qoshul.app.core.motion.countUpAsState
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
+import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
 import az.qoshul.app.core.ui.SheetScaffold
@@ -125,9 +126,20 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     )
                 }
             }
-            itemsIndexed(engine.partners) { _, p ->
-                PartnerCard(p, onCreate = { onOpenCreateAtVenue(p) })
-                Spacer(Modifier.height(20.dp))
+            // D-061: server rejimində siyahı boş ola bilər — placeholder
+            if (engine.partners.isEmpty()) {
+                item {
+                    EmptyState(
+                        icon = Icons.Filled.Storefront,
+                        text = "Hazırda tərəfdaş məkan yoxdur. " +
+                            "Bağlantı gələndə yenidən yoxla.",
+                    )
+                }
+            } else {
+                itemsIndexed(engine.partners) { _, p ->
+                    PartnerCard(p, onCreate = { onOpenCreateAtVenue(p) })
+                    Spacer(Modifier.height(20.dp))
+                }
             }
         }
     }
@@ -181,7 +193,10 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
             Text(p.name, style = T.h2)
             Spacer(Modifier.height(8.dp))
             Text("${p.address}, ${p.city}", style = T.meta)
-            if (p.deal != null) {
+            // D-061: !! əvəzinə yerli dəyişən (nə olar əgər deal null-dırsa —
+            // kart heç vaxt çökmür, endirim sətri sadəcə gizlənir)
+            val deal = p.deal
+            if (deal != null) {
                 Spacer(Modifier.height(15.dp))
                 Row(
                     Modifier
@@ -190,7 +205,7 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(p.deal!!, style = androidx.compose.ui.text.TextStyle(
+                    Text(deal, style = androidx.compose.ui.text.TextStyle(
                         fontFamily = JakartaSans, fontSize = 12.5.sp,
                         fontWeight = FontWeight.W800, color = Q.primary))
                     Text(p.hours, style = androidx.compose.ui.text.TextStyle(
@@ -429,7 +444,9 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                 }
                 else -> {
                     // — receipt —
-                    val last = acct.recentLedger.first()
+                    // D-061: first() əvəzinə firstOrNull — ledger boş olsa
+                    // (nə olar əgər) receipt ümumi mətnlə açılır, çökmür.
+                    val last = acct.recentLedger.firstOrNull()
                     PopIn {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                             Box(Modifier.size(62.dp).background(Q.primary, CircleShape),
@@ -441,14 +458,20 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             Text("Endirim tətbiq olundu", style = T.h2.copy(fontSize = 15.sp))
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "${acct.venueName} bazasından ${last.amount} XP xərcləndi. " +
-                                    "Hər iki tərəfə receipt göndərildi — əməliyyat ledger-də izlənilir.",
+                                if (last != null)
+                                    "${acct.venueName} bazasından ${last.amount} XP xərcləndi. " +
+                                        "Hər iki tərəfə receipt göndərildi — əməliyyat ledger-də izlənilir."
+                                else
+                                    "${acct.venueName} bazasından XP xərcləndi. " +
+                                        "Hər iki tərəfə receipt göndərildi.",
                                 style = T.meta.copy(fontSize = 11.5.sp), textAlign = TextAlign.Center,
                             )
                             Spacer(Modifier.height(16.dp))
-                            ReceiptRow("İştirak edən XP", "${last.amount} XP")
-                            ReceiptRow("Qalıq balans", "${last.balanceAfter} XP")
-                            ReceiptRow("Ledger qeydi", last.id)
+                            if (last != null) {
+                                ReceiptRow("İştirak edən XP", "${last.amount} XP")
+                                ReceiptRow("Qalıq balans", "${last.balanceAfter} XP")
+                                ReceiptRow("Ledger qeydi", last.id)
+                            }
                             Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = onDismiss,

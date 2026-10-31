@@ -311,10 +311,12 @@ fun EventCard(
                 if (event.past) {
                     WhiteBadge(Icons.Filled.Event, "Keçib", Modifier.padding(start = 12.dp, top = 12.dp))
                 }
-                if (showLevel && !event.past && event.level in listOf("Peşəkar", "Orta", "Başlanğıc")) {
+                // D-061: level null olsa (nə olar əgər) nişan sadəcə yoxdur
+                val lvl = event.level
+                if (showLevel && !event.past && lvl != null && lvl in listOf("Peşəkar", "Orta", "Başlanğıc")) {
                     WhiteBadge(
-                        if (event.level == "Peşəkar") Icons.Filled.MilitaryTech else Icons.Filled.School,
-                        event.level!!,
+                        if (lvl == "Peşəkar") Icons.Filled.MilitaryTech else Icons.Filled.School,
+                        lvl,
                         Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp),
                     )
                 }

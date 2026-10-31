@@ -258,8 +258,18 @@ data class AssistantParse(val text: String, val proposal: EventProposal?)
 /**
  * Assistant [TƏDBİR] parser — web assistant-event.ts portu.
  * (JSON parse — kotlinx.serialization əvəzinə sadə əl üsulu, sıfır asılılıq.)
+ *
+ * D-061 "nə olar əgər": format gözlənilmədən fərqli olsa da çökmür —
+ * Safety.of fallback-i mətni olduğu kimi qaytarır, təklif null olur
+ * (çağıran tərəf artıq null-gözənilən axında işləyir).
  */
-fun parseAssistantEvent(text: String): AssistantParse {
+fun parseAssistantEvent(text: String): AssistantParse =
+    az.qoshul.app.core.safety.Safety.of(
+        tag = "assistant-parse",
+        fallback = AssistantParse(text, null),
+    ) { parseAssistantEventUnsafe(text) }
+
+private fun parseAssistantEventUnsafe(text: String): AssistantParse {
     val i = text.indexOf("[TƏDBİR]")
     if (i < 0) return AssistantParse(text, null)
     val clean = text.substring(0, i).trim()
@@ -279,21 +289,36 @@ fun parseAssistantEvent(text: String): AssistantParse {
         while (q2 < json.length && json[q2] != '"') q2++
         return json.substring(q1 + 1, q2)
     }
+
+    // D-061: sitatsız ədəd dəstəyi — əvvəl int() yalnız str() ilə oxuyurdu:
+    // "capacity":10 (sitatsız) halında str() növbəti açarın sitatını tapırdı
+    // və dəyər HƏMİŞƏ default qalırdı (real assistant cavablarında 10 yerinə 8).
     fun int(key: String, def: Int): Int {
-        val v = str(key)
-        return v.toIntOrNull() ?: def
+        // 1) sitatsız ədəd: "key":10,
+        val k = json.indexOf("\"$key\"")
+        if (k >= 0) {
+            val colon = json.indexOf(':', k)
+            if (colon >= 0) {
+                val rest = json.substring(colon + 1).trim()
+                Regex("^-?\\d+").find(rest)?.let { m ->
+                    m.value.toIntOrNull()?.let { return it }
+                }
+            }
+        }
+        // 2) sitatlı ədəd: "key":"10"
+        return str(key).toIntOrNull() ?: def
     }
-    return AssistantParse(
-        clean,
-        EventProposal(
-            title = str("title"),
-            category = str("category"),
-            date = str("date"),
-            time = str("time"),
-            capacity = int("capacity", 8),
-            location = str("location"),
-            description = str("description"),
-            partner = str("partner"),
-        ),
+    val proposal = EventProposal(
+        title = str("title"),
+        category = str("category"),
+        date = str("date"),
+        time = str("time"),
+        capacity = int("capacity", 8),
+        location = str("location"),
+        description = str("description"),
+        partner = str("partner"),
     )
+    // D-061 "nə olar əgər": boş JSON ({}) və ya başlıqsız qalıq — təklif
+    // YOX sayılır (boş "Təsdiqləndi: " kartı əvəzinə).
+    return AssistantParse(clean, if (proposal.title.isBlank()) null else proposal)
 }
