@@ -1,0 +1,33 @@
+# Qoshul.az — başlanğıc yolu baseline profile qaydaları (D-043).
+#
+# Kitabxana profilləri (Compose, AndroidX) avtomatik birləşir; bu fayl TƏTBİQİN
+# ÖZ başlanğıc yolunu əlavə edir: Application → MainActivity → setContent →
+# QoshulApp → AppEngine ilkin vəziyyəti → Auth/Onboarding/Shell ilk kadrı.
+#
+# Nəticə: ilk açılışda JIT şərhi azalır (~30% tez ilk launch — rəsmi ölçü:
+# developer.android.com/topic/performance/baselineprofiles/overview).
+# API 28+ profili birbaşa oxuyur; API 24-27 üçün androidx.profileinstaller
+# (implementation asılılığı) ilk açılışda quraşdırır.
+#
+# Makrobenchmark ilə generasiya (emulator tələb edir) gələcək mərhələdir;
+# bu əl ilə yazılmış qayda dəsti konservativdir (yalnız başlanğıc yolu).
+
+# — Giriş nöqtələri —
+HSPLaz/qoshul/app/QoshulApplication;-><init>()V
+HSPLaz/qoshul/app/QoshulApplication;->onCreate()V
+HSPLaz/qoshul/app/MainActivity;-><init>()V
+HSPLaz/qoshul/app/MainActivity;->onCreate(Landroid/os/Bundle;)V
+
+# — Başlanğıc yolu: kök kompozisiya + mühərrik ilkinləşdirməsi —
+Laz/qoshul/app/core/engine/AppEngine
+Laz/qoshul/app/core/data/FakeData
+Laz/qoshul/app/core/model/**
+Laz/qoshul/app/core/theme/**
+Laz/qoshul/app/core/ui/Nav
+Laz/qoshul/app/core/ui/Ui
+Laz/qoshul/app/core/glass/Glass
+Laz/qoshul/app/core/motion/Motion
+Laz/qoshul/app/features/auth/AuthScreen
+Laz/qoshul/app/features/onboarding/OnboardingScreen
+Laz/qoshul/app/features/shell/AppShell
+Laz/qoshul/app/features/feed/FeedScreen
