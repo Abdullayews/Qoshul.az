@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -111,6 +112,9 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                 onClick = { nav.pop() },
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    // D-051 fix: geri düyməsi status barın altında qalırdı;
+                    // şəkil full-bleed qalır, düymə inset alır.
+                    .statusBarsPadding()
                     .padding(6.dp)
                     .size(40.dp)
                     .background(Q.glass, CircleShape),

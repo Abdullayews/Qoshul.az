@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -157,6 +158,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         modifier = Modifier
             .fillMaxSize()
             .background(Q.background)
+            // D-051 fix: məzmun status barın altında çəkilirdi — inset əlavə olundu
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp)
             .imePadding(),

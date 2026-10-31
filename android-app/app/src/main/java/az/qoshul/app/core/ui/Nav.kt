@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -120,6 +121,9 @@ fun PushScreenScaffold(
     androidx.compose.foundation.layout.Column(
         modifier = Modifier
             .fillMaxSize()
+            // D-051 fix: push-ekranlar status barın altında qalırdı — bütün
+            // push ekranlar bu scaffold-u istifadə edir (10 ekran bir düzəlişlə).
+            .statusBarsPadding()
             .background(Q.background)
     ) {
         // AppBar (D-050 düzəlişi: fillMaxSize → fillMaxWidth — sətir hündürlüyü

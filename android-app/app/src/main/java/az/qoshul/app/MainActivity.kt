@@ -53,6 +53,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // D-051: full-screen sizing — çentikli (cutout) ekranlarda məzmun
+        // bütün displeyə yayılır (default letterbox/qara zolaqlar əvəzinə).
+        if (android.os.Build.VERSION.SDK_INT >= 27) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
         setContent {
             QoshulTheme {
                 QoshulApp()

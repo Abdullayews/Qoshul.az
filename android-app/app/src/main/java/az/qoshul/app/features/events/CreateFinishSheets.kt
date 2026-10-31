@@ -86,12 +86,18 @@ fun CreateEventSheet(
         mutableStateOf(presetCity.ifEmpty { venue?.city ?: engine.state.value.city })
     }
     var category by remember {
-        mutableStateOf(if (engine.dataSource.allCategories.contains(initial?.category)) initial!!.category else "Qəhvə")
+        // D-051 fix: initial==null → NPE riski aradan qaldırıldı (takeIf zənciri)
+        mutableStateOf(initial?.category?.takeIf { engine.dataSource.allCategories.contains(it) } ?: "Qəhvə")
     }
     var format by remember { mutableStateOf("Oflayn") }
+    // D-051 fix: əvvəl düyməsiz ölü placeholder idi (onSelect boş, tipo "üçun")
+    var ageLimit by remember { mutableStateOf("Hamı üçün") }
     var date by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
     var time by remember { mutableStateOf("18:00") }
-    var capacity by remember { mutableStateOf(if ((initial?.capacity ?: 8) in 2..500) initial!!.capacity else 8) }
+    var capacity by remember {
+        // D-051 fix: əvvəl (initial?.capacity ?: 8) in 2..500 → true → initial!! NPE
+        mutableStateOf(initial?.capacity?.takeIf { it in 2..500 } ?: 8)
+    }
     var paid by remember { mutableStateOf(false) }
     var approval by remember { mutableStateOf(false) }
     var aiBusy by remember { mutableStateOf(false) }
@@ -128,6 +134,7 @@ fun CreateEventSheet(
             epochDay = date.toEpochDay().toInt(),
             price = if (paid) price.toIntOrNull() ?: 0 else 0,
             format = format, approval = approval,
+            ageLimit = ageLimit,
             tags = tags.split(",").map { it.trim() }.filter { it.isNotEmpty() },
         )
         onDismiss()
@@ -254,7 +261,7 @@ fun CreateEventSheet(
                             FormLine("Yaş həddi") {
                                 DropdownLine(
                                     listOf("Hamı üçün", "16+", "18+", "18–25", "25–35"),
-                                    selected = "Hamı üçun", onSelect = { },
+                                    selected = ageLimit, onSelect = { ageLimit = it },
                                 )
                             }
                         }

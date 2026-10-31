@@ -3,6 +3,7 @@ package az.qoshul.app.core.engine
 import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.QoshulDataSource
+import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.model.ActivityXpResult
 import az.qoshul.app.core.model.AppNotification
 import az.qoshul.app.core.model.AssistantParse
@@ -443,7 +444,11 @@ class AppEngine(
                 image = dataSource.imageForCategory(category),
                 city = city, location = if (format == "Onlayn") "Onlayn görüş" else location,
                 lat = lat ?: c?.lat ?: 40.4093, lng = lng ?: c?.lng ?: 49.8671, distance = 0.0,
-                time = time, date = date, epochDay = epochDay, past = false,
+                time = time,
+                // D-051 fix: ISO tarix yerinə etiket ("Bu gün"/"Sabah"/"Noy 2") —
+                // fake data ilə eyni format, kartlar və "Bu axşam" sayğısı tutarlı.
+                date = dateLabelFor(epochDay.toLong()),
+                epochDay = epochDay, past = false,
                 capacity = capacity, participants = 1, host = profileNameV,
                 description = description,
                 price = if (price > 0) price else null,

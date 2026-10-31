@@ -177,7 +177,9 @@ fun EventsScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                             trailing = { SectionLink(text = st.rank, icon = Icons.Filled.WorkspacePremium) },
                         )
                     }
-                    items(2) { i ->
+                    // D-051 fix: items(2) siyahı 1 elementli olanda IndexOutOfBounds
+                    // atırdı (proRanked[1]) — minOf ilə sərhədləndi.
+                    items(minOf(2, proRanked.size)) { i ->
                         EventCard(
                             event = proRanked[i], joined = proRanked[i].id in st.joined,
                             pending = proRanked[i].id in st.pending, saved = proRanked[i].id in st.saved,

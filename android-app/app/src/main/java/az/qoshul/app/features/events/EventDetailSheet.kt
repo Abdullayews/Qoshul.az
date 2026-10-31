@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -85,7 +83,9 @@ fun EventDetailSheet(
     val isPending = event.id in st.pending
 
     SheetScaffold(onDismiss = onDismiss) {
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+        // D-051 fix: daxili verticalScroll silindi — SheetScaffold-ın öz scrollable
+        // Column-u içində nested scroll = IllegalStateException (infinity constraints).
+        Column(Modifier.padding(horizontal = 20.dp)) {
             ShadedImage(assetKey = event.image, height = 180.dp,
                 modifier = Modifier.androidxDetailClip())
             Spacer(Modifier.height(14.dp))
