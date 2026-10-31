@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.runtime.collectAsState
@@ -21,15 +22,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NightlightRound
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.Percent
@@ -51,12 +57,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.engine.AppUiState
+import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.StaggerIn
@@ -72,6 +80,7 @@ import az.qoshul.app.core.ui.SectionHeading
 import az.qoshul.app.core.ui.SectionLink
 import az.qoshul.app.core.ui.SafetyNote
 import az.qoshul.app.core.ui.VenueMiniCard
+import az.qoshul.app.core.ui.imagePaint
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.PersonMiniCard
 import az.qoshul.app.core.ui.XpTrack
@@ -82,6 +91,9 @@ import az.qoshul.app.features.events.EventsScreen
  * "Sənin üçün | Tədbirlər" daxili tabları; axtarış pinned (D-029).
  * D-050: bütün kart bağlantıları canlıdır (məkan → detal, insan → Match,
  * endirim → Kuponlar) — ölü onClick-lər aradan qaldırıldı.
+ * D-054: "Aktiv tədbirlər" — bugünkü canlı tədbirlər birbaşa ana ekranda
+ * üfüqi kart zolağı kimi (istifadəçi tələbi: aktiv tədbirlər ana ekranda
+ * görünməlidir; "Bu axşam" mətn banneri əvəzinə real kartlar).
  */
 @Composable
 fun FeedScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
@@ -196,19 +208,29 @@ private fun ForYouView(
                 StaggerIn(1) { XpTrack(xp = st.xp) }
                 Spacer(Modifier.height(10.dp))
             }
-            // "Bu axşam" körpüsü
-            val tonightCount = engine.cityEvents.count { it.date == "Bu gün" }
-            if (tonightCount > 0) {
+            // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
+            val active = engine.activeEvents
+            if (active.isNotEmpty()) {
                 item {
                     StaggerIn(2) {
-                        CommunityBanner(
-                            icon = Icons.Filled.NightlightRound,
-                            title = "Bu axşam $tonightCount tədbir var",
-                            subtitle = "Görüşlər, idman, sənət — hamısı Tədbirlər bölməsində.",
-                            onClick = onOpenEvents,
-                            trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                        SectionHeading(
+                            title = "Aktiv tədbirlər", icon = Icons.Rounded.Event,
+                            trailing = {
+                                SectionLink(text = "Hamısı", icon = Icons.Filled.NorthEast, onClick = onOpenEvents)
+                            },
                         )
                     }
+                }
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(active) { e ->
+                            LiveEventCard(
+                                event = e, joined = e.id in st.joined, pending = e.id in st.pending,
+                                onClick = onOpenEvents,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(20.dp))
                 }
             }
             // — Populyar məkanlar —
@@ -317,6 +339,94 @@ private fun ForYouView(
         }
     }
 }
+
+/**
+ * Aktiv tədbir kartı (D-054) — bugünkü tədbir üçün üfüqi zolaq kartı:
+ * şəkil + yaşıl nöqtəli "CANLI" nişanı, ad, məkan, saat, iştirak vəziyyəti.
+ */
+@Composable
+private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        Modifier
+            .width(248.dp)
+            .androidxLiveTap(interaction, onClick)
+            .background(Q.card, RoundedCornerShape(Q.rLg.dp))
+            .androidxLiveBorder()
+    ) {
+        // — şəkil + CANLI nişanı —
+        Box(Modifier.fillMaxWidth().height(92.dp)) {
+            Image(
+                painter = imagePaint(event.image), contentDescription = event.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().height(92.dp),
+            )
+            Box(Modifier.fillMaxWidth().height(92.dp).androidxLiveShade())
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+                    .background(Q.glass, RoundedCornerShape(5.dp))
+                    .border(1.dp, Q.glassBorder, RoundedCornerShape(5.dp))
+                    .padding(horizontal = 8.dp, vertical = 5.dp),
+            ) {
+                Box(Modifier.size(5.dp).background(Q.primary, CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Text("CANLI", style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 10.sp,
+                    fontWeight = FontWeight.W800, color = androidx.compose.ui.graphics.Color.White))
+            }
+        }
+        // — məlumat —
+        Column(Modifier.padding(12.dp)) {
+            Text(event.title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = T.eventTitle)
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.LocationOn, null, tint = Q.mutedFg, modifier = Modifier.size(13.5.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(event.location, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = T.meta, modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.Schedule, null, tint = Q.mutedFg, modifier = Modifier.size(13.5.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    when {
+                        joined -> "Qoşulsan · ${event.time}"
+                        pending -> "Təsdiq gözləyir · ${event.time}"
+                        else -> "Bu gün · ${event.time} · ${event.spotsLeft} yer qalıb"
+                    },
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = JakartaSans, fontSize = 10.5.sp,
+                        fontWeight = if (joined) FontWeight.W700 else FontWeight.W500,
+                        color = if (joined) Q.primary else Q.mutedFg),
+                )
+            }
+        }
+    }
+}
+
+private fun Modifier.androidxLiveTap(
+    interaction: MutableInteractionSource,
+    onClick: () -> Unit,
+): Modifier = this.then(
+    Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick)
+)
+
+private fun Modifier.androidxLiveBorder(): Modifier =
+    this.then(Modifier.border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp)))
+
+private fun Modifier.androidxLiveShade(): Modifier = this.then(
+    Modifier.background(
+        androidx.compose.ui.graphics.Brush.verticalGradient(
+            0.55f to androidx.compose.ui.graphics.Color.Transparent,
+            1.0f to Q.photoShade.copy(alpha = 0.5f),
+        )
+    )
+)
 
 /** Endirim yalı kartı (108px, D-035 ölçüsü). */
 @Composable

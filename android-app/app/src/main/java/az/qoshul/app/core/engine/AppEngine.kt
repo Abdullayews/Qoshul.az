@@ -203,6 +203,9 @@ class AppEngine(
 
     val upcoming: List<QoshulEvent> get() = eventsV.filter { !it.past }
     val cityEvents: List<QoshulEvent> get() = upcoming.filter { it.city == cityV }
+    /** D-054: bugünkü tədbirlər — ana ekranda "Aktiv tədbirlər" zolağı üçün. */
+    val activeEvents: List<QoshulEvent>
+        get() = cityEvents.filter { it.epochDay == LocalDate.now().toEpochDay().toInt() }
     val rank: String get() = XpRules.rankForXp(xpV)
     val rankIndex: Int get() = XpRules.rankIndexForXp(xpV)
     val xpProgress: XpRules.XpProgress get() = XpRules.xpProgress(xpV)

@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,7 +80,10 @@ import az.qoshul.app.features.events.EventCard
 /**
  * Profil — Flutter profile_screen.dart portu: başlıq, maraqlar, şəxsiyyət
  * testi, nişanlar, 3 tez keçid, statistika (CountUp), XP progress, 3 tab.
+ * D-054: nişanlar və maraqlar FlowRow ilə yan-yana düzülür (əvvəl Column —
+ * istifadəçi şikayəti: nişanlar alt-alta düşürdü; indi sətir dolunca qırılır).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(engine: AppEngine, nav: NavState) {
     var tab by remember { mutableIntStateOf(0) }
@@ -153,13 +158,13 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                 )
             }
         }
-        // maraqlar
+        // maraqlar (D-054: FlowRow — yan-yana, sətir dolanda qırılır)
         if (st.interests.isNotEmpty()) {
             item {
                 Spacer(Modifier.height(20.dp))
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.androidxInterestsWrap(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     st.interests.forEach { i ->
                         Text(i, style = androidx.compose.ui.text.TextStyle(
@@ -184,16 +189,17 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                 TraitBars(st.personality!!.traits, engine.dataSource.traitLabels)
             }
         }
-        // nişanlar
+        // nişanlar (D-054: FlowRow — yan-yana, alt-alta YOX)
         item {
             Spacer(Modifier.height(18.dp))
             SectionHeading(title = "Nişanlar", icon = Icons.Filled.MilitaryTech)
-            Column {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 badgeDefs.forEachIndexed { i, b ->
                     PopIn(delayMs = Motion.STAGGER_STEP * i, key = b.id) {
-                        Box(Modifier.padding(end = 8.dp, bottom = 8.dp)) {
-                            BadgeChip(badge = b, earned = b.id in st.earnedBadges)
-                        }
+                        BadgeChip(badge = b, earned = b.id in st.earnedBadges)
                     }
                 }
             }
@@ -396,8 +402,6 @@ private fun Modifier.androidxGreenRing(): Modifier = this.then(
 
 private fun Modifier.androidxAvatarClip(): Modifier =
     this.then(Modifier.androidxClipCircle())
-
-private fun Modifier.androidxInterestsWrap(): Modifier = this
 
 private fun Modifier.androidxStatsBorders(): Modifier = this.then(
     Modifier

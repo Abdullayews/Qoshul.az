@@ -89,7 +89,8 @@ fun StaggerIn(index: Int, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .alpha(progress.value)
-            .graphicsLayer { translationY = 14f * (1f - progress.value) }
+            // D-054: dp əsaslı sürüşmə (əvvəl xam 14f px — DPI-dan asılı idi)
+            .graphicsLayer { translationY = 14.dp.toPx() * (1f - progress.value) }
     ) { content() }
 }
 
@@ -165,7 +166,8 @@ fun TypingDots(color: Color, size: Float = 5f) {
             Box(
                 modifier = Modifier
                     .padding(horizontal = 2.dp)
-                    .graphicsLayer { translationY = -3f * t }
+                    // D-054: dp əsaslı hoppanma (əvvəl xam 3f px)
+                    .graphicsLayer { translationY = -3.dp.toPx() * t }
                     .size(size.dp)
                     .alpha(0.35f + 0.65f * t)
                     .background(color, CircleShape)

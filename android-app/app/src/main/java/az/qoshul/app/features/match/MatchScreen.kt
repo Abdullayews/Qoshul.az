@@ -71,11 +71,14 @@ import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
 import az.qoshul.app.core.ui.SafetyNote
 import az.qoshul.app.core.ui.imagePaint
+import androidx.compose.ui.platform.LocalDensity
 import kotlin.math.abs
 
 /**
  * "Tanış ol" — Flutter match_screen.dart portu (ROL D): kart dəsti.
- * Dartılma (drag) kartı çevirir; 110px hədd — uçur (swipe) və ya yay geri.
+ * Dartılma (drag) kartı çevirir; ~110dp hədd — uçur (swipe) və ya yay geri.
+ * D-054: hədd xam piksel (300f) deyil, sıxlıq-uyğunlaşan dp —
+ * yüksək DPI ekranda 300px fiziki olaraq çox kiçik idi (fixed-px qadağası).
  */
 @Composable
 fun MatchScreen(engine: AppEngine, nav: NavState) {
@@ -124,7 +127,8 @@ fun MatchScreen(engine: AppEngine, nav: NavState) {
                             Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    translationY = -12f * depth
+                                    // D-054: dp əsaslı dərinlik ofseti (əvvəl xam 12f px)
+                                    translationY = -12.dp.toPx() * depth
                                     scaleX = 1f - 0.05f * depth
                                     scaleY = 1f - 0.05f * depth
                                 }
@@ -271,7 +275,8 @@ private fun SwipeCard(
 ) {
     var dragX by remember { mutableStateOf(0f) }
     var dragY by remember { mutableStateOf(0f) }
-    val threshold = 300f // dp boşluğunda təxmini px həddi
+    // D-054: DPI-uyğun hədd — 110dp hər ekranda eyni fiziki məsafə.
+    val threshold = with(LocalDensity.current) { 110.dp.toPx() }
 
     Box(
         Modifier
@@ -298,7 +303,8 @@ private fun SwipeCard(
                 .graphicsLayer {
                     translationX = dragX
                     translationY = dragY
-                    rotationZ = (dragX / 22f).coerceIn(-12f, 12f)
+                    // D-054: fırlanma da DPI-uyğun — 12° ~ hər 88dp dartma (əvvəl xam px bölüsü).
+                    rotationZ = (dragX * 12f / 88.dp.toPx()).coerceIn(-12f, 12f)
                 }
         ) {
             CardFace(
