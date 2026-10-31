@@ -53,11 +53,17 @@ object Q {
     val shimmerBase = Color(0xFFEEF2F5)
     val shimmerHighlight = Color(0xFFFAFCFE)
 
-    // radiuslar (dp) — web --radius-*
+    // radiuslar (dp) — web --radius-* ; D-058: Lilt dili
+    // (istifadəçi direktivi 2026-10-31: düymə/grid/seçim/dolma barı
+    // reference app qədər yumşaq): kartlar 8→16dp, pill %50 kapsul.
     const val rSm = 4.0
     const val rMd = 6.0
-    const val rLg = 8.0
-    const val rXl = 8.0
+    const val rLg = 16.0
+    const val rXl = 20.0
     const val rMap = 18.0
     const val rAiBox = 16.0
+
+    /** Kapsul radiusu (PERCENT, dp deyil!) — `RoundedCornerShape(Q.rPill)`
+     * hər hündürlükdə tam-yuvarlaq (kapsul) forma verir: düymələr, çiplər. */
+    const val rPill = 50
 }

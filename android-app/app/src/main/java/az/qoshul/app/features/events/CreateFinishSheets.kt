@@ -170,8 +170,8 @@ fun CreateEventSheet(
                     Button(
                         onClick = { aiFill() },
                         enabled = !aiBusy && idea.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.secondary, contentColor = Q.primary,
                             disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
@@ -312,8 +312,8 @@ fun CreateEventSheet(
             Button(
                 onClick = { if (title.isNotBlank() && desc.isNotBlank()) submit() },
                 enabled = title.isNotBlank() && desc.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
             ) {
                 Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
@@ -365,11 +365,12 @@ fun DropdownLine(
             ) {
                 Column(Modifier.verticalScroll(rememberScrollState()).height(200.dp)) {
                     options.forEach { opt ->
+                        val sel = opt == selected
                         Text(
                             opt,
                             style = T.input.copy(
-                                color = if (opt == selected) Q.primary else Q.foreground,
-                                fontWeight = if (opt == selected) FontWeight.W700 else FontWeight.W400,
+                                color = if (sel) Q.primary else Q.foreground,
+                                fontWeight = if (sel) FontWeight.W700 else FontWeight.W400,
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -377,6 +378,8 @@ fun DropdownLine(
                                     onSelect(opt)
                                     expanded = false
                                 }
+                                // D-058: seçili sətir — reference dili: tinted fon + qalın
+                                .background(if (sel) Q.secondary else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(10.dp))
                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                         )
                     }
@@ -388,8 +391,9 @@ fun DropdownLine(
 
 private fun Modifier.androidxDropdownBg(): Modifier = this.then(
     Modifier
-        .background(Q.card, RoundedCornerShape(Q.rMd.dp))
-        .border(1.dp, Q.border, RoundedCornerShape(Q.rMd.dp))
+        // D-058: input sahəsi — reference 16px radius
+        .background(Q.card, RoundedCornerShape(16.dp))
+        .border(1.dp, Q.border, RoundedCornerShape(16.dp))
 )
 
 private fun Modifier.androidxDropdownClick(onClick: () -> Unit): Modifier =
@@ -453,8 +457,8 @@ fun FinishActivitySheet(
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = { step = 1 },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) {
                         Icon(Icons.Filled.QrCodeScanner, null, modifier = Modifier.size(16.dp))
@@ -494,8 +498,8 @@ fun FinishActivitySheet(
                     Button(
                         onClick = { step = 2 },
                         enabled = sharedPhotos.value.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg,
                             disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
@@ -576,8 +580,8 @@ fun FinishActivitySheet(
                             step = 3
                         },
                         enabled = tagged.value.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg,
                             disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
@@ -627,8 +631,8 @@ fun FinishActivitySheet(
                                 Spacer(Modifier.height(14.dp))
                                 Button(
                                     onClick = onDismiss,
-                                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                                    shape = RoundedCornerShape(Q.rMd.dp),
+                                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                                 ) { Text("Əla!", style = T.button) }
                             }

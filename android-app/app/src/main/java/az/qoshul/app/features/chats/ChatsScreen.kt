@@ -431,7 +431,7 @@ private fun ChatView(
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .androidxChatTap { sendAction(qr) }
-                                .background(Q.muted, RoundedCornerShape(15.dp))
+                                .background(Q.muted, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 14.dp, vertical = 8.dp),
                         )
                     }
@@ -452,7 +452,7 @@ private fun ChatView(
                     enabled = text.isNotBlank(),
                     modifier = Modifier.size(42.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Q.primary, contentColor = Q.primaryFg,
                         disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),

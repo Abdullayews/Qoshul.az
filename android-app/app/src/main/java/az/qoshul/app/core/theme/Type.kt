@@ -36,7 +36,8 @@ object T {
     val category = TextStyle(fontFamily = JakartaSans, fontSize = 10.5.sp, fontWeight = FontWeight.W700, color = Q.primary)
     val chip = TextStyle(fontFamily = JakartaSans, fontSize = 11.5.sp, fontWeight = FontWeight.W500, color = Q.mutedFg)
     val chipActive = TextStyle(fontFamily = JakartaSans, fontSize = 11.5.sp, fontWeight = FontWeight.W700, color = Q.primaryFg)
-    val button = TextStyle(fontFamily = JakartaSans, fontSize = 13.sp, fontWeight = FontWeight.W600)
+    // D-058: 13sp/W600 → 15sp/W700 — reference app düymə etiketi (16px/600) miqyası
+    val button = TextStyle(fontFamily = JakartaSans, fontSize = 15.sp, fontWeight = FontWeight.W700)
     val label = TextStyle(fontFamily = JakartaSans, fontSize = 12.sp, fontWeight = FontWeight.W600)
     val input = TextStyle(fontFamily = JakartaSans, fontSize = 13.5.sp, fontWeight = FontWeight.W400)
     val stat = TextStyle(fontFamily = JakartaSans, fontSize = 22.sp, fontWeight = FontWeight.W800)

@@ -176,8 +176,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 Spacer(Modifier.height(14.dp))
                 OutlinedButton(
                     onClick = { showDelete = true },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = Q.destructive),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.destructive),
@@ -192,8 +192,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         engine.signOut()
                         nav.popAll()
                     },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {

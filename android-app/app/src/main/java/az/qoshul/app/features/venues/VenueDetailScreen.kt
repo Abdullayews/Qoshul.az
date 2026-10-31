@@ -211,8 +211,8 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                 // D-050: "Yol tap" AKTİV — xəritəyə keçib məkan pininə uçur
                 OutlinedButton(
                     onClick = { nav.pop(); focus.venue(venue.id) },
-                    modifier = Modifier.weight(1f).height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
@@ -224,8 +224,8 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                 Spacer(Modifier.width(10.dp))
                 Button(
                     onClick = { reserveOpen = true },
-                    modifier = Modifier.weight(2f).height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.weight(2f).height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                 ) {
                     Icon(Icons.Filled.TableRestaurant, null, modifier = Modifier.size(16.dp))
@@ -348,8 +348,8 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = { step = 3 },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) { Text("Davam et", style = T.button) }
                     Spacer(Modifier.height(12.dp))
@@ -392,8 +392,8 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                             }
                         },
                         enabled = canConfirm,
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg,
                             disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
@@ -434,8 +434,8 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                         Spacer(Modifier.height(14.dp))
                         Button(
                             onClick = onDismiss,
-                            modifier = Modifier.fillMaxWidth().height(46.dp),
-                            shape = RoundedCornerShape(Q.rMd.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(Q.rPill),
                             colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                         ) { Text("Hazırdır", style = T.button) }
                     }

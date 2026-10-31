@@ -151,7 +151,7 @@ fun ProfileScreen(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
-                                .background(Q.secondary, RoundedCornerShape(Q.rMd.dp))
+                                .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 9.dp, vertical = 6.dp),
                         ) {
                             Icon(Icons.Filled.Verified, null, tint = Q.primary, modifier = Modifier.size(12.dp))
@@ -183,7 +183,7 @@ fun ProfileScreen(
                         Text(i, style = androidx.compose.ui.text.TextStyle(
                             fontFamily = JakartaSans, fontSize = 11.5.sp, color = Q.primary),
                             modifier = Modifier
-                                .background(Q.secondary, RoundedCornerShape(5.dp))
+                                .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 11.dp, vertical = 7.dp))
                     }
                 }

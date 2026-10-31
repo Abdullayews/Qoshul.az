@@ -204,8 +204,8 @@ private fun WelcomeStep(onNext: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 28.dp)
-                .height(46.dp),
-            shape = RoundedCornerShape(Q.rMd.dp),
+                .height(52.dp),
+            shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
         ) {
             Text(
@@ -259,7 +259,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
             var showPicker by remember { mutableStateOf(false) }
             Button(
                 onClick = { showPicker = true },
-                shape = RoundedCornerShape(Q.rMd.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(containerColor = Q.card, contentColor = Q.foreground),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
             ) {
@@ -348,8 +348,8 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(Q.rMd.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
         ) { Text("Davam et", style = T.button) }
         Spacer(Modifier.height(24.dp))
@@ -462,8 +462,8 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
                 onNext()
             },
             enabled = ok,
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(Q.rMd.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Q.primary, contentColor = Q.primaryFg,
                 disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg,
@@ -520,8 +520,8 @@ private fun PermissionsStep(engine: AppEngine) {
         Spacer(Modifier.height(10.dp))
         Button(
             onClick = { engine.finishOnboarding() },
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(Q.rMd.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
         ) { Text("Qoshul-a başla", style = T.button) }
         Spacer(Modifier.height(24.dp))

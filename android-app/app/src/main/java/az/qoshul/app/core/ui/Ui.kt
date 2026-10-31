@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -140,7 +141,7 @@ fun RankBadge(label: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .background(Q.rankBadgeBg, RoundedCornerShape(Q.rMd.dp))
+            .background(Q.rankBadgeBg, RoundedCornerShape(Q.rPill))
             .padding(horizontal = 10.dp, vertical = 7.dp),
     ) {
         Icon(Icons.Filled.EmojiEvents, null, tint = Q.accentFg, modifier = Modifier.size(13.5.dp))
@@ -169,9 +170,9 @@ fun XpTrack(xp: Int) {
     }
 }
 
-/** Animasiyalı progress zolağı (TweenAnimationBuilder portu). */
+/** Animasiyalı progress zolağı (TweenAnimationBuilder portu). D-058: default 6dp — reference dolma barı miqyası (track açıq boz + fill primary, kapsul uclar). */
 @Composable
-fun XpBar(progress: Float, height: Dp = 4.dp) {
+fun XpBar(progress: Float, height: Dp = 6.dp) {
     val target by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
         animationSpec = tween(Motion.D4, easing = Motion.ease),
@@ -181,14 +182,14 @@ fun XpBar(progress: Float, height: Dp = 4.dp) {
         Modifier
             .fillMaxWidth()
             .height(height)
-            .clip(RoundedCornerShape(3.dp))
+            .clip(RoundedCornerShape(50))
             .background(Q.border)
     ) {
         Box(
             Modifier
                 .fillMaxWidth(target)
                 .height(height)
-                .background(Q.primary)
+                .background(Q.primary, CircleShape)
         )
     }
 }
@@ -201,7 +202,7 @@ fun Segmented(labels: List<String>, active: Int, onChanged: (Int) -> Unit) {
         Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, bottom = 22.dp)
-            .background(Q.muted, RoundedCornerShape(9.dp))
+            .background(Q.muted, RoundedCornerShape(Q.rPill))
             .padding(4.dp)
     ) {
         labels.forEachIndexed { i, label ->
@@ -210,7 +211,7 @@ fun Segmented(labels: List<String>, active: Int, onChanged: (Int) -> Unit) {
                 Modifier
                     .weight(1f)
                     .height(38.dp)
-                    .background(if (isActive) Q.card else Color.Transparent, RoundedCornerShape(7.dp))
+                    .background(if (isActive) Q.card else Color.Transparent, RoundedCornerShape(Q.rPill))
                     .clickable { onChanged(i) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -249,11 +250,11 @@ fun SearchBarField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .background(Q.card, RoundedCornerShape(15.dp))
+                    .background(Q.card, RoundedCornerShape(16.dp))
                     .border(
                         1.4.dp.takeIf { focused } ?: 1.dp,
                         if (focused) Q.primary else Q.border,
-                        RoundedCornerShape(15.dp),
+                        RoundedCornerShape(16.dp),
                     )
                     .padding(horizontal = 14.dp),
             ) {
@@ -298,13 +299,13 @@ fun CategoryChip(
             .height(36.dp)
             .background(
                 if (active) Q.primary else Q.card,
-                RoundedCornerShape(Q.rMd.dp),
+                RoundedCornerShape(Q.rPill),
             )
             .border(
                 1.dp, if (active) Q.primary else Q.border,
-                RoundedCornerShape(Q.rMd.dp),
+                RoundedCornerShape(Q.rPill),
             )
-            .padding(horizontal = 13.dp),
+            .padding(horizontal = 14.dp),
     ) {
         Icon(icon, null, tint = if (active) Q.primaryFg else Q.mutedFg, modifier = Modifier.size(14.5.dp))
         Spacer(Modifier.width(6.dp))
@@ -371,7 +372,7 @@ fun AiBox(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .padding(vertical = 10.dp)
             .background(Q.aiBoxBg, RoundedCornerShape(Q.rAiBox.dp))
-            .border(1.2.dp, Q.primary, RoundedCornerShape(Q.rAiBox.dp))
+            .border(1.dp, Q.primary, RoundedCornerShape(Q.rAiBox.dp))
             .padding(12.dp)
     ) { content() }
 }
@@ -498,9 +499,9 @@ fun LiveBadge(text: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .background(Q.glass, RoundedCornerShape(5.dp))
-            .border(1.dp, Q.glassBorder, RoundedCornerShape(5.dp))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .background(Q.glass, RoundedCornerShape(Q.rPill))
+            .border(1.dp, Q.glassBorder, RoundedCornerShape(Q.rPill))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
     ) {
         // D-057: yaşıl canlı nöqtə (əvvəl narıncı idi, Feed inline nüsxəsi yaşıl)
         Box(Modifier.size(5.dp).background(Q.primary, CircleShape))
@@ -555,8 +556,8 @@ fun ResvStatusChip(status: ResvStatus) {
         status.label,
         style = tStyle(10.5, FontWeight.W700, fg),
         modifier = Modifier
-            .background(bg, RoundedCornerShape(Q.rMd.dp))
-            .padding(horizontal = 9.dp, vertical = 6.dp),
+            .background(bg, RoundedCornerShape(Q.rPill))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
     )
 }
 
@@ -582,13 +583,13 @@ fun BadgeChip(badge: BadgeDef, earned: Boolean) {
         modifier = Modifier
             .background(
                 if (earned) Q.secondary else Q.muted,
-                RoundedCornerShape(Q.rMd.dp),
+                RoundedCornerShape(Q.rPill),
             )
             .border(
                 1.dp, if (earned) Q.primary else Q.border,
-                RoundedCornerShape(Q.rMd.dp),
+                RoundedCornerShape(Q.rPill),
             )
-            .padding(horizontal = 11.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Icon(
             if (earned) Icons.Filled.MilitaryTech else Icons.Outlined.MilitaryTech,
@@ -614,6 +615,7 @@ fun VenueMiniCard(
             .clickable(interactionSource = interaction, indication = null, enabled = onClick != null) {
                 onClick?.invoke()
             }
+            .shadow(3.dp, RoundedCornerShape(Q.rLg.dp))
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
     ) {
@@ -629,8 +631,8 @@ fun VenueMiniCard(
                     style = tStyle(10.5, FontWeight.W800, Q.accentFg),
                     modifier = Modifier
                         .padding(8.dp)
-                        .background(Q.rankBadgeBg, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .background(Q.rankBadgeBg, RoundedCornerShape(Q.rPill))
+                        .padding(horizontal = 9.dp, vertical = 4.dp),
                 )
             }
         }
@@ -667,6 +669,7 @@ fun PersonMiniCard(
             .clickable(interactionSource = interaction, indication = null, enabled = onClick != null) {
                 onClick?.invoke()
             }
+            .shadow(3.dp, RoundedCornerShape(Q.rLg.dp))
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
             .padding(11.dp),
@@ -682,8 +685,8 @@ fun PersonMiniCard(
                 style = tStyle(10.5, FontWeight.W800, Q.primaryFg),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .background(Q.primary, RoundedCornerShape(5.dp))
-                    .padding(horizontal = 7.dp, vertical = 3.5.dp),
+                    .background(Q.primary, RoundedCornerShape(Q.rPill))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -704,6 +707,7 @@ fun OfferCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 12.dp)
+            .shadow(3.dp, RoundedCornerShape(Q.rLg.dp))
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .border(
                 1.dp, if (unlocked) Q.border else Q.muted,
@@ -736,8 +740,8 @@ fun OfferCard(
                         "Səviyyən ilə açıq",
                         style = tStyle(9.5, FontWeight.W700, Q.primary),
                         modifier = Modifier
-                            .background(Q.secondary, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 7.dp, vertical = 2.5.dp),
+                            .background(Q.secondary, RoundedCornerShape(Q.rPill))
+                            .padding(horizontal = 8.dp, vertical = 3.dp),
                     )
                 }
             }

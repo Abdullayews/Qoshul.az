@@ -140,8 +140,8 @@ private fun Intro(onStart: () -> Unit) {
             Spacer(Modifier.height(22.dp))
             Button(
                 onClick = onStart,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
             ) {
                 Icon(Icons.Filled.NorthEast, null, modifier = Modifier.height(16.dp))
@@ -176,11 +176,13 @@ private fun QuestionStep(index: Int, total: Int, text: String, onAnswer: (Int) -
             OutlinedButton(
                 onClick = { onAnswer(score) },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                // D-058: seçim kartı — reference dil: 16dp radius, 1.5dp kənar
+                // (düymələrdən fərqli olaraq kapsul DEYİL — reference option kartları 16px)
+                shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Q.card, contentColor = Q.foreground),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-            ) { Text(label, style = T.button) }
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, Q.border),
+            ) { Text(label, style = T.button.copy(fontWeight = FontWeight.W600)) }
             Spacer(Modifier.height(10.dp))
         }
         Spacer(Modifier.height(8.dp))
@@ -219,8 +221,8 @@ private fun QuizResult(
             Spacer(Modifier.height(18.dp))
             Button(
                 onClick = onSave,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
             ) {
                 Icon(Icons.Filled.Psychology, null, modifier = Modifier.height(16.dp))

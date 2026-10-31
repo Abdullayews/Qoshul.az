@@ -185,7 +185,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 onClick = { if (!busy) demoSignIn() },
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Q.primary, contentColor = Q.primaryFg),
             ) {
@@ -223,7 +223,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                         fontWeight = FontWeight.W700, letterSpacing = 6.sp,
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = qoshulTextFieldColors(),
                 )
             }
@@ -231,8 +231,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             OutlinedButton(
                 onClick = { if (!busy) social() },
                 enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Q.card, contentColor = Q.foreground
@@ -246,8 +246,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             OutlinedButton(
                 onClick = { if (!busy) social() },
                 enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Q.card, contentColor = Q.foreground
@@ -319,8 +319,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         Button(
             onClick = { if (!busy) submit() },
             enabled = !busy,
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RoundedCornerShape(Q.rMd.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
+            shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Q.primary, contentColor = Q.primaryFg
             ),
@@ -400,7 +400,7 @@ fun QoshulTextField(
             { Text(it, style = T.input.copy(color = Q.mutedFg)) }
         },
         textStyle = T.input,
-        shape = RoundedCornerShape(Q.rMd.dp),
+        shape = RoundedCornerShape(Q.rPill),
         colors = qoshulTextFieldColors(),
     )
 }

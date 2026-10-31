@@ -106,7 +106,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                                     onClick = { engine.sendAssistant(s) },
                                     modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
                                         .height(34.dp),
-                                    shape = RoundedCornerShape(Q.rMd.dp),
+                                    shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.outlinedButtonColors(
                                         containerColor = Q.secondary, contentColor = Q.primary),
                                 ) { Text(s, style = androidx.compose.ui.text.TextStyle(
@@ -145,7 +145,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                                 Spacer(Modifier.height(10.dp))
                                 Button(
                                     onClick = onOpenCreate,
-                                    shape = RoundedCornerShape(Q.rMd.dp),
+                                    shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Q.primary, contentColor = Q.primaryFg),
                                 ) {
@@ -177,7 +177,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                     enabled = !st.assistantBusy && text.isNotBlank(),
                     modifier = Modifier.size(42.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Q.primary, contentColor = Q.primaryFg,
                         disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),

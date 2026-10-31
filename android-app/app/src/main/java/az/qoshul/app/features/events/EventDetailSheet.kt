@@ -123,7 +123,7 @@ fun EventDetailSheet(
                         Text(tag, style = androidx.compose.ui.text.TextStyle(
                             fontFamily = JakartaSans, fontSize = 10.5.sp, color = Q.primary),
                             modifier = Modifier
-                                .background(Q.secondary, RoundedCornerShape(5.dp))
+                                .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 10.dp, vertical = 6.dp))
                     }
                 }
@@ -136,8 +136,8 @@ fun EventDetailSheet(
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = { onDismiss(); onFinishActivity(event) },
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                 ) {
                     Icon(Icons.Filled.WorkspacePremium, null, modifier = Modifier.size(16.dp))
@@ -148,8 +148,8 @@ fun EventDetailSheet(
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = {}, enabled = false,
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(
                         disabledContainerColor = Q.secondary, disabledContentColor = Q.primary),
                 ) {
@@ -164,8 +164,8 @@ fun EventDetailSheet(
                 if (event.id in st.checkedIn) {
                     Button(
                         onClick = {}, enabled = false,
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             disabledContainerColor = Q.secondary, disabledContentColor = Q.primary),
                     ) {
@@ -176,8 +176,8 @@ fun EventDetailSheet(
                 } else {
                     Button(
                         onClick = { engine.checkInEvent(event.id) },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) {
                         Icon(Icons.Filled.WhereToVote, null, modifier = Modifier.size(16.dp))
@@ -209,7 +209,7 @@ fun EventDetailSheet(
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = { engine.addReview(event.id, rating, comment); reviewSent = true },
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                 ) { Text("Rəyi göndər", style = T.button) }
             }
@@ -229,8 +229,8 @@ fun EventDetailSheet(
                 // (A3-ün "xəritə fazasında" qeydi D-048 MapLibre ilə bağlandı)
                 OutlinedButton(
                     onClick = { onDismiss(); onShowOnMap(event) },
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
@@ -248,8 +248,8 @@ fun EventDetailSheet(
                         engine.eventReminder(event, "24 saat əvvəl")
                         reminded = true
                     },
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = if (reminded) Q.secondary else Q.card,
                         contentColor = if (reminded) Q.primary else Q.foreground),
@@ -271,8 +271,8 @@ fun EventDetailSheet(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = { engine.leave(event.id); onDismiss() },
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {
@@ -288,8 +288,8 @@ fun EventDetailSheet(
                     // söhbətini açır (ChatFocusState → Söhbətlər tabı + konkret çat).
                     Button(
                         onClick = { onDismiss(); onOpenChat(event) },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) {
@@ -301,8 +301,8 @@ fun EventDetailSheet(
                     Button(
                         onClick = { engine.join(event.id) },
                         enabled = !event.isFull,
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg,
                             disabledContainerColor = Q.secondary, disabledContentColor = Q.primary),

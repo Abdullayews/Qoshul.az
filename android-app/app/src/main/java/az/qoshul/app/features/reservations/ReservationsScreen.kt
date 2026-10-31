@@ -130,8 +130,8 @@ fun ReservationsScreen(engine: AppEngine, nav: NavState) {
                         Row {
                             OutlinedButton(
                                 onClick = { qrResv = r },
-                                modifier = Modifier.weight(1f).height(40.dp),
-                                shape = RoundedCornerShape(Q.rMd.dp),
+                                modifier = Modifier.weight(1f).height(52.dp),
+                                shape = RoundedCornerShape(Q.rPill),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     containerColor = Q.card, contentColor = Q.foreground),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
@@ -144,8 +144,8 @@ fun ReservationsScreen(engine: AppEngine, nav: NavState) {
                                 Spacer(Modifier.width(8.dp))
                                 Button(
                                     onClick = { engine.checkInReservation(r.id) },
-                                    modifier = Modifier.weight(2f).height(40.dp),
-                                    shape = RoundedCornerShape(Q.rMd.dp),
+                                    modifier = Modifier.weight(2f).height(52.dp),
+                                    shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = Q.primary, contentColor = Q.primaryFg),
                                 ) {

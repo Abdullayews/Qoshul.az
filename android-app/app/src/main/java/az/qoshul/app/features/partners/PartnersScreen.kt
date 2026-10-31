@@ -200,8 +200,8 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onCreate,
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
             ) {
                 Icon(Icons.Filled.Add, null, modifier = Modifier.size(16.dp))
@@ -286,8 +286,8 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                                 scanFailed = false; step = 1
                             } else scanFailed = true
                         },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) {
                         Icon(Icons.Filled.QrCodeScanner, null, modifier = Modifier.size(17.dp))
@@ -336,8 +336,8 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     Spacer(Modifier.height(14.dp))
                     Button(
                         onClick = { step = 2 },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        shape = RoundedCornerShape(Q.rMd.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                     ) {
                         Icon(Icons.Filled.ReceiptLong, null, modifier = Modifier.size(16.dp))
@@ -400,8 +400,8 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     Row {
                         OutlinedButton(
                             onClick = { step = 1 },
-                            modifier = Modifier.weight(1f).height(46.dp),
-                            shape = RoundedCornerShape(Q.rMd.dp),
+                            modifier = Modifier.weight(1f).height(52.dp),
+                            shape = RoundedCornerShape(Q.rPill),
                             colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.foreground),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                         ) { Text("Geri", style = T.button) }
@@ -415,8 +415,8 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                                 }
                             },
                             enabled = p.ok,
-                            modifier = Modifier.weight(2f).height(46.dp),
-                            shape = RoundedCornerShape(Q.rMd.dp),
+                            modifier = Modifier.weight(2f).height(52.dp),
+                            shape = RoundedCornerShape(Q.rPill),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Q.primary, contentColor = Q.primaryFg,
                                 disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
@@ -452,8 +452,8 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = onDismiss,
-                                modifier = Modifier.fillMaxWidth().height(46.dp),
-                                shape = RoundedCornerShape(Q.rMd.dp),
+                                modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(Q.rPill),
                                 colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
                             ) { Text("Bitir", style = T.button) }
                         }

@@ -650,7 +650,7 @@ private fun BottomCardButton(
     Box(
         line
             .height(42.dp)
-            .background(bg, RoundedCornerShape(Q.rMd.dp))
+            .background(bg, RoundedCornerShape(Q.rPill))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { Text(label, style = T.button.copy(color = fg)) }

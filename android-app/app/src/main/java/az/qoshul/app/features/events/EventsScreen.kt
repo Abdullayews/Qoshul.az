@@ -436,7 +436,7 @@ private fun JoinButton(event: QoshulEvent, joined: Boolean, pending: Boolean, on
         enabled = b.enabled,
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp),
         modifier = Modifier.height(38.dp), // A5: məzmun 34px + toxunma hədəfi
-        shape = RoundedCornerShape(Q.rMd.dp),
+        shape = RoundedCornerShape(Q.rPill),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (b.secondary) Q.secondary else Q.primary,
             contentColor = if (b.secondary) Q.primary else Q.primaryFg,

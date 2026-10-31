@@ -148,7 +148,7 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
         Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 6.dp)
-            .background(Q.muted, RoundedCornerShape(13.dp))
+            .background(Q.muted, RoundedCornerShape(Q.rPill))
             .padding(4.dp)
     ) {
         tabs.forEachIndexed { i, (icon, activeIcon, label) ->
@@ -157,7 +157,7 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
                 Modifier
                     .weight(1f)
                     .height(42.dp)
-                    .background(if (isActive) Q.card else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(10.dp))
+                    .background(if (isActive) Q.card else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(Q.rPill))
                     .clickable { onChanged(i) },
                 contentAlignment = Alignment.Center,
             ) {
@@ -428,8 +428,8 @@ private fun CityPill(city: String, onClick: () -> Unit) {
         modifier = Modifier
             .scaleTap(interaction)
             .androidxLiveTap(interaction, onClick)
-            .background(Q.card, RoundedCornerShape(10.dp))
-            .border(1.dp, Q.border, RoundedCornerShape(10.dp))
+            .background(Q.card, RoundedCornerShape(Q.rPill))
+            .border(1.dp, Q.border, RoundedCornerShape(Q.rPill))
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
         Icon(Icons.Filled.LocationOn, null, tint = Q.primary, modifier = Modifier.height(13.dp))

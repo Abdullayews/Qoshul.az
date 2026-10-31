@@ -322,7 +322,7 @@ private fun Modifier.androidxAcctBorder(expanded: Boolean): Modifier = this.then
 )
 
 private fun Modifier.androidxAcctIconBg(): Modifier = this.then(
-    Modifier.background(Q.secondary, RoundedCornerShape(Q.rMd.dp))
+    Modifier.background(Q.secondary, RoundedCornerShape(Q.rPill))
 )
 
 private fun Modifier.androidxProBg(): Modifier = this.then(
@@ -339,19 +339,19 @@ private fun Modifier.androidxLedgerDivider(): Modifier = this.then(Modifier.back
 
 private fun Modifier.androidxFallbackBg(): Modifier = this.then(
     Modifier
-        .background(Q.muted, RoundedCornerShape(Q.rMd.dp))
+        .background(Q.muted, RoundedCornerShape(Q.rPill))
         .androidxFallbackBorder()
 )
 
 private fun Modifier.androidxFallbackBorder(): Modifier = this.then(
-    Modifier.border(1.dp, Q.border, RoundedCornerShape(Q.rMd.dp))
+    Modifier.border(1.dp, Q.border, RoundedCornerShape(Q.rPill))
 )
 
 private fun Modifier.androidxRefreshTap(interaction: MutableInteractionSource, onClick: () -> Unit): Modifier =
     this.then(Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick))
 
 private fun Modifier.androidxRefreshBg(): Modifier = this.then(
-    Modifier.background(Q.primary, RoundedCornerShape(Q.rMd.dp))
+    Modifier.background(Q.primary, RoundedCornerShape(Q.rPill))
 )
 
 private fun Modifier.androidxDrawAlpha(a: Float): Modifier = this.alpha(a)

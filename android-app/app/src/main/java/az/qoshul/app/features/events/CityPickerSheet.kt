@@ -57,7 +57,7 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(43.dp)
-                    .background(Q.card, RoundedCornerShape(7.dp))
+                    .background(Q.card, RoundedCornerShape(12.dp))
                     .androidxSearchBorder()
                     .padding(horizontal = 12.dp),
             ) {
@@ -107,5 +107,5 @@ private fun Modifier.androidxCityRow(active: Boolean, onClick: () -> Unit): Modi
 )
 
 private fun Modifier.androidxSearchBorder(): Modifier = this.then(
-    Modifier.border(1.dp, Q.border, RoundedCornerShape(7.dp))
+    Modifier.border(1.dp, Q.border, RoundedCornerShape(12.dp))
 )

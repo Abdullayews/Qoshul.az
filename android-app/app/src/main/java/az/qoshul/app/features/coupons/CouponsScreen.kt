@@ -118,7 +118,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                                     (st.venueXp[o.venueId]?.balance ?: 0) >= o.xpPrice,
                                                 modifier = Modifier.height(32.dp),
                                                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
-                                                shape = RoundedCornerShape(Q.rMd.dp),
+                                                shape = RoundedCornerShape(Q.rPill),
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = Q.primary, contentColor = Q.primaryFg,
                                                     disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
