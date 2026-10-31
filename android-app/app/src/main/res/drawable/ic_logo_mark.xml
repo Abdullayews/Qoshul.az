@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Daxili istifadə üçün tam brend nişanı (D-046) — favicon-un birebir portu:
+  yaşıl kvadrat (rx 25%) + ağ birləşən halqalar. Auth/Onboarding ekranlarında
+  Wordmark üzərində. Launcher üçün ayrıca ic_launcher_foreground (şəffaf fon).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <path
+        android:pathData="M16,0 L48,0 A16,16 0 0 1 64,16 L64,48 A16,16 0 0 1 48,64 L16,64 A16,16 0 0 1 0,48 L0,16 A16,16 0 0 1 16,0 Z"
+        android:fillColor="#00A63E" />
+    <path
+        android:pathData="M36,18 h-7 a12,12 0 0 0 0,24 h7"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M28,22 h7 a12,12 0 0 1 0,24 h-7"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+</vector>
