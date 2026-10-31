@@ -361,9 +361,17 @@ fun DropdownLine(
                 Modifier
                     .fillMaxWidth()
                     .androidxDropdownBg()
-                    .heightInMax()
             ) {
-                Column(Modifier.verticalScroll(rememberScrollState()).height(200.dp)) {
+                // D-062 fix: əvvəl `verticalScroll().height(200.dp)` idi —
+                // modifierlər xaricdən daxilə tətbiq olunduğundan scroll node
+                // XARİCDƏ qalırdı və sheet-in öz verticalScroll-unun verdiyi
+                // SONSUZ hündürlüklə ölçülürdü → "Vertically scrollable
+                // component was measured with an infinity maximum height
+                // constraints" IllegalStateException — dropdown AÇILANDA
+                // (hər hansı bir seçim sərinə toxunanda) app ÇÖKÜRDÜ.
+                // Doğru pattern: height XARİCDƏ (sərhədli qutu verir), scroll
+                // daxildə — CityPickerSheet-in LazyColumn(420.dp) qaydası.
+                Column(Modifier.height(200.dp).verticalScroll(rememberScrollState())) {
                     options.forEach { opt ->
                         val sel = opt == selected
                         Text(
@@ -398,8 +406,6 @@ private fun Modifier.androidxDropdownBg(): Modifier = this.then(
 
 private fun Modifier.androidxDropdownClick(onClick: () -> Unit): Modifier =
     this.then(Modifier.clickable(onClick = onClick))
-
-private fun Modifier.heightInMax(): Modifier = this
 
 // ═══════════════════════════════════════════════════════════════════
 // Bitirmə axını — Flutter finish_activity_sheet.dart portu (D-026 L.3)
