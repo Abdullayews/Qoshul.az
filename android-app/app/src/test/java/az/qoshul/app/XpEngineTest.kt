@@ -88,7 +88,7 @@ class XpRulesTest {
 
 class XpEngineTest {
 
-    private fun engine() = AppEngine()
+    private fun engine() = AppEngine(dataSource = FakeQoshulDataSource)
 
     // ── XP mühərriki (idempotent) ──
 

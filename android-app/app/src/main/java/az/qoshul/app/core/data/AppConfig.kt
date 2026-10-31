@@ -21,8 +21,11 @@ enum class AppMode {
 /** Tətbiq miqyasında rejim konfiqurasiyası (branch-ə görə dəyişir). */
 object AppConfig {
 
-    /** Bu branch-də aktiv rejim. server-only branch-də SERVER_ONLY olur. */
-    val MODE: AppMode = AppMode.PLACEHOLDER
+    /**
+     * Bu branch-də aktiv rejim: SERVER_ONLY (server-only branch — D-050).
+     * main branch-də PLACEHOLDER olur; runtime keçid YOXDUR.
+     */
+    val MODE: AppMode = AppMode.SERVER_ONLY
 
     val isPlaceholder: Boolean get() = MODE == AppMode.PLACEHOLDER
     val isServerOnly: Boolean get() = MODE == AppMode.SERVER_ONLY

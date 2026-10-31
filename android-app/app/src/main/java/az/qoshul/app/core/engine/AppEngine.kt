@@ -1,8 +1,11 @@
 package az.qoshul.app.core.engine
 
+import az.qoshul.app.core.data.ApiClient
+import az.qoshul.app.core.data.ApiResult
 import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.QoshulDataSource
+import az.qoshul.app.core.data.QoshulApi
 import az.qoshul.app.core.model.ActivityXpResult
 import az.qoshul.app.core.model.AppNotification
 import az.qoshul.app.core.model.AssistantParse
@@ -52,9 +55,15 @@ import kotlinx.coroutines.launch
  * Bütün məntiq qaydaları ROL (docs/product-spec.md) + D-026 ilə eynidir.
  */
 class AppEngine(
-    val dataSource: QoshulDataSource = FakeQoshulDataSource,
+    val dataSource: QoshulDataSource = if (AppConfig.isServerOnly) {
+        az.qoshul.app.core.data.ServerQoshulDataSource
+    } else {
+        FakeQoshulDataSource
+    },
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
+    /** SERVER_ONLY rejimi (D-050): real API klienti — null = mock rejimi. */
+    val server: QoshulApi? = null,
 ) {
     private fun now(): LocalDateTime = clock()
 
@@ -280,6 +289,7 @@ class AppEngine(
     // ═════════════════════════ Auth ═════════════════════════
 
     fun signIn() {
+        if (server != null) return // server rejimində yalnız signInServer açır
         signedInV = true
         emit()
     }
@@ -291,6 +301,7 @@ class AppEngine(
      * çağırılmalı (AuthScreen qapısı təmin edir).
      */
     fun signInDemo() {
+        if (server != null) return // server rejimində demo hesab YOXDUR
         val demo = AppConfig.DemoAccount
         firstNameV = demo.FIRST_NAME
         lastNameV = demo.LAST_NAME
@@ -314,6 +325,60 @@ class AppEngine(
     fun signOut() {
         signedInV = false
         emit()
+    }
+
+    // ═══════════════════ Server auth (SERVER_ONLY, D-050) ═══════════════════
+
+    /**
+     * Real server girişi — uğursuzsa istifadəyə hazır xəta mesajı qaytarır
+     * (null = uğur). Serverə qoşulana qədər tətbiq açılmır (istifadəçi
+     * direktivi: "serverə bağlanana qədər heçnə olmasın").
+     */
+    suspend fun signInServer(email: String, password: String): String? {
+        val api = server ?: return "Server konfiqurasiya edilməyib."
+        return when (val r = api.login(email.trim(), password)) {
+            is ApiResult.Ok -> {
+                applyServerProfile(r.data)
+                signedInV = true
+                emit()
+                null
+            }
+            is ApiResult.Err -> r.message
+        }
+    }
+
+    /** Real server qeydiyyatı — login ilə eyni semantika. */
+    suspend fun registerServer(email: String, password: String, name: String): String? {
+        val api = server ?: return "Server konfiqurasiya edilməyib."
+        return when (val r = api.register(email.trim(), password, name.trim())) {
+            is ApiResult.Ok -> {
+                applyServerProfile(r.data)
+                signedInV = true
+                emit()
+                null
+            }
+            is ApiResult.Err -> r.message
+        }
+    }
+
+    /** Şifrə yeniləmə linki — serverə POST, xəta mesajı UI-da göstərilir. */
+    suspend fun forgotPasswordServer(email: String): String? {
+        val api = server ?: return "Server konfiqurasiya edilməyib."
+        return when (val r = api.forgotPassword(email.trim())) {
+            is ApiResult.Ok -> null
+            is ApiResult.Err -> r.message
+        }
+    }
+
+    /** Server profili mühərrik halına tətbiq olunur (login cavabından). */
+    private fun applyServerProfile(p: ApiClient.ServerProfile) {
+        if (p.firstName.isNotBlank() || p.lastName.isNotBlank()) {
+            firstNameV = p.firstName.ifBlank { "Dost" }
+            lastNameV = p.lastName
+            profileNameV = "${p.firstName} ${p.lastName}".trim().ifBlank { "Dost" }
+        }
+        if (p.city.isNotBlank()) cityV = p.city
+        onboardedV = p.onboarded
     }
 
     // ═════════════════════════ Onboarding (ROL B) ═════════════════════════
@@ -434,6 +499,41 @@ class AppEngine(
         recurring: String = "Bir dəfəlik", tags: List<String> = emptyList(),
         lat: Double? = null, lng: Double? = null,
     ) {
+        // SERVER_ONLY (D-050): tədbir YALNIZ serverdə yaradılır. POST uğursuzsa
+        // (məs. server yoxdur) heç nə lokal əlavə olunmur — bildirişlə xəta
+        // bildirilir. Uğursuzda siyahı boş qalır (fake data YOXDUR).
+        val api = server
+        if (api != null) {
+            val s = scope ?: return
+            val payload = buildString {
+                append("{")
+                append("\"title\":").append(kotlinx.serialization.json.JsonPrimitive(title.trim()).toString()).append(",")
+                append("\"category\":").append(kotlinx.serialization.json.JsonPrimitive(category).toString()).append(",")
+                append("\"city\":").append(kotlinx.serialization.json.JsonPrimitive(city).toString()).append(",")
+                append("\"location\":").append(kotlinx.serialization.json.JsonPrimitive(location).toString()).append(",")
+                append("\"date\":").append(kotlinx.serialization.json.JsonPrimitive(date).toString()).append(",")
+                append("\"time\":").append(kotlinx.serialization.json.JsonPrimitive(time).toString()).append(",")
+                append("\"capacity\":").append(capacity).append(",")
+                append("\"description\":").append(kotlinx.serialization.json.JsonPrimitive(description.trim()).toString())
+                append("}")
+            }
+            s.launch {
+                when (val r = api.postEvent(payload)) {
+                    is ApiResult.Ok -> notify(
+                        NotifType.MESSAGE,
+                        "Tədbir yaradıldı",
+                        "\"${title.trim()}\" serverdə yaradıldı.",
+                    )
+                    is ApiResult.Err -> notify(
+                        NotifType.MESSAGE,
+                        "Tədbir yaradılmadı",
+                        r.message,
+                    )
+                }
+            }
+            return
+        }
+
         val c = dataSource.findCity(city) // D-050: naməlum şəhər → Bakı mərkəzi
         val id = "c${eventsV.size + 1}-${now().nano / 1_000_000 % 100000}"
         eventsV.add(
@@ -876,6 +976,29 @@ class AppEngine(
         assistantMsgsV.add(ChatMessage("Sən", text.trim(), mine = true))
         assistantBusyV = true
         emit()
+
+        // SERVER_ONLY (D-050): cavab yalnız real serverdən gəlir — mock
+        // generator işləmir; server yoxdursa səbirli xəta mesajı çapılır.
+        val api = server
+        if (api != null) {
+            val s = scope ?: run {
+                assistantMsgsV.add(ChatMessage("Köməkçi", "Serverə qoşulunmur — cavab verə bilmirəm."))
+                assistantBusyV = false
+                emit()
+                return
+            }
+            assistantJob?.cancel()
+            assistantJob = s.launch {
+                val reply = when (val r = api.assistant(text.trim())) {
+                    is ApiResult.Ok -> r.data
+                    is ApiResult.Err -> r.message
+                }
+                assistantMsgsV.add(ChatMessage("Köməkçi", reply))
+                assistantBusyV = false
+                emit()
+            }
+            return
+        }
 
         val reply = assistantReplyFor(text.trim())
         assistantJob?.cancel()

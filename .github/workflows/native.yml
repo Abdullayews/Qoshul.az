@@ -4,7 +4,7 @@ name: Native
 
 on:
   push:
-    branches: [main]
+    branches: [main, server-only]
     paths:
       - ".github/workflows/native.yml"
       - "android-app/**"

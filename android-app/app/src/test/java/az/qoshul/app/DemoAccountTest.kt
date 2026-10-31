@@ -1,6 +1,7 @@
 package az.qoshul.app
 
 import az.qoshul.app.core.data.AppConfig
+import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -15,7 +16,7 @@ import org.junit.Test
  */
 class DemoAccountTest {
 
-    private fun newEngine() = AppEngine()
+    private fun newEngine() = AppEngine(dataSource = FakeQoshulDataSource)
 
     @Test
     fun `demo hesabı bir toxunuşla dolu profillə daxil olur`() {

@@ -57,6 +57,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,6 +69,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.data.AppConfig
+import az.qoshul.app.core.data.ConnectionState
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.features.chats.ChatsScreen
 import az.qoshul.app.features.feed.FeedScreen
@@ -119,7 +122,9 @@ fun AppShell(
             onPartners = { nav.push(Route.Partners) },
             onAssistant = { nav.push(Route.Assistant) },
             onBell = { nav.push(Route.Notifications) },
+            onSettings = { nav.push(Route.Settings) },
             unread = engine.unreadCount,
+            engine = engine,
         )
         Box(Modifier.weight(1f)) {
             // Fade-through tab keçidi (D-025)
@@ -155,14 +160,46 @@ fun AppShell(
     }
 }
 
-/** .app-header — 67px, ağ, alt haşiyə (web-parity). */
+/** .app-header — 67px, ağ, alt haşiyə (web-parity). D-050: SERVER_ONLY-də server nişanı. */
 @Composable
 private fun Header(
     onPartners: () -> Unit,
     onAssistant: () -> Unit,
     onBell: () -> Unit,
+    onSettings: () -> Unit,
     unread: Int,
+    engine: AppEngine,
 ) {
+    // SERVER_ONLY: canlı server statusu — hər 30 saniyədə yoxlanır (D-050)
+    if (AppConfig.isServerOnly && engine.server != null) {
+        val api = engine.server
+        val conn by api.connection.collectAsState()
+        LaunchedEffect(Unit) {
+            while (true) {
+                api.checkConnection()
+                kotlinx.coroutines.delay(30_000)
+            }
+        }
+        if (conn != ConnectionState.ONLINE) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .background(Q.destructive.copy(alpha = 0.08f))
+                    .androidxServerBannerTap(onSettings)
+                    .padding(horizontal = 12.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    "● Yalnız server rejimi — " + when (conn) {
+                        ConnectionState.CHECKING -> "server yoxlanılır..."
+                        else -> "serverə qoşulunmur"
+                    } + " (toxun: ayarlar)",
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = JakartaSans, fontSize = 10.5.sp,
+                        fontWeight = FontWeight.W600, color = Q.destructive),
+                )
+            }
+        }
+    }
     Box(
         Modifier
             .fillMaxWidth()
@@ -309,6 +346,9 @@ private fun Modifier.shadowNav(): Modifier = this.then(
         spotColor = Q.primary.copy(alpha = 0.28f),
     )
 )
+
+private fun Modifier.androidxServerBannerTap(onClick: () -> Unit): Modifier =
+    this.then(Modifier.clickable(onClick = onClick))
 
 /** Alt nav item — aktiv: yaşıl kapsul (10%) + filled ikon bounce + nöqtə (D-033). */
 @Composable

@@ -9,10 +9,13 @@ android {
 
     defaultConfig {
         applicationId = "az.qoshul.app"
+        // D-050: server-only branch — paralel quraşdırma üçün fərqli paket ID
+        // (main-dəki placeholder APK ilə yanaşı quraşdırıla bilər)
+        applicationIdSuffix = ".server"
         minSdk = 24
         targetSdk = 36
         versionCode = 4
-        versionName = "0.9.0"
+        versionName = "0.9.0-server"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -88,6 +91,11 @@ dependencies {
     // FFI nüvə .so ~1 MB/ABI, OpenGL backend (Vulkan runtime-a ehtiyac yoxdur)
     implementation(libs.maplibre.compose.android)
     runtimeOnly(libs.maplibre.compose.runtime.opengl.android)
+
+    // SERVER_ONLY (D-050, server-only branch): API klienti — OkHttp 5
+    // (auth/health/assistant/events; kotlinx-serialization-json maplibre-dən
+    // transitive gəlir, JSON qurulumu JsonObject ilə — ayrıca plugin YOXDUR)
+    implementation(libs.okhttp)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

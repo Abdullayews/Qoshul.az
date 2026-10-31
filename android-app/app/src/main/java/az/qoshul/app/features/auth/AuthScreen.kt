@@ -1,8 +1,10 @@
 package az.qoshul.app.features.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +30,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.data.AppConfig
+import az.qoshul.app.core.data.ConnectionState
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.JakartaSans
@@ -94,6 +99,50 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     fun submit() {
         error = null
         msg = null
+
+        // SERVER_ONLY (D-050): yalnız real server auth — heç bir lokal keçid yoxdur.
+        if (AppConfig.isServerOnly) {
+            val emailOk = email.contains("@") && email.contains(".")
+            if (!emailOk) {
+                error = "E-poçt ünvanını düzgün yaz."
+                return
+            }
+            if (mode == AuthMode.UP) {
+                if (pass.length < 8) {
+                    error = "Şifrə ən azı 8 simvol olmalıdır."
+                    return
+                }
+                if (pass != repeat) {
+                    error = "Şifrələr eyni deyil."
+                    return
+                }
+            } else if (mode == AuthMode.ENTER && pass.isEmpty()) {
+                error = "Şifrəni yaz."
+                return
+            }
+            scope.launch {
+                busy = true
+                val err: String? = when (mode) {
+                    AuthMode.ENTER -> engine?.signInServer(email, pass)
+                    AuthMode.UP -> engine?.registerServer(email, pass, name)
+                    AuthMode.FORGOT -> engine?.forgotPasswordServer(email)
+                    AuthMode.CODE -> null
+                } ?: "Server konfiqurasiya edilməyib."
+                busy = false
+                if (err == null) {
+                    if (mode == AuthMode.FORGOT) {
+                        msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi."
+                    } else {
+                        onSignedIn()
+                    }
+                } else {
+                    error = err
+                }
+            }
+            return
+        }
+
+        // PLACEHOLDER (main branch): mock axın — dörd rejim lokal işləyir.
         scope.launch {
             busy = true
             delay(800)
@@ -133,6 +182,9 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     }
 
     fun social() {
+        // SERVER_ONLY: sosial girişlər OAuth server tələb edir — düymələr
+        // gizlidir; bu funksiya PLACEHOLDER-də işləyir.
+        if (AppConfig.isServerOnly) return
         scope.launch {
             busy = true
             delay(900)
@@ -150,7 +202,11 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     val subtitle = when (mode) {
         AuthMode.CODE -> "$email ünvanına göndərilən kodu yaz."
         AuthMode.FORGOT -> "E-poçtunu yaz, sənə yeniləmə linki göndərək."
-        else -> "Yeni insanlara, yeni planlara qoşul."
+        else -> if (AppConfig.isServerOnly) {
+            "Yalnız server məlumatı — real hesabla daxil ol."
+        } else {
+            "Yeni insanlara, yeni planlara qoşul."
+        }
     }
 
     Column(
@@ -170,6 +226,13 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         Spacer(Modifier.height(4.dp))
         Text(subtitle, style = T.subtitle)
         Spacer(Modifier.height(22.dp))
+
+        // — SERVER_ONLY (D-050): server status kartı — heç nə server olmadan
+        // açılmır; vəziyyət şəffaf göstərilir —
+        if (AppConfig.isServerOnly) {
+            ServerStatusCard(engine)
+            Spacer(Modifier.height(16.dp))
+        }
 
         // — D-050: vahid hardcoded demo hesabı (yalnız PLACEHOLDER rejimi) —
         val demo = AppConfig.DemoAccount
@@ -221,45 +284,49 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 )
             }
         } else {
-            OutlinedButton(
-                onClick = { if (!busy) social() },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground
-                ),
-            ) {
-                Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Google ilə davam et", style = T.button)
+            // Sosial girişlər yalnız PLACEHOLDER-də (server rejimində OAuth
+            // server tələb edir — fake düymə göstərmək dürüst olmazdı)
+            if (!AppConfig.isServerOnly) {
+                OutlinedButton(
+                    onClick = { if (!busy) social() },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(Q.rMd.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Q.card, contentColor = Q.foreground
+                    ),
+                ) {
+                    Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Google ilə davam et", style = T.button)
+                }
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = { if (!busy) social() },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(Q.rMd.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Q.card, contentColor = Q.foreground
+                    ),
+                ) {
+                    Icon(az.qoshul.app.core.ui.appleIcon, null, modifier = Modifier.height(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Apple ilə davam et", style = T.button)
+                }
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    "və ya",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = JakartaSans, fontSize = 12.5.sp, color = Q.mutedFg
+                    ),
+                )
+                Spacer(Modifier.height(6.dp))
             }
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = { if (!busy) social() },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(46.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground
-                ),
-            ) {
-                Icon(az.qoshul.app.core.ui.appleIcon, null, modifier = Modifier.height(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Apple ilə davam et", style = T.button)
-            }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                "və ya",
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 12.5.sp, color = Q.mutedFg
-                ),
-            )
-            Spacer(Modifier.height(6.dp))
             if (mode == AuthMode.UP) {
                 FormFieldX("Ad və soyad") {
                     QoshulTextField(value = name, onValueChange = { name = it })
@@ -368,6 +435,80 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
 private fun qTextButton() = androidx.compose.ui.text.TextStyle(
     fontFamily = JakartaSans, fontSize = 12.sp, color = Q.primary
 )
+
+/**
+ * SERVER_ONLY (D-050): server bağlantı kartı — URL, canlı status göstəricisi
+ * və "Yenidən yoxla". Tətbiqin bütün məzmunu bu bağlantıdan asılıdır.
+ */
+@Composable
+private fun ServerStatusCard(engine: AppEngine?) {
+    val api = engine?.server ?: run {
+        // engine verilməyibsə (test/preview) neytral vəziyyət göstərilir
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .background(Q.card, RoundedCornerShape(Q.rMd.dp))
+                .border(1.dp, Q.border, RoundedCornerShape(Q.rMd.dp))
+                .padding(12.dp),
+        ) {
+            Text("Server vəziyyəti: bilinmir", style = T.meta)
+        }
+        return
+    }
+    val conn by api.connection.collectAsState()
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+
+    // Açılışda avtomatik yoxlama
+    LaunchedEffect(Unit) { api.checkConnection() }
+
+    val (dot, label, tint) = when (conn) {
+        ConnectionState.ONLINE -> Triple("●", "Server hazır", Q.primary)
+        ConnectionState.CHECKING -> Triple("◐", "Yoxlanılır...", Q.mutedFg)
+        ConnectionState.OFFLINE -> Triple("●", "Serverə qoşulunmur", Q.destructive)
+        ConnectionState.UNKNOWN -> Triple("○", "Vəziyyət bilinmir", Q.mutedFg)
+    }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .background(Q.card, RoundedCornerShape(Q.rMd.dp))
+            .border(1.dp, Q.border, RoundedCornerShape(Q.rMd.dp))
+            .padding(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(dot, style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 14.sp, color = tint))
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                Text(label, style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 13.sp, fontWeight = FontWeight.W700))
+                Text(api.baseUrl, style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 11.sp, color = Q.mutedFg))
+            }
+            TextButton(
+                enabled = !checking,
+                onClick = {
+                    scope.launch {
+                        checking = true
+                        api.checkConnection()
+                        checking = false
+                    }
+                },
+            ) { Text("Yenidən yoxla", style = qTextButton()) }
+        }
+        if (conn == ConnectionState.OFFLINE) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Bu versiya yalnız server məlumatı ilə işləyir — backend " +
+                    "qoşulana qədər daxil olmaq mümkün deyil.",
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 11.sp,
+                    lineHeight = 17.sp, color = Q.mutedFg),
+            )
+        }
+    }
+}
 
 /** Vahid mətn sahəsi (theme inputDecorationTheme portu). */
 @Composable

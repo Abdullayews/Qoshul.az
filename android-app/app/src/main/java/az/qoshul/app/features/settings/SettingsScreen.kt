@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,6 +67,7 @@ import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.features.auth.QoshulTextField
+import kotlinx.coroutines.launch
 
 /**
  * Ayarlar — Flutter settings_screen.dart portu (ROL TAB 5):
@@ -119,6 +122,12 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     SwitchRow(Icons.Filled.NearMe, "Məsafəmi göstər (~2 km)",
                         st.showDistance) { engine.setShowDistance(it) }
                 }
+            }
+
+            // — SERVER_ONLY (D-050): server bağlantı kartı — URL dəyişdirilə bilər —
+            if (AppConfig.isServerOnly && engine.server != null) {
+                item { SectionLabel("Server") }
+                item { ServerSettingsCard(engine) }
             }
             item {
                 Text(
@@ -318,6 +327,65 @@ private fun SectionLabel(title: String) {
         fontFamily = JakartaSans, fontSize = 12.5.sp, fontWeight = FontWeight.W700,
         color = Q.mutedFg),
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp, top = 6.dp))
+}
+
+/**
+ * SERVER_ONLY (D-050): server URL konfiqurasiyası + canlı bağlantı yoxlaması.
+ * Lokal backend sınağı üçün (məs. http://10.0.2.2:4000) ünvan dəyişilə bilər.
+ */
+@Composable
+private fun ServerSettingsCard(engine: AppEngine) {
+    val api = engine.server ?: return
+    val conn by api.connection.collectAsState()
+    var url by remember { mutableStateOf(api.baseUrl) }
+    var checking by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Column(Modifier.padding(horizontal = 14.dp, vertical = 13.dp)) {
+        Text("Server ünvanı", style = androidx.compose.ui.text.TextStyle(
+            fontFamily = JakartaSans, fontSize = 12.sp, fontWeight = FontWeight.W700))
+        Spacer(Modifier.height(6.dp))
+        QoshulTextField(value = url, onValueChange = { url = it },
+            hint = "https://api.qoshul.az")
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val (label, color) = when (conn) {
+                az.qoshul.app.core.data.ConnectionState.ONLINE -> "Server hazır" to Q.primary
+                az.qoshul.app.core.data.ConnectionState.CHECKING -> "Yoxlanılır..." to Q.mutedFg
+                az.qoshul.app.core.data.ConnectionState.OFFLINE -> "Serverə qoşulunmur" to Q.destructive
+                az.qoshul.app.core.data.ConnectionState.UNKNOWN -> "Vəziyyət bilinmir" to Q.mutedFg
+            }
+            Text("●", style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 13.sp, color = color))
+            Spacer(Modifier.padding(5.dp))
+            Text(label, style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 12.sp, color = color),
+                modifier = Modifier.weight(1f))
+            OutlinedButton(
+                enabled = !checking && url.isNotBlank(),
+                onClick = {
+                    scope.launch {
+                        checking = true
+                        api.baseUrl = url
+                        api.checkConnection()
+                        checking = false
+                    }
+                },
+                shape = RoundedCornerShape(Q.rMd.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Q.card, contentColor = Q.primary),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Q.primary),
+            ) {
+                if (checking) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        strokeWidth = 2.dp, color = Q.primary,
+                        modifier = Modifier.height(14.dp).width(14.dp))
+                } else {
+                    Text("Yadda saxla və yoxla", style = T.button.copy(fontSize = 11.5.sp))
+                }
+            }
+        }
+    }
 }
 
 @Composable

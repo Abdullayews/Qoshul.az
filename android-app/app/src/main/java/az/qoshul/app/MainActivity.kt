@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import az.qoshul.app.core.data.ApiClient
+import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.EventProposal
 import az.qoshul.app.core.model.Partner
@@ -71,7 +73,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QoshulApp() {
     val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
-    val engine = remember { AppEngine(scope = scope) }
+    // D-050: SERVER_ONLY rejimində mühərrik real API klienti ilə qurulur
+    // (server-only branch); PLACEHOLDER-də (main) server = null.
+    val engine = remember {
+        AppEngine(
+            scope = scope,
+            server = if (AppConfig.isServerOnly) ApiClient(QoshulApplication.instance) else null,
+        )
+    }
     val st by engine.state.collectAsState()
     val nav = rememberNavState()
     val focus = remember { MapFocusState() }
@@ -84,7 +93,14 @@ fun QoshulApp() {
 
     Box(Modifier.fillMaxSize()) {
         when {
-            !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() }, engine = engine)
+            !st.signedIn -> AuthScreen(
+                onSignedIn = {
+                    // SERVER_ONLY: signInServer uğurlu olanda signedIn artıq true-dur;
+                    // PLACEHOLDER: mock giriş.
+                    if (!AppConfig.isServerOnly) engine.signIn()
+                },
+                engine = engine,
+            )
             !st.onboarded -> OnboardingScreen(engine)
             else -> GlassNavHost(
                 nav = nav,
