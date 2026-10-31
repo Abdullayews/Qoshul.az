@@ -57,6 +57,18 @@ jobs:
           path: android-app/app/build/test-results/
           if-no-files-found: error
 
+      # D-054: Robolectric NATIVE renderlər — "proqramın üzü" JVM-də
+      - name: Ekran görüntüləri (Robolectric, D-054)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qoshul-screenshots
+          path: |
+            android-app/build/shots/
+            android-app/app/build/shots/
+          if-no-files-found: ignore
+          overwrite: true
+
       - name: Release APK (R8 + resource shrink)
         run: ./gradlew assembleRelease --no-daemon
 

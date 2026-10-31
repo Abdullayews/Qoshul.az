@@ -25,7 +25,6 @@ import az.qoshul.app.features.venues.VenueDetailScreen
 import az.qoshul.app.features.xp.XpCardScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,11 +51,32 @@ class ScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val outDir = File("/home/z/my-project/download/shots")
+    /**
+     * PNG çıxış qovluğu — mühitdən asılıdır (CI-də sandbox yolu YOXDUR):
+     * (1) QOSHUL_SHOTS_DIR env override; (2) lokal sandbox yolu;
+     * (3) build/shots (CI — artifact kimi yüklənir); (4) /tmp fallback.
+     * Heç biri yazıla bilmirsə shot() ötürülür (test düşmur — PNG optional).
+     */
+    private val outDir: File by lazy {
+        sequenceOf(
+            System.getenv("QOSHUL_SHOTS_DIR")?.let(::File),
+            File("/home/z/my-project/download/shots"),
+            File("build/shots"),
+            File("app/build/shots"),
+        ).filterNotNull().firstOrNull { it.isDirectory || it.mkdirs() }
+            ?: File("/tmp/qoshul-shots").apply { mkdirs() }
+    }
 
-    @Before
-    fun setUp() {
-        outDir.mkdirs()
+    private fun shot(name: String) {
+        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
+        try {
+            File(outDir, "$name.png").outputStream().use {
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+        } catch (t: Throwable) {
+            // PNG yazmaq mümkün deyilsə (CI read-only və s.) — ötür, testi düşürtmə
+            println("SHOT-SKIP: $name (${t.message})")
+        }
     }
 
     /**
@@ -68,13 +88,6 @@ class ScreenshotTest {
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(1600)
         compose.waitForIdle()
-    }
-
-    private fun shot(name: String) {
-        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
-        File(outDir, "$name.png").outputStream().use {
-            bmp.compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
     }
 
     private fun newEngine(): AppEngine {
