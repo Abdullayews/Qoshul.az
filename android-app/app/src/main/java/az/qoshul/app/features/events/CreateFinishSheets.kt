@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.data.nextDateLabels
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.ActivityXpResult
@@ -94,9 +95,11 @@ fun CreateEventSheet(
     var ageLimit by remember { mutableStateOf("Hamı üçün") }
     var date by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
     var time by remember { mutableStateOf("18:00") }
-    var capacity by remember {
-        // D-051 fix: əvvəl (initial?.capacity ?: 8) in 2..500 → true → initial!! NPE
-        mutableStateOf(initial?.capacity?.takeIf { it in 2..500 } ?: 8)
+    // D-053 fix: capacity artıq xam mətn kimi saxlanılır — əvvəl Int state
+    // sahəni idarə edirdi, "1" yazmaq (15-in ilk rəqəmi) SİLMİŞ sayılırdı
+    // (1 ∉ 2..500 → dəyər rədd edilirdi). Submittə clamp olunur.
+    var capacityText by remember {
+        mutableStateOf(initial?.capacity?.takeIf { it in 2..500 }?.toString() ?: "8")
     }
     var paid by remember { mutableStateOf(false) }
     var approval by remember { mutableStateOf(false) }
@@ -120,7 +123,7 @@ fun CreateEventSheet(
                 title = "Şənbə üçün birgə plan"; category = "Stolüstü oyunlar"
                 desc = "Maraqlı keçirmək istəyənlər üçün açıq dəvət. Oyunlar, söhbət, yaxşı əhval."
             }
-            capacity = 10
+            capacityText = "10"
             aiBusy = false
         }
     }
@@ -130,7 +133,10 @@ fun CreateEventSheet(
             title = title.trim(), category = category, city = city,
             location = aiLocation ?: location.trim(),
             date = "%04d-%02d-%02d".format(date.year, date.monthValue, date.dayOfMonth),
-            time = time, capacity = capacity, description = desc.trim(),
+            time = time,
+            // D-053: xam mətn submittə clamp olunur (boşa/toxunulmaya → 8)
+            capacity = capacityText.toIntOrNull()?.coerceIn(2, 500) ?: 8,
+            description = desc.trim(),
             epochDay = date.toEpochDay().toInt(),
             price = if (paid) price.toIntOrNull() ?: 0 else 0,
             format = format, approval = approval,
@@ -218,7 +224,10 @@ fun CreateEventSheet(
                     FormLine("Tarix") {
                         DropdownLine(
                             options = nextDateLabels(14),
-                            selected = "%02d.%02d".format(date.dayOfMonth, date.monthValue),
+                            // D-053 fix: əvvəl selected = "01.11" formatında idi —
+                            // options siyahısında ("Bu gün"/"Sabah"/"Noy 2") yox idi,
+                            // heç bir seçim vurğulanmırdı. Artıq eyni etiket sistemi.
+                            selected = dateLabelFor(date.toEpochDay()),
                             onSelect = { sel ->
                                 val idx = nextDateLabels(14).indexOf(sel)
                                 if (idx >= 0) date = LocalDate.now().plusDays(idx.toLong())
@@ -237,9 +246,11 @@ fun CreateEventSheet(
                 }
             }
             FormLine("İştirakçı sayı (2–500)") {
-                QoshulTextField(value = capacity.toString(), onValueChange = {
-                    it.toIntOrNull()?.let { n -> if (n in 2..500) capacity = n }
-                })
+                // D-053: yalnız rəqəm + max 3 rəqəm; dəyər submittə clamp olunur
+                QoshulTextField(
+                    value = capacityText,
+                    onValueChange = { if (it.length <= 3 && it.all(Char::isDigit)) capacityText = it },
+                )
             }
             FormLine("İştirak haqqı") {
                 Row {

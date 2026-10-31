@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
@@ -160,6 +161,9 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             .background(Q.background)
             // D-051 fix: məzmun status barın altında çəkilirdi — inset əlavə olundu
             .statusBarsPadding()
+            // D-053 fix: aşağıdakı məzmun (demo düyməsi, giriş düyməsi) alt sistem
+            // barının altında qalırdı — navbar inseti əlavə olundu
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp)
             .imePadding(),

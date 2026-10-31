@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -46,7 +47,12 @@ fun SheetScaffold(
             Modifier
                 .fillMaxWidth()
                 .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                // D-053 fix: imePadding — mətn sahəli sheet-lərdə (Yarat, Rezerv,
+                // rəy) klaviatura məzmunu örtürdü. Inset istehlakı qaydasına görə
+                // navigationBarsPadding + imePadding = max(nav, ime) — klaviatura
+                // açıqda yalnız ime, qapalıyken yalnız nav tətbiq olunur.
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(bottom = 12.dp)
         ) {
             // tutamaq xətti (Flutter-dəki 36x4 qapaq)

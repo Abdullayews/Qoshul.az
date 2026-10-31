@@ -1,5 +1,6 @@
 package az.qoshul.app.core.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -11,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
@@ -91,6 +93,11 @@ fun GlassNavHost(
     content: @Composable (Route) -> Unit,
 ) {
     val current: Route? = nav.stack.lastOrNull()
+    // D-053 fix: sistem geri düyməsi/gesture push-ekranı POP etsin.
+    // Əvvəl heç bir BackHandler yox idi — push-ekranda geri basanda bütün
+    // tətbiq bağlanırdı (10 push-ekranın hamısında). Sheet-lər öz daxili
+    // back-handler-lərinə görə üstünlük alır (son qeydiyyatlı callback).
+    BackHandler(enabled = current != null) { nav.pop() }
     AnimatedContent(
         targetState = current,
         transitionSpec = {
@@ -123,8 +130,13 @@ fun PushScreenScaffold(
             .fillMaxSize()
             // D-051 fix: push-ekranlar status barın altında qalırdı — bütün
             // push ekranlar bu scaffold-u istifadə edir (10 ekran bir düzəlişlə).
-            .statusBarsPadding()
+            // D-053 fix: (1) background padding-lərdən ƏVVƏL — barların arxası
+            // da boyanır (əvvəl status bar zonası themes.xml-in ağ fonunda qalırdı);
+            // (2) navigationBarsPadding — alt sistem barının altında məzmun
+            // gizlənməsin (gesture/3-düymə nav, 10 ekran bir düzəlişlə).
             .background(Q.background)
+            .navigationBarsPadding()
+            .statusBarsPadding()
     ) {
         // AppBar (D-050 düzəlişi: fillMaxSize → fillMaxWidth — sətir hündürlüyü
         // height(56) ilə sabitlənir, amma semantika düzgün olmalı idi)

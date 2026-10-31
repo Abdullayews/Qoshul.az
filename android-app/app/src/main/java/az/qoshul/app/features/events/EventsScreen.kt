@@ -158,7 +158,11 @@ fun EventsScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
 
                 val q = search.lowercase()
                 fun ok(vararg parts: String) = q.isEmpty() || parts.joinToString(" ").lowercase().contains(q)
+                // D-053 fix: "Yaxınlaşan" artıq tarixə görə artan sıralanır —
+                // əvvəl yeni yaradılan tədbir index 0-a düşdüyündən gələcək
+                // həftənin tədbiri bu gününkündən öndə görünürdü.
                 val upcoming = st.events.filter { !it.past && ok(it.title, it.location, it.category, it.city) }
+                    .sortedBy { it.epochDay }
                 val mine = st.events.filter {
                     (it.id in st.joined || it.id in st.pending) && ok(it.title, it.location)
                 }

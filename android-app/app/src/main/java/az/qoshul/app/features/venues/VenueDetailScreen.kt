@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -125,6 +126,9 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
         Column(
             Modifier
                 .weight(1f)
+                // D-053 fix: məzmun alt sistem barının altında qalırdı — inset əlavə
+                // olundu (şəkil başlıq full-bleed qalır, yalnız scroll hissə inset alır)
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
         ) {

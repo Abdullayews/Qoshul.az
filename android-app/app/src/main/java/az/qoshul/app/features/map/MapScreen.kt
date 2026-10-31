@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -280,13 +281,15 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             }
 
             // — OSM atribusiyası (istifadə qaydası — məcburi kredit) —
+            // D-053 fix: atribusiya nav pill-in arxasında gizlənirdi — yuxarı qalxdı
             Text(
                 "© OpenStreetMap contributors",
                 style = androidx.compose.ui.text.TextStyle(
                     fontFamily = JakartaSans, fontSize = 8.5.sp, color = Q.mutedFg),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 6.dp, bottom = 6.dp)
+                    .navigationBarsPadding()
+                    .padding(end = 6.dp, bottom = 96.dp)
                     .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 3.dp),
             )
@@ -327,8 +330,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }
 
         // — sayğac (şüşə həb) —
+        // D-053 fix: nav pill zone-unun üstünə qaldırıldı (əvvəl arxasında gizlənirdi)
         GlassPill(
-            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+            modifier = Modifier.align(Alignment.BottomStart)
+                .navigationBarsPadding().padding(start = 12.dp, bottom = 96.dp),
             dense = true, horizontal = 9.dp, vertical = 6.dp,
         ) {
             Text(
@@ -340,7 +345,8 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         // — D-027: görünüş rejimi həbi —
         if (st.mapVisibility != MapVisibility.EVERYONE) {
             GlassPill(
-                modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp),
+                modifier = Modifier.align(Alignment.BottomEnd)
+                    .navigationBarsPadding().padding(end = 12.dp, bottom = 96.dp),
                 dense = true, horizontal = 9.dp, vertical = 6.dp,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -359,11 +365,15 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }
 
         // — seçilmiş pinin alt kartı (D-025 səth #3) —
+        // D-053 fix: kart nav pill-in arxasında qalırdı — "Ətraflı"/"Rezerv et"
+        // düymələri basıla bilmirdi. Pill zone = navbar inset + 10 + 68dp;
+        // kart inset + 96dp-dən yuxarı başlayır (18dp boşluq, hər navbar növündə).
         selected?.let { pin ->
             GlassSurface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                    .navigationBarsPadding()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 96.dp),
                 shape = RoundedCornerShape(Q.rXl.dp),
                 sigma = 18.dp,
                 luminance = 0.58f,

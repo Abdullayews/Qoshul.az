@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -136,6 +138,8 @@ private fun WelcomeStep(onNext: () -> Unit) {
             .fillMaxSize()
             .background(Q.background)
             .androidxStatusPadding()
+            // D-053 fix: "İrəli" düyməsi gesture/3-düymə nav barının altında qalırdı
+            .navigationBarsPadding()
     ) {
         TextButton(
             onClick = onNext,
@@ -230,9 +234,16 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
         Modifier
             .fillMaxSize()
             .background(Q.background)
-            .verticalScroll(rememberScrollState())
+            // D-053 fix: (1) insetlər scroll-dan ƏVVƏL — əvvəl padding scroll
+            // ilə birlikdə yuxarı qaçırdı, məzmun status barın altına sürüşürdü;
+            // (2) navigationBarsPadding — alt bar altında məzmun;
+            // (3) imePadding — klaviatura ad/bio sahələrini örtürdü
+            // (edge-to-edge + adjustResize klaviatura üçün kifayət etmir).
             .androidxStatusPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
+            .imePadding()
     ) {
         Spacer(Modifier.height(18.dp))
         Wordmark(fontSize = 22)
@@ -384,9 +395,12 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
         Modifier
             .fillMaxSize()
             .background(Q.background)
-            .verticalScroll(rememberScrollState())
+            // D-053 fix: insetlər scroll-dan əvvəl + navbar + ime (yuxarıda izah)
             .androidxStatusPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
+            .imePadding()
     ) {
         Spacer(Modifier.height(18.dp))
         Wordmark(fontSize = 22)
@@ -476,9 +490,12 @@ private fun PermissionsStep(engine: AppEngine) {
         Modifier
             .fillMaxSize()
             .background(Q.background)
-            .verticalScroll(rememberScrollState())
+            // D-053 fix: insetlər scroll-dan əvvəl + navbar + ime (yuxarıda izah)
             .androidxStatusPadding()
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp)
+            .imePadding()
     ) {
         Spacer(Modifier.height(18.dp))
         Wordmark(fontSize = 22)
