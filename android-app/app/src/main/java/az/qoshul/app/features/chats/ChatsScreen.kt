@@ -34,6 +34,9 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -41,7 +44,12 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import az.qoshul.app.core.model.Person
+import az.qoshul.app.core.ui.ChatFocusState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -76,13 +84,30 @@ import kotlinx.coroutines.launch
 /**
  * Söhbətlər — Flutter chats_screen.dart portu (ROL TAB 4):
  * "Şəxsi" (match/dost) + "Qruplar" (tədbir); report / blok / sil.
+ * D-055: [chatFocus] — EventDetail "Qrup söhbətinə bax" və Match
+ * "Söhbətə keç" düymələri konkret söhbəti açır; "Report et" menyu
+ * elementi artıq real dialoqdur (əvvəl heç nə etmirdi).
+ * D-056: şəxsi söhbətlərdə tez cavab çipləri + avtomatik cavab (engine).
  */
 @Composable
-fun ChatsScreen(engine: AppEngine) {
+fun ChatsScreen(engine: AppEngine, chatFocus: ChatFocusState? = null) {
     var activeEventId by remember { mutableStateOf<String?>(null) }
     var activeFriendId by remember { mutableStateOf<String?>(null) }
-    var lastFriendName by remember { mutableStateOf("") }
+    var reportFor by remember { mutableStateOf<Person?>(null) }
     val st by engine.state.collectAsState()
+
+    // D-055: ChatFocusState istəyi → konkret söhbəti aç
+    LaunchedEffect(chatFocus?.request) {
+        when (val r = chatFocus?.request) {
+            is ChatFocusState.Target.Event -> {
+                activeEventId = r.eventId; activeFriendId = null; chatFocus.consume()
+            }
+            is ChatFocusState.Target.Friend -> {
+                activeFriendId = r.personId; activeEventId = null; chatFocus.consume()
+            }
+            null -> Unit
+        }
+    }
 
     val activeEvent = activeEventId?.let { engine.eventById(it) }
     val activeFriend = activeFriendId?.let { engine.personById(it) }
@@ -106,6 +131,8 @@ fun ChatsScreen(engine: AppEngine) {
             onSend = { engine.sendFriendMessage(activeFriend.id, it) },
             onBack = { activeFriendId = null },
             friendActions = true,
+            // D-056: Instagram DM pariteti — tez cavab çipləri
+            quickReplies = listOf("Salam!", "Necəsən?", "Hara görüşək?"),
             onBlock = {
                 engine.blockUser(activeFriend.id)
                 activeFriendId = null
@@ -114,11 +141,50 @@ fun ChatsScreen(engine: AppEngine) {
                 engine.deleteChat(activeFriend.id)
                 activeFriendId = null
             },
+            onReport = { reportFor = activeFriend },
         )
     } else {
         ChatList(engine,
             onOpenEvent = { id -> activeEventId = id },
-            onOpenFriend = { id, name -> activeFriendId = id; lastFriendName = name },
+            onOpenFriend = { id -> activeFriendId = id },
+        )
+    }
+
+    // — report dialoqu (D-055: menyu elementi əvvəl no-op idi) —
+    reportFor?.let { p ->
+        var reason by remember { mutableStateOf(reportReasons.first()) }
+        AlertDialog(
+            onDismissRequest = { reportFor = null },
+            title = { Text("Report et") },
+            text = {
+                Column {
+                    Text("${p.fullName} haqqında bildiriş. Səbəb seç:", style = T.subtitle)
+                    Spacer(Modifier.height(8.dp))
+                    reportReasons.forEach { r ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            RadioButton(
+                                selected = reason == r, onClick = { reason = r },
+                                colors = RadioButtonDefaults.colors(selectedColor = Q.primary),
+                            )
+                            Text(r, style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = JakartaSans, fontSize = 12.sp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    engine.reportUser(p.id, reason)
+                    reportFor = null
+                    activeFriendId = null
+                }) { Text("Göndər") }
+            },
+            dismissButton = {
+                TextButton(onClick = { reportFor = null }) { Text("İmtina") }
+            },
         )
     }
 }
@@ -127,7 +193,7 @@ fun ChatsScreen(engine: AppEngine) {
 private fun ChatList(
     engine: AppEngine,
     onOpenEvent: (String) -> Unit,
-    onOpenFriend: (String, String) -> Unit,
+    onOpenFriend: (String) -> Unit,
 ) {
     val st by engine.state.collectAsState()
     val joinedEvents = st.events.filter { it.id in st.joined }
@@ -149,7 +215,19 @@ private fun ChatList(
             }
         } else {
             if (joinedEvents.isNotEmpty()) {
-                item { SectionHeading(title = "Qruplar", icon = Icons.Filled.Groups) }
+                item {
+                    SectionHeading(
+                        title = "Qruplar", icon = Icons.Filled.Groups,
+                        // D-056: joinedUpcomingCount engine-də hesablanırdı, heç yerdə göstərilmirdi
+                        trailing = {
+                            if (engine.joinedUpcomingCount > 0) {
+                                Text("${engine.joinedUpcomingCount} yaxınlaşan", style = androidx.compose.ui.text.TextStyle(
+                                    fontFamily = JakartaSans, fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.W600, color = Q.mutedFg))
+                            }
+                        },
+                    )
+                }
                 items(joinedEvents) { e ->
                     StaggerIn(0) {
                         ChatRow(
@@ -172,7 +250,7 @@ private fun ChatList(
                             imageKey = p.image, title = p.fullName,
                             subtitle = "${p.city} · " +
                                 (if (p.id in st.matches) "Match" else "Dost") + " · Şəxsi",
-                            onClick = { onOpenFriend(p.id, p.fullName) },
+                            onClick = { onOpenFriend(p.id) },
                         )
                     }
                 }
@@ -220,8 +298,10 @@ private fun ChatView(
     onBack: () -> Unit,
     calendar: Boolean = false,
     friendActions: Boolean = false,
+    quickReplies: List<String> = emptyList(),
     onBlock: () -> Unit = {},
     onDelete: () -> Unit = {},
+    onReport: () -> Unit = {},
 ) {
     var text by remember { mutableStateOf("") }
     var typing by remember { mutableStateOf(false) }
@@ -231,6 +311,17 @@ private fun ChatView(
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+    }
+
+    /** Göndər + "yazır..." simulyasiyası — düymə və tez-cavab çipi üçün ortaq. */
+    fun sendAction(body: String) {
+        if (body.isBlank()) return
+        onSend(body.trim())
+        text = ""
+        typing = true
+        scope.launch {
+            delay(1400); typing = false
+        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -273,7 +364,7 @@ private fun ChatView(
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(
                             text = { Text("Report et") },
-                            onClick = { menuOpen = false },
+                            onClick = { menuOpen = false; onReport() },
                         )
                         DropdownMenuItem(
                             text = { Text("Blokla") },
@@ -315,38 +406,59 @@ private fun ChatView(
                 }
             }
         }
-        // — yazma zolağı —
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
+        // — tez cavablar + yazma zolağı (D-056) —
+        Column(
+            Modifier
                 .fillMaxWidth()
                 .androidxComposerBorder()
                 .background(Q.card)
-                .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp)
                 .navigationBarsPadding()
                 .imePadding(),
         ) {
-            Box(Modifier.weight(1f)) {
-                QoshulTextField(value = text, onValueChange = { text = it }, hint = "Bir mesaj yaz...")
-            }
-            Spacer(Modifier.width(8.dp))
-            Button(
-                onClick = {
-                    onSend(text.trim()); text = ""
-                    typing = true
-                    scope.launch {
-                        delay(1400); typing = false
+            if (text.isBlank() && quickReplies.isNotEmpty()) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 20.dp, top = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
+                ) {
+                    quickReplies.forEach { qr ->
+                        Text(
+                            qr,
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = JakartaSans, fontSize = 12.sp,
+                                fontWeight = FontWeight.W600, color = Q.foreground),
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .androidxChatTap { sendAction(qr) }
+                                .background(Q.muted, RoundedCornerShape(15.dp))
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
                     }
-                },
-                enabled = text.isNotBlank(),
-                modifier = Modifier.size(42.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                shape = RoundedCornerShape(Q.rMd.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Q.primary, contentColor = Q.primaryFg,
-                    disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
+                }
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, "Göndər", modifier = Modifier.size(16.dp))
+                Box(Modifier.weight(1f)) {
+                    QoshulTextField(value = text, onValueChange = { text = it }, hint = "Bir mesaj yaz...")
+                }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = { sendAction(text) },
+                    enabled = text.isNotBlank(),
+                    modifier = Modifier.size(42.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    shape = RoundedCornerShape(Q.rMd.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Q.primary, contentColor = Q.primaryFg,
+                        disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, "Göndər", modifier = Modifier.size(16.dp))
+                }
             }
         }
     }

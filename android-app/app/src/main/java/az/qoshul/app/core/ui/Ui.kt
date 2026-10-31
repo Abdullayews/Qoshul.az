@@ -502,9 +502,10 @@ fun LiveBadge(text: String) {
             .border(1.dp, Q.glassBorder, RoundedCornerShape(5.dp))
             .padding(horizontal = 8.dp, vertical = 5.dp),
     ) {
-        Box(Modifier.size(5.dp).background(Q.accent, CircleShape))
+        // D-057: yaşıl canlı nöqtə (əvvəl narıncı idi, Feed inline nüsxəsi yaşıl)
+        Box(Modifier.size(5.dp).background(Q.primary, CircleShape))
         Spacer(Modifier.width(6.dp))
-        Text(text, style = tStyle(10.0, FontWeight.W500, Color.White))
+        Text(text, style = tStyle(10.0, FontWeight.W800, Color.White))
     }
 }
 

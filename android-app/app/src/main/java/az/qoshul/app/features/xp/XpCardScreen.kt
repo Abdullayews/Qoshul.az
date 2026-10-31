@@ -103,7 +103,7 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 "Səviyyə üçün istifadə olunur — xərclənmir. " +
-                                    "Səviyyən artdıqca Kəşf-də sənə peşəkar aktiviteler önə düşür.",
+                                    "Səviyyən artdıqca Kəşf-də sənə peşəkar aktivliklər önə düşür.",
                                 style = T.meta.copy(fontSize = 11.5.sp),
                             )
                         }

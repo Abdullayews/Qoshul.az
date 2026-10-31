@@ -258,6 +258,30 @@ class AppEngine(
         emit()
     }
 
+    /**
+     * D-056: şəxsiyyət testi nəticəsi (engine-də setter yox idi — test
+     * UI-ı heç vaxt personality-ni doldura bilmirdi, TraitBars boş qalırdı).
+     * Nəticə profil tamamlanması (+30) şərtlərini də yoxlayır.
+     */
+    fun setPersonality(result: PersonalityResult) {
+        personalityV = result
+        completeProfileFull()
+    }
+
+    /** D-056: dost dəvəti → +100 XP (bir dəfə, XpRules.INVITE_XP əvvələr ölü idi). */
+    fun inviteFriend(): Boolean {
+        val awarded = award("invite", XpRules.INVITE_XP)
+        if (awarded) {
+            notify(
+                NotifType.LEVEL_UP,
+                "+${XpRules.INVITE_XP} XP qazandın",
+                "Dost dəvəti göndərildi — dostun qoşulanda tədbirləri birlikdə planlayın!",
+            )
+            emit()
+        }
+        return awarded
+    }
+
     /** ROL B: telefon təsdiqi → badge + +40 XP (bir dəfə). */
     fun verifyPhone() {
         if (phoneVerifiedV) return
@@ -828,7 +852,24 @@ class AppEngine(
     fun sendFriendMessage(personId: String, text: String) {
         val list = friendMessagesV.getOrPut(personId) { mutableListOf() }
         list.add(ChatMessage("Sən", text, mine = true))
+        mockFriendReply(list, personId) // D-056: şəxsi söhbətdə də cavab gəlir
         emit()
+    }
+
+    /** D-056: şəxsi söhbət mock cavabı — hadisə mockReply pariteti. */
+    private fun mockFriendReply(list: MutableList<ChatMessage>, personId: String) {
+        val scope = scope ?: return // JVM testlərində avtomatik cavab bağlıdır
+        replyJobs += scope.launch {
+            delay(1400)
+            val p = personById(personId) ?: return@launch
+            val replies = listOf(
+                "Razıyam, nə vaxt görüşək?",
+                "Yaxşı fikirdir! Saat dəqiq desən, gələrəm.",
+                "Super — sözə görə!",
+            )
+            list.add(ChatMessage(p.firstName, replies[now().second % replies.size]))
+            emit()
+        }
     }
 
     /** ROL TAB 4: "Söhbəti sil" — şəxsi söhbəti bağlayır (mock). */
@@ -927,7 +968,7 @@ class AppEngine(
         }
         if (lower.contains("pulsuz") || lower.contains("ödənişsiz")) {
             val free = upcoming.filter { it.price == null && it.city == cityV }.take(3)
-            if (free.isEmpty()) return "Bu şəhərdə hazırda pulsuz tədbir görmürəm. Amma özünüq pulsuz tədbir yarada bilərsən!"
+            if (free.isEmpty()) return "Bu şəhərdə hazırda pulsuz tədbir görmürəm. Amma özün pulsuz tədbir yarada bilərsən!"
             return "Pulsuz tədbirlər bunlardır:\n\n" +
                 free.joinToString("\n") { "• ${it.title} — ${it.date}, ${it.time} (${it.location})" }
         }

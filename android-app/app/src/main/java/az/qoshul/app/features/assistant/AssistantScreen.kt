@@ -55,6 +55,15 @@ import az.qoshul.app.features.auth.QoshulTextField
  * AI köməkçi — Flutter assistant_screen.dart portu: təklif çipləri, axın
  * simulyasiyalı mesajlar (engine coroutine ilə), [TƏDBİR] təklif kartı.
  */
+/**
+ * "Bakı" → "Bakıda", "Gəncə" → "Gəncədə" (D-057): son saitə görə -da/-də.
+ * Arxa saitlər (a,ı,o,u) → "da"; ön saitlər (e,ə,i,ö,ü) → "də".
+ */
+private fun cityIn(city: String): String {
+    val v = city.lastOrNull { c -> c in "aıoueəiüö" } ?: 'a'
+    return "$city${if (v in "aıou") "da" else "də"}"
+}
+
 @Composable
 fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) {
     var text by remember { mutableStateOf("") }
@@ -62,7 +71,9 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
     val listState = rememberLazyListState()
 
     val suggestions = listOf(
-        "Bu həftə sonu ${st.city}da nə var?",
+        // D-057: "${st.city}da" sadəlövh birləşdirmə idi — "Gəncə" üçün yanlış
+        // olurdu; cityIn son saitiə görə -da/-də seçir (Bakıda ✓, Gəncədə ✓)
+        "Bu həftə sonu ${cityIn(st.city)} nə var?",
         "Pulsuz idman tədbirləri hansılardır?",
         "Gəncədə tanışlıq üçün nə tövsiyə edərsən?",
         "Şənbə üçün tədbir fikri ver",

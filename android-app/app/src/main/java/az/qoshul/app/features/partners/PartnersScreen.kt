@@ -33,8 +33,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -77,6 +79,8 @@ import az.qoshul.app.features.events.CreateEventSheet
 @Composable
 fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qoshul.app.core.model.Partner) -> Unit) {
     var businessOpen by remember { mutableStateOf(false) }
+    var partnerInfoOpen by remember { mutableStateOf(false) }
+    val firstVenue = remember { engine.partners.firstOrNull() }
 
     PushScreenScaffold(title = "Tərəfdaşlar", onBack = { nav.pop() }) { mod ->
         LazyColumn(
@@ -90,10 +94,13 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     subtitle = "Görüşlərə ev sahibliyi edən tərəfdaşlarımız.")
             }
             item {
+                // D-055: ölü banner → info dialoqu (tərəfdaşlıq prosesi)
                 CommunityBanner(
                     icon = Icons.Filled.Storefront,
                     title = "Öz məkanını əlavə et",
                     subtitle = "Biznes kimi qeydiyyatdan keç, yeni müştərilər qazan.",
+                    onClick = { partnerInfoOpen = true },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
                 )
             }
             item {
@@ -105,12 +112,18 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
                 )
             }
-            item {
-                CommunityBanner(
-                    icon = Icons.Filled.Handshake,
-                    title = "Görüş təşkil et, +150 XP qazan",
-                    subtitle = "Tərəfdaş məkanlarda daha çox fürsət.",
-                )
+            // D-055: saxta "+150 XP" iddiası (heç bir XP qaydasına uyğun deyildi)
+            // əvəzinə real hərəkət: tədbir yaratma sheeti partnyor məkanla açılır
+            if (firstVenue != null) {
+                item {
+                    CommunityBanner(
+                        icon = Icons.Filled.Handshake,
+                        title = "Görüş təşkil et — XP qazan",
+                        subtitle = "Tərəfdaş məkanda tədbir yarat: qoşulma +10, check-in +40 XP.",
+                        onClick = { onOpenCreateAtVenue(firstVenue) },
+                        trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                    )
+                }
             }
             itemsIndexed(engine.partners) { _, p ->
                 PartnerCard(p, onCreate = { onOpenCreateAtVenue(p) })
@@ -121,6 +134,26 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
 
     if (businessOpen) {
         BusinessModeSheet(engine, onDismiss = { businessOpen = false })
+    }
+
+    // D-055: tərəfdaşlıq info dialoqu (əvvəl banner ölü idi)
+    if (partnerInfoOpen) {
+        AlertDialog(
+            onDismissRequest = { partnerInfoOpen = false },
+            title = { Text("Öz məkanını əlavə et") },
+            text = {
+                Text(
+                    "Restoran, kafe və ya idman mərkəzi işlədirsən? Qoshul.az tərəfdaşı " +
+                        "ol — tədbirlər sənin məkanda keçirilsin, müştərilərin XP endirimi ilə " +
+                        "geri qayıtsın.\n\nMüraciət üçün: biznes@qoshul.az (demo). Bu demoda " +
+                        "Biznes rejimi ilə XP endirim axınını sınaya bilərsən.",
+                    style = T.subtitle.copy(lineHeight = 21.sp),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { partnerInfoOpen = false }) { Text("Anladım", style = T.button) }
+            },
+        )
     }
 }
 

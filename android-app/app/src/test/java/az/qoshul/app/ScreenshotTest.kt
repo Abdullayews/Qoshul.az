@@ -18,9 +18,13 @@ import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.features.auth.AuthScreen
 import az.qoshul.app.features.events.CreateEventSheet
 import az.qoshul.app.features.events.EventDetailSheet
+import az.qoshul.app.features.events.FinishActivitySheet
 import az.qoshul.app.features.match.MatchScreen
 import az.qoshul.app.features.settings.SettingsScreen
 import az.qoshul.app.features.shell.AppShell
+import az.qoshul.app.features.chats.ChatsScreen
+import az.qoshul.app.features.events.CityPickerSheet
+import az.qoshul.app.features.profile.PersonalityQuizScreen
 import az.qoshul.app.features.venues.VenueDetailScreen
 import az.qoshul.app.features.xp.XpCardScreen
 import kotlinx.coroutines.CoroutineScope
@@ -227,5 +231,67 @@ class ScreenshotTest {
         compose.onNodeWithText("Profil").performClick()
         settle()
         shot("13-dpi-profile")
+    }
+
+    // ═══════════════ 7. Şəxsiyyət testi (D-056) ═══════════════
+
+    @Test
+    fun `şəxsiyyət testi — intro, sual və nəticə`() {
+        val engine = newEngine()
+        compose.setContent { QoshulTheme { PersonalityQuizScreen(engine, NavState()) } }
+        settle()
+        shot("15-quiz-intro")
+
+        compose.onNodeWithText("Testə başla").performClick()
+        settle()
+        shot("16-quiz-question")
+
+        // 10 sualı "Razıyam" ilə keç → nəticə görünüşü
+        repeat(10) { compose.onNodeWithText("Razıyam").performClick() }
+        settle()
+        shot("17-quiz-result")
+    }
+
+    // ═══════════════ 8. Bitirmə sheeti (D-055 — əvvəl əlçatmaz idi) ═══════════════
+
+    @Test
+    fun `bitirmə sheeti — təşkilatçı XP payı`() {
+        val engine = newEngine()
+        val ev = engine.eventById("e-mafiya")!!
+        compose.setContent {
+            QoshulTheme {
+                AppShell(engine = engine, nav = NavState(), onOpenCreate = {})
+                FinishActivitySheet(engine = engine, event = ev, onDismiss = {})
+            }
+        }
+        settle()
+        shot("18-finish")
+    }
+
+    // ═══════════════ 9. Şəhər seçimi sheeti (D-055 — əvvəl ölü fayl idi) ═══════════════
+
+    @Test
+    fun `şəhər seçimi sheeti`() {
+        val engine = newEngine()
+        compose.setContent {
+            QoshulTheme {
+                AppShell(engine = engine, nav = NavState(), onOpenCreate = {})
+                CityPickerSheet(engine = engine, onDismiss = {})
+            }
+        }
+        settle()
+        shot("19-city")
+    }
+
+    // ═══════════════ 10. Şəxsi söhbət + tez cavablar (D-056) ═══════════════
+
+    @Test
+    fun `şəxsi söhbət — tez cavab çipləri`() {
+        val engine = newEngine()
+        compose.setContent { QoshulTheme { ChatsScreen(engine) } }
+        settle()
+        compose.onNodeWithText("Rəşad Əliyev").performClick()
+        settle()
+        shot("20-chat-friend")
     }
 }

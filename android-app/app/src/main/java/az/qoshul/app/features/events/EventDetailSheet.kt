@@ -32,6 +32,12 @@ import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WhereToVote
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -66,7 +72,12 @@ import az.qoshul.app.core.ui.SheetScaffold
  * A3 düzəlişi: "Qrup söhbətinə keç" artıq real keçid callback-i alır.
  * D-050: "Yol göstər" aktivləşdi (xəritə fazası gəldi — D-048 MapLibre):
  * [onShowOnMap] xəritə tabına keçib tədbir pininə uçur.
+ * D-055: [onOpenChat] — "Qoşuldun" halı artıq DEAKTİV deyil: düymə qrup
+ * söhbətini açır (ChatFocusState vasitəsilə).
+ * D-056: "24 saat əvvəl xatırlat" (eventReminder) + taq çipləri + yaş
+ * həddi və təkrarlanma faktları (modeldə var idi, göstərilmirdi).
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EventDetailSheet(
     engine: AppEngine,
@@ -74,10 +85,12 @@ fun EventDetailSheet(
     onDismiss: () -> Unit,
     onFinishActivity: (QoshulEvent) -> Unit = {},
     onShowOnMap: (QoshulEvent) -> Unit = {},
+    onOpenChat: (QoshulEvent) -> Unit = {},
 ) {
     var rating by remember { mutableIntStateOf(5) }
     var comment by remember { mutableStateOf("") }
     var reviewSent by remember { mutableStateOf(false) }
+    var reminded by remember { mutableStateOf(false) }
     val st by engine.state.collectAsState()
     val isJoined = event.id in st.joined
     val isPending = event.id in st.pending
@@ -99,6 +112,22 @@ fun EventDetailSheet(
             Spacer(Modifier.height(10.dp))
             Text(event.description, style = androidx.compose.ui.text.TextStyle(
                 fontFamily = JakartaSans, fontSize = 12.sp, lineHeight = 22.sp, color = Q.mutedFg))
+            // — taq çipləri (D-056: modeldə var idi, heç yerdə göstərilmirdi) —
+            if (event.tags.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                FlowRow(
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp),
+                ) {
+                    event.tags.forEach { tag ->
+                        Text(tag, style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = JakartaSans, fontSize = 10.5.sp, color = Q.primary),
+                            modifier = Modifier
+                                .background(Q.secondary, RoundedCornerShape(5.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp))
+                    }
+                }
+            }
             Spacer(Modifier.height(12.dp))
             FactsGrid(event)
 
@@ -211,6 +240,33 @@ fun EventDetailSheet(
                     Text("Yol göstər (${event.distance} km)", style = T.button)
                 }
             }
+            // D-056: "Xatırlat" — engine.eventReminder əvvəlcədən var idi, UI yox idi
+            if (!event.past) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        engine.eventReminder(event, "24 saat əvvəl")
+                        reminded = true
+                    },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(Q.rMd.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (reminded) Q.secondary else Q.card,
+                        contentColor = if (reminded) Q.primary else Q.foreground),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, if (reminded) Q.primary else Q.border),
+                ) {
+                    Icon(
+                        if (reminded) Icons.Filled.CheckCircle else Icons.Filled.NotificationsActive,
+                        null, tint = Q.primary, modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (reminded) "Xatırladıcı qoyuldu ✓" else "24 saat əvvəl xatırlat",
+                        style = T.button,
+                    )
+                }
+            }
             if (isJoined && !event.past) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
@@ -227,28 +283,33 @@ fun EventDetailSheet(
             }
             if (!event.past) {
                 Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = { engine.join(event.id) },
-                    enabled = !isJoined && !isPending && !event.isFull,
-                    modifier = Modifier.fillMaxWidth().height(46.dp),
-                    shape = RoundedCornerShape(Q.rMd.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Q.primary, contentColor = Q.primaryFg,
-                        disabledContainerColor = Q.secondary, disabledContentColor = Q.primary),
-                ) {
-                    when {
-                        isJoined -> {
-                            Icon(Icons.Filled.NorthEast, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Qoşuldun — qrup söhbətinə bax", style = T.button)
-                        }
-                        isPending -> {
-                            Icon(Icons.Filled.HourglassEmpty, null, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Sorğun təşkilatçıya göndərildi", style = T.button)
-                        }
-                        event.isFull -> Text("Yer yoxdur", style = T.button)
-                        else -> {
+                if (isJoined || isPending) {
+                    // D-055: qoşulubsa düymə DEAKTİV "Qoşuldun" deyil — qrup
+                    // söhbətini açır (ChatFocusState → Söhbətlər tabı + konkret çat).
+                    Button(
+                        onClick = { onDismiss(); onOpenChat(event) },
+                        modifier = Modifier.fillMaxWidth().height(46.dp),
+                        shape = RoundedCornerShape(Q.rMd.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Q.primary, contentColor = Q.primaryFg),
+                    ) {
+                        Icon(Icons.Filled.ChatBubbleOutline, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Qrup söhbətinə bax", style = T.button)
+                    }
+                } else {
+                    Button(
+                        onClick = { engine.join(event.id) },
+                        enabled = !event.isFull,
+                        modifier = Modifier.fillMaxWidth().height(46.dp),
+                        shape = RoundedCornerShape(Q.rMd.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Q.primary, contentColor = Q.primaryFg,
+                            disabledContainerColor = Q.secondary, disabledContentColor = Q.primary),
+                    ) {
+                        if (event.isFull) {
+                            Text("Yer yoxdur", style = T.button)
+                        } else {
                             Icon(Icons.Filled.NorthEast, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(
@@ -281,6 +342,9 @@ private fun FactsGrid(e: QoshulEvent) {
         add(Icons.Filled.Payments to (e.price?.let { "$it AZN" } ?: "Pulsuz"))
         e.level?.let { add(Icons.Filled.SignalCellularAlt to it) }
         e.language?.let { add(Icons.Filled.Translate to it) }
+        // D-056: modeldə olan, amma göstərilməyən faktlar
+        e.ageLimit?.let { add(Icons.Filled.School to "Yaş həddi: $it") }
+        if (e.recurring != "Bir dəfəlik") add(Icons.Filled.AllInclusive to e.recurring)
     }
     Column(
         Modifier

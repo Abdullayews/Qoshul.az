@@ -356,7 +356,7 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                     SectionLink(text = "← saata qayıt", onClick = { step = 1 })
                 }
                 3 -> {
-                    Text("Qeyd (isteğe bağlı)", style = T.label)
+                    Text("Qeyd (istəyə bağlı)", style = T.label)
                     Spacer(Modifier.height(7.dp))
                     QoshulTextField(value = note,
                         onValueChange = { if (it.length <= 200) note = it },

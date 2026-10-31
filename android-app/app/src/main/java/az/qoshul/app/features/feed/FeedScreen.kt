@@ -29,7 +29,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Schedule
+import az.qoshul.app.core.motion.scaleTap
+import az.qoshul.app.core.ui.LiveBadge
+import az.qoshul.app.features.events.CityPickerSheet
+import az.qoshul.app.features.events.EventDetailSheet
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -94,9 +99,20 @@ import az.qoshul.app.features.events.EventsScreen
  * D-054: "Aktiv tədbirlər" — bugünkü canlı tədbirlər birbaşa ana ekranda
  * üfüqi kart zolağı kimi (istifadəçi tələbi: aktiv tədbirlər ana ekranda
  * görünməlidir; "Bu axşam" mətn banneri əvəzinə real kartlar).
+ * D-055: LiveEventCard artıq tədbir DETALINI açır (əvvəl siyahı açırdı);
+ *        şəhər həqiqətən dəyişilə bilər (CityPill + CityPickerSheet).
+ * D-056: "AI seçimi" bölməsi — engine.aiRecommendations canlıdır.
+ * D-057: salamlaşma yenidən qurulub (badge addırda, şəhər həbı sağda),
+ *        bölmə araları vahid 20dp ritmi, "N məkan" artıq saxta link deyil.
  */
 @Composable
-fun FeedScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
+fun FeedScreen(
+    engine: AppEngine,
+    nav: NavState,
+    focus: MapFocusState,
+    onFinishActivity: (QoshulEvent) -> Unit = {},
+    onOpenChat: (QoshulEvent) -> Unit = {},
+) {
     var view by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
 
@@ -112,10 +128,10 @@ fun FeedScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             label = "feedTabs",
         ) { v ->
             if (v == 0) {
-                ForYouView(engine, nav, search = search, onSearchChange = { search = it },
-                    onOpenEvents = { view = 1 })
+                ForYouView(engine, nav, focus, search = search, onSearchChange = { search = it },
+                    onOpenEvents = { view = 1 }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
             } else {
-                EventsScreen(engine, nav, focus)
+                EventsScreen(engine, nav, focus, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
             }
         }
     }
@@ -171,11 +187,19 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
 private fun ForYouView(
     engine: AppEngine,
     nav: NavState,
+    focus: MapFocusState,
     search: String,
     onSearchChange: (String) -> Unit,
     onOpenEvents: () -> Unit,
+    onFinishActivity: (QoshulEvent) -> Unit,
+    onOpenChat: (QoshulEvent) -> Unit,
 ) {
     val st by engine.state.collectAsStateWithLifecycle()
+    var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
+    var cityOpen by remember { mutableStateOf(false) }
+    // D-056: AI seçimi — şəhər dəyişəndə yenidən hesablanır (LazyColumn
+    // daxilində remember çağırmaq olmaz — @Composable konteksti deyil)
+    val aiPicks = remember(st.city) { engine.aiRecommendations() }
 
     Column(Modifier.fillMaxSize()) {
         // — sabit axtarış (D-029) —
@@ -190,23 +214,30 @@ private fun ForYouView(
                 start = 20.dp, end = 20.dp, bottom = 132.dp
             ),
         ) {
-            // salamlaşma
+            // salamlaşma (D-057: badge addırda — "ad + rütbə" bir vahid;
+            // sağda şəhər həbı — boş sahə problemi də həll olundu)
             item {
                 StaggerIn(0) {
                     Row(verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
-                            Text("Salam, ${st.firstName}!", style = T.h1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Salam, ${st.firstName}!", maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis, style = T.h1)
+                                Spacer(Modifier.width(8.dp))
+                                RankBadge(label = st.rank)
+                            }
                             Spacer(Modifier.height(4.dp))
                             Text("Bu gün yeni bir hekayəyə qoşul.", style = T.subtitle)
                         }
-                        RankBadge(label = st.rank)
+                        Spacer(Modifier.width(10.dp))
+                        CityPill(city = st.city, onClick = { cityOpen = true })
                     }
                 }
             }
             item {
-                Spacer(Modifier.height(17.dp))
+                Spacer(Modifier.height(16.dp))
                 StaggerIn(1) { XpTrack(xp = st.xp) }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(12.dp))
             }
             // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
             val active = engine.activeEvents
@@ -226,8 +257,32 @@ private fun ForYouView(
                         items(active) { e ->
                             LiveEventCard(
                                 event = e, joined = e.id in st.joined, pending = e.id in st.pending,
-                                onClick = onOpenEvents,
+                                onClick = { detailEvent = e },
                             )
+                        }
+                    }
+                    Spacer(Modifier.height(20.dp))
+                }
+            }
+            // — AI seçimi (D-056): aiRecommendations əvvəlcədən var idi, UI-a bağlı deyildi —
+            if (aiPicks.isNotEmpty()) {
+                item {
+                    StaggerIn(2) {
+                        SectionHeading(
+                            title = "AI seçimi", icon = Icons.Rounded.AutoAwesome,
+                            trailing = {
+                                SectionLink(text = "AI köməkçi", icon = Icons.Filled.NorthEast, onClick = {
+                                    nav.push(Route.Assistant)
+                                })
+                            },
+                        )
+                    }
+                }
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(aiPicks) { (e, reason) ->
+                            AiPickCard(event = e, reason = reason, joined = e.id in st.joined,
+                                onClick = { detailEvent = e })
                         }
                     }
                     Spacer(Modifier.height(20.dp))
@@ -242,7 +297,12 @@ private fun ForYouView(
                 item {
                     SectionHeading(
                         title = "Populyar məkanlar", icon = Icons.Filled.Storefront,
-                        trailing = { SectionLink(text = "${venues.size} məkan") },
+                        // D-057: sayğac — saxta yaşıl link YOX (kliklənə bilməz görünürdü)
+                        trailing = {
+                            Text("${venues.size} məkan", style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = JakartaSans, fontSize = 11.5.sp,
+                                fontWeight = FontWeight.W600, color = Q.mutedFg))
+                        },
                     )
                 }
                 item {
@@ -323,26 +383,111 @@ private fun ForYouView(
                             )
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(20.dp))
                 }
             }
-            // — cəmiyyət banneri —
+            // — cəmiyyət banneri (D-055: ölü banner deyil — Tərəfdaşlara aparır) —
             item {
                 CommunityBanner(
                     icon = Icons.Filled.School,
                     title = "Eyni maraqlar, yeni tanışlıqlar",
                     subtitle = "Sevdiyin məkanlarda görüş, əlavə XP qazan.",
+                    onClick = { nav.push(Route.Partners) },
                     trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
                 )
             }
             item { SafetyNote() }
         }
     }
+
+    // — modal sheet-lər (D-055/D-056) —
+    if (cityOpen) {
+        CityPickerSheet(engine = engine, onDismiss = { cityOpen = false })
+    }
+    detailEvent?.let { ev ->
+        EventDetailSheet(
+            engine = engine, event = ev,
+            onDismiss = { detailEvent = null },
+            onFinishActivity = onFinishActivity,
+            onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
+            onOpenChat = onOpenChat,
+        )
+    }
+}
+
+/**
+ * Şəhər həbı (D-055) — salamlaşma sətirində sağda; CityPickerSheet-i açır.
+ * setCity əvvəl yalnız testlərdən çatışıldığı üçün ölü idi — bu, 25 şəhəri
+ * istifadəçiyə açır (feed/map/aktiv tədbirlər şəhərə görə filtrlənir).
+ */
+@Composable
+private fun CityPill(city: String, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .scaleTap(interaction)
+            .androidxLiveTap(interaction, onClick)
+            .background(Q.card, RoundedCornerShape(10.dp))
+            .border(1.dp, Q.border, RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Icon(Icons.Filled.LocationOn, null, tint = Q.primary, modifier = Modifier.height(13.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(city, style = androidx.compose.ui.text.TextStyle(
+            fontFamily = JakartaSans, fontSize = 12.sp, fontWeight = FontWeight.W800))
+        Icon(Icons.Filled.KeyboardArrowDown, null, tint = Q.mutedFg, modifier = Modifier.height(16.dp))
+    }
+}
+
+/**
+ * AI tövsiyə kartı (D-056) — "AI seçimi" zolağı üçün; AiBox-a yaxın yaşıl çalar.
+ */
+@Composable
+private fun AiPickCard(event: QoshulEvent, reason: String, joined: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        Modifier
+            .width(232.dp)
+            .androidxLiveTap(interaction, onClick)
+            .background(Q.aiBoxBg, RoundedCornerShape(Q.rLg.dp))
+            .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
+            .padding(13.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(14.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("AI tövsiyəsi", style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 10.5.sp, fontWeight = FontWeight.W800, color = Q.primary))
+        }
+        Spacer(Modifier.height(8.dp))
+        // D-057: 14.5sp — 232dp kartda 2 sətirə rahat yerləşir (16sp-də
+        // başlıq ortadan ellipsizə olunurdu — VLM audit tapıntısı)
+        Text(event.title, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 14.5.sp, fontWeight = FontWeight.W800))
+        Spacer(Modifier.height(6.dp))
+        Text(reason, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            style = T.meta.copy(lineHeight = 17.sp))
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Schedule, null, tint = if (joined) Q.primary else Q.mutedFg, modifier = Modifier.size(13.5.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                if (joined) "Qoşulsan · ${event.time}" else "${event.date} · ${event.time}",
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 10.5.sp, fontWeight = FontWeight.W500,
+                    color = if (joined) Q.primary else Q.mutedFg),
+            )
+        }
+    }
 }
 
 /**
  * Aktiv tədbir kartı (D-054) — bugünkü tədbir üçün üfüqi zolaq kartı:
- * şəkil + yaşıl nöqtəli "CANLI" nişanı, ad, məkan, saat, iştirak vəziyyəti.
+ * şəkil + yaşıl nöqtəli "CANLI" nişanı (D-057: LiveBadge tək mənbədən),
+ * ad, məkan, saat, iştirak vəziyyəti. D-055: klik → tədbir DETALI.
  */
 @Composable
 private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean, onClick: () -> Unit) {
@@ -354,7 +499,7 @@ private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean,
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .androidxLiveBorder()
     ) {
-        // — şəkil + CANLI nişanı —
+        // — şəkil + CANLI nişanı (D-057: Ui.LiveBadge — inline nüsxə silindi) —
         Box(Modifier.fillMaxWidth().height(92.dp)) {
             Image(
                 painter = imagePaint(event.image), contentDescription = event.title,
@@ -362,20 +507,8 @@ private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean,
                 modifier = Modifier.fillMaxWidth().height(92.dp),
             )
             Box(Modifier.fillMaxWidth().height(92.dp).androidxLiveShade())
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp)
-                    .background(Q.glass, RoundedCornerShape(5.dp))
-                    .border(1.dp, Q.glassBorder, RoundedCornerShape(5.dp))
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-            ) {
-                Box(Modifier.size(5.dp).background(Q.primary, CircleShape))
-                Spacer(Modifier.width(6.dp))
-                Text("CANLI", style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 10.sp,
-                    fontWeight = FontWeight.W800, color = androidx.compose.ui.graphics.Color.White))
+            Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+                LiveBadge(text = "CANLI")
             }
         }
         // — məlumat —

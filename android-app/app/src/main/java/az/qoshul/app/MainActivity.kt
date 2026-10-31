@@ -19,6 +19,7 @@ import az.qoshul.app.core.model.EventProposal
 import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.model.parseAssistantEvent
+import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.GlassNavHost
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
@@ -34,6 +35,7 @@ import az.qoshul.app.features.match.MatchScreen
 import az.qoshul.app.features.notifications.NotificationsScreen
 import az.qoshul.app.features.onboarding.OnboardingScreen
 import az.qoshul.app.features.partners.PartnersScreen
+import az.qoshul.app.features.profile.PersonalityQuizScreen
 import az.qoshul.app.features.reservations.ReservationsScreen
 import az.qoshul.app.features.safety.SafetyScreen
 import az.qoshul.app.features.settings.SettingsScreen
@@ -75,6 +77,9 @@ class MainActivity : ComponentActivity() {
  * push-ekranlar GlassNavHost ilə (GlassPageRoute pariteti).
  * D-050: xəritə fokus vəziyyəti (MapFocusState) burada sahiblənir —
  * AppShell (tab keçidi) və push-ekranlar (VenueDetail "Yol tap") paylaşır.
+ * D-055: [chatFocus] — Söhbətlər tabına keçid siqnalı (MapFocus pariteti);
+ * onFinishActivity — EventDetail → FinishActivitySheet (əvvəl kəsılırdı,
+ * bitirmə axını bütün 695 sətirlik sheet UI-dan əlçatmaz idi).
  */
 @Composable
 fun QoshulApp() {
@@ -83,6 +88,7 @@ fun QoshulApp() {
     val st by engine.state.collectAsState()
     val nav = rememberNavState()
     val focus = remember { MapFocusState() }
+    val chatFocus = remember { ChatFocusState() }
 
     // modal sheet vəziyyətləri
     var createOpen by remember { mutableStateOf(false) }
@@ -102,6 +108,9 @@ fun QoshulApp() {
                         nav = nav,
                         onOpenCreate = { createOpen = true },
                         focus = focus,
+                        chatFocus = chatFocus,
+                        onFinishActivity = { e -> finishEvent = e },
+                        onOpenChat = { e -> chatFocus.event(e.id) },
                     )
                 },
             ) { route ->
@@ -110,6 +119,7 @@ fun QoshulApp() {
                     engine = engine,
                     nav = nav,
                     focus = focus,
+                    chatFocus = chatFocus,
                     onOpenCreateAtVenue = { v -> createVenue = v; createOpen = true },
                     onOpenAssistantCreate = { proposal ->
                         assistantProposal = proposal; createOpen = true
@@ -132,6 +142,9 @@ fun QoshulApp() {
             venue = createVenue,
         )
     }
+    // D-055: finishEvent axını İNDİ canlıdır — əvvəl heç kim bu state-i
+    // yazmırdı (EventDetail onFinishActivity {} idi), FinishActivitySheet
+    // (QR → şəkil → taq → XP) 695 sətirlik ölü kod idi.
     finishEvent?.let { ev ->
         FinishActivitySheet(engine = engine, event = ev, onDismiss = { finishEvent = null })
     }
@@ -144,6 +157,7 @@ private fun RouteScreen(
     engine: AppEngine,
     nav: NavState,
     focus: MapFocusState,
+    chatFocus: ChatFocusState,
     onOpenCreateAtVenue: (Partner) -> Unit,
     onOpenAssistantCreate: (EventProposal) -> Unit,
 ) {
@@ -152,12 +166,14 @@ private fun RouteScreen(
         Route.Assistant -> AssistantScreen(engine, nav,
             onOpenCreate = { lastProposal(engine)?.let(onOpenAssistantCreate) })
         Route.Notifications -> NotificationsScreen(engine, nav)
-        Route.Match -> MatchScreen(engine, nav)
+        Route.Match -> MatchScreen(engine, nav,
+            onOpenChat = { p -> chatFocus.friend(p.id) })
         Route.Coupons -> CouponsScreen(engine, nav)
         Route.Reservations -> ReservationsScreen(engine, nav)
         Route.XpCard -> XpCardScreen(engine, nav)
         Route.Settings -> SettingsScreen(engine, nav)
         Route.Safety -> SafetyScreen(nav)
+        Route.Quiz -> PersonalityQuizScreen(engine, nav) // D-056
         is Route.VenueDetail -> VenueDetailScreen(engine, nav, route.venueId, focus)
     }
 }

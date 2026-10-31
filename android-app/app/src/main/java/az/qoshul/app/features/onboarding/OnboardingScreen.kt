@@ -280,7 +280,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                 )
             }
         }
-        FormFieldX("Cins (isteğe bağlı)") {
+        FormFieldX("Cins (istəyə bağlı)") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Kişi" to Icons.Filled.Male, "Qadın" to Icons.Filled.Female,
                     "Digər" to Icons.Filled.MoreHoriz).forEach { (g, ic) ->
@@ -502,7 +502,7 @@ private fun PermissionsStep(engine: AppEngine) {
         Spacer(Modifier.height(14.dp))
         Text("İcazələr", style = T.h1)
         Spacer(Modifier.height(4.dp))
-        Text("Hər ikisi isteğe bağlıdır — rdd etsən də tətbiq işləməyə davam edir.", style = T.subtitle)
+        Text("Hər ikisi istəyə bağlıdır — rədd etsən də tətbiq işləməyə davam edir.", style = T.subtitle)
         Spacer(Modifier.height(18.dp))
         PermCard(Icons.Filled.LocationOn, "Məkan",
             "Yaxınlıq üçün · \"tətbiq istifadə olunarkən\"\nDəqiq koordinat yalnız sənə görünür, başqalarına ~məsafə.",

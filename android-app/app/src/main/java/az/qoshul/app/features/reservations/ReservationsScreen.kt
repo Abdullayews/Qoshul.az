@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
@@ -159,6 +161,25 @@ fun ReservationsScreen(engine: AppEngine, nav: NavState) {
                                 }
                             }
                         }
+                        // D-056: gəlməmə axını — engine.markNoShow hazır idi, UI-a bağlı
+                        // deyildi; sayğac "X/3" artıq real dəyişir (3 → 7 gün məhdudiyyət)
+                        if (r.canCancel) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .androidxResvTap { engine.markNoShow(r.id) }
+                                    .padding(vertical = 4.dp),
+                            ) {
+                                Icon(Icons.Filled.PersonOff, null, tint = Q.destructive, modifier = Modifier.size(15.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Gəlməyəcəm — əvvəlcədən bildir",
+                                    style = T.meta.copy(color = Q.destructive),
+                                )
+                            }
+                        }
                     }
                     Spacer(Modifier.height(12.dp))
                 }
@@ -193,6 +214,9 @@ private fun Modifier.androidxResvCard(): Modifier = this.then(
         .background(Q.card, RoundedCornerShape(Q.rLg.dp))
         .androidxResvBorder()
 )
+
+private fun Modifier.androidxResvTap(onClick: () -> Unit): Modifier =
+    this.then(Modifier.clickable(onClick = onClick))
 
 private fun Modifier.androidxResvBorder(): Modifier = this.then(
     Modifier.border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))

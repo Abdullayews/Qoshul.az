@@ -63,6 +63,8 @@ sealed interface Route {
     data object XpCard : Route
     data object Settings : Route
     data object Safety : Route
+    /** D-056: şəxsiyyət testi (10 sual → PersonalityResult). */
+    data object Quiz : Route
     data class VenueDetail(val venueId: String) : Route
 }
 

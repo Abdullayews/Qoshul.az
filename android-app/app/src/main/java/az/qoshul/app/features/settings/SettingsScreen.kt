@@ -64,6 +64,8 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold
 import az.qoshul.app.core.ui.Route
+import androidx.compose.material.icons.filled.People
+import az.qoshul.app.features.events.CityPickerSheet
 import az.qoshul.app.features.auth.QoshulTextField
 
 /**
@@ -78,6 +80,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     var showBlocked by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var showPhone by remember { mutableStateOf(false) }
+    var cityOpen by remember { mutableStateOf(false) }
+    var inviteOpen by remember { mutableStateOf(false) }
 
     PushScreenScaffold(title = "Ayarlar", onBack = { nav.pop() }) { mod ->
         LazyColumn(
@@ -91,9 +95,18 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 SettingsCard {
                     RowItem(Icons.Filled.Person, "Ad", st.profileName)
                     DividerLine()
-                    RowItem(Icons.Filled.LocationCity, "Şəhər", st.city)
+                    // D-055: şəhər sətri artıq KLİKLƏNƏBİLİR — CityPickerSheet açır
+                    // (25 şəhər; setCity feed/map/aktiv tədbirləri dəyişir)
+                    NavRow(Icons.Filled.LocationCity, "Şəhər", value = st.city) {
+                        cityOpen = true
+                    }
                     DividerLine()
                     RowItem(Icons.Filled.WorkspacePremium, "Səviyyə", st.rank)
+                    DividerLine()
+                    // D-056: dost dəvəti — INVITE_XP (+100) əvvəl heç bir UI-a bağlı deyildi
+                    NavRow(Icons.Filled.People, "Dostunu dəvət et", value = "+${XpRules.INVITE_XP} XP") {
+                        inviteOpen = true
+                    }
                     DividerLine()
                     RowItem(
                         Icons.Filled.Tune, "Məlumat rejimi", AppConfig.modeLabel,
@@ -307,7 +320,50 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         containerColor = Q.destructive, contentColor = androidx.compose.ui.graphics.Color.White),
                 ) { Text("Sil") }
             },
-            dismissButton = { TextButton(onClick = { showDelete = false }) { Text("Imtina") } },
+            dismissButton = { TextButton(onClick = { showDelete = false }) { Text("İmtina") } },
+        )
+    }
+
+    // — D-055: şəhər seçimi sheeti —
+    if (cityOpen) {
+        CityPickerSheet(engine = engine, onDismiss = { cityOpen = false })
+    }
+
+    // — D-056: dost dəvəti dialoqu (INVITE_XP əvvəl heç bir UI-a bağlı deyildi) —
+    if (inviteOpen) {
+        var invited by remember { mutableStateOf(false) }
+        AlertDialog(
+            onDismissRequest = { inviteOpen = false },
+            title = { Text("Dostunu dəvət et") },
+            text = {
+                Text(
+                    if (invited)
+                        "Dəvət göndərildi ✓ +${XpRules.INVITE_XP} XP hesabına düşdü. " +
+                            "Dostun qoşulanda tədbirləri birlikdə planlayın!"
+                    else
+                        "Qoshul.az-ı dostlarınla bölüş — hər dəvət sənə +${XpRules.INVITE_XP} XP " +
+                            "gətirir (bir dəfə). Paylaş:\n\n\"Qoshul.az — Bakıda və bütün Azərbaycanda " +
+                            "maraq görüşləri, endirim XP-si və yeni tanışlıqlar.\"",
+                    style = T.subtitle.copy(lineHeight = 21.sp),
+                )
+            },
+            confirmButton = {
+                if (invited) {
+                    TextButton(onClick = { inviteOpen = false }) { Text("Bağla", style = T.button) }
+                } else {
+                    Button(
+                        onClick = {
+                            engine.inviteFriend()
+                            invited = true
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Q.primary, contentColor = Q.primaryFg),
+                    ) { Text("Paylaş (+${XpRules.INVITE_XP} XP)", style = T.button) }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { inviteOpen = false }) { Text("İmtina", style = T.button) }
+            },
         )
     }
 }

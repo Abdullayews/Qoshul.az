@@ -63,6 +63,7 @@ import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.countUpAsState
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.RankBadge
@@ -75,19 +76,31 @@ import az.qoshul.app.core.ui.SectionHeading
 import az.qoshul.app.core.ui.ViewHeading
 import az.qoshul.app.core.ui.imagePaint
 import az.qoshul.app.features.auth.QoshulTextField
+import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.Psychology
 import az.qoshul.app.features.events.EventCard
+import az.qoshul.app.features.events.EventDetailSheet
 
 /**
  * Profil — Flutter profile_screen.dart portu: başlıq, maraqlar, şəxsiyyət
  * testi, nişanlar, 3 tez keçid, statistika (CountUp), XP progress, 3 tab.
  * D-054: nişanlar və maraqlar FlowRow ilə yan-yana düzülür (əvvəl Column —
  * istifadəçi şikayəti: nişanlar alt-alta düşürdü; indi sətir dolunca qırılır).
+ * D-055: "Tədbirlərim" kartları artıq detala açılır (əvvəl onOpen={} idi);
+ *        onOpenChat — qrup söhbətinə keçid eyni sheetdən işləyir.
+ * D-056: şəxsiyyət testi banneri (personality == null) — Route.Quiz.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProfileScreen(engine: AppEngine, nav: NavState) {
+fun ProfileScreen(
+    engine: AppEngine,
+    nav: NavState,
+    onFinishActivity: (QoshulEvent) -> Unit = {},
+    onOpenChat: (QoshulEvent) -> Unit = {},
+) {
     var tab by remember { mutableIntStateOf(0) }
     var editOpen by remember { mutableStateOf(false) }
+    var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
     val st by engine.state.collectAsState()
     val prog = remember(st.xp) { az.qoshul.app.core.model.XpRules.xpProgress(st.xp) }
 
@@ -176,8 +189,19 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                 }
             }
         }
-        // şəxsiyyət testi
-        if (st.personality != null) {
+        // şəxsiyyət testi — D-056: nəticə YOXDURSA CTA banneri, VARSA nəticə + zolaqlar
+        if (st.personality == null) {
+            item {
+                Spacer(Modifier.height(16.dp))
+                CommunityBanner(
+                    icon = Icons.Filled.Psychology,
+                    title = "Şəxsiyyət testi",
+                    subtitle = "10 sual · 2 dəqiqə. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 XP.",
+                    onClick = { nav.push(Route.Quiz) },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                )
+            }
+        } else {
             item {
                 Spacer(Modifier.height(16.dp))
                 CommunityBanner(
@@ -295,12 +319,23 @@ fun ProfileScreen(engine: AppEngine, nav: NavState) {
                     event = e, joined = e.id in st.joined, pending = e.id in st.pending,
                     saved = e.id in st.saved, showLevel = false,
                     onToggleSave = { engine.toggleSave(e.id) },
-                    onOpen = { /* detal sheet events ekranında açılır */ },
+                    // D-055: ölü klik YOX — kart tədbir detal sheetini açır
+                    onOpen = { detailEvent = e },
                     onJoin = { engine.join(e.id) },
                 )
                 Spacer(Modifier.height(16.dp))
             }
         }
+    }
+
+    // — D-055: tədbir detal sheeti (profil kartlarından) —
+    detailEvent?.let { ev ->
+        EventDetailSheet(
+            engine = engine, event = ev,
+            onDismiss = { detailEvent = null },
+            onFinishActivity = onFinishActivity,
+            onOpenChat = onOpenChat,
+        )
     }
 
     if (editOpen) {

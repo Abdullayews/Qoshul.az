@@ -79,9 +79,11 @@ import kotlin.math.abs
  * Dartılma (drag) kartı çevirir; ~110dp hədd — uçur (swipe) və ya yay geri.
  * D-054: hədd xam piksel (300f) deyil, sıxlıq-uyğunlaşan dp —
  * yüksək DPI ekranda 300px fiziki olaraq çox kiçik idi (fixed-px qadağası).
+ * D-055: [onOpenChat] — "Söhbətə keç" əvvəl yalnız nav.pop() edirdi;
+ *        artıq konkret şəxsi söhbəti açır (ChatFocusState).
  */
 @Composable
-fun MatchScreen(engine: AppEngine, nav: NavState) {
+fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit = {}) {
     var reportFor by remember { mutableStateOf<Person?>(null) }
     var safetyOpen by remember { mutableStateOf(false) }
     var matchDialog by remember { mutableStateOf<Person?>(null) }
@@ -103,7 +105,7 @@ fun MatchScreen(engine: AppEngine, nav: NavState) {
                     icon = Icons.Filled.FavoriteBorder,
                     text = if (st.swipes.isEmpty())
                         "Hazırda yeni kart yoxdur.\nYaxınlıqdakı insanlar burada görünəcək."
-                    else "Bugünlük kartlar bitdi.\nYeni insanlar üçün sabah yenidən bax!",
+                    else "Bu günlük kartlar bitdi.\nYeni insanlar üçün sabah yenidən bax!",
                     action = if (st.swipes.isNotEmpty()) {
                         {
                             OutlinedButton(onClick = { engine.resetSwipes() }) {
@@ -196,7 +198,8 @@ fun MatchScreen(engine: AppEngine, nav: NavState) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { matchDialog = null; nav.pop() }) { Text("Söhbətə keç") }
+                // D-055: yalnız nav.pop() deyil — konkret söhbətə keçir
+                TextButton(onClick = { matchDialog = null; nav.pop(); onOpenChat(p) }) { Text("Söhbətə keç") }
             },
             dismissButton = {
                 TextButton(onClick = { matchDialog = null }) { Text("Davam et") }

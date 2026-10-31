@@ -161,6 +161,16 @@ object FakeQoshulDataSource : QoshulDataSource {
             price = 5,
         ),
         QoshulEvent(
+            id = "e-run", title = "Səhər qaçışı — Bulvar marşrutu", category = "Qaçış",
+            image = imgFriends, city = "Bakı", location = "Dənizkənarı bulvar, Azneft başlanğıcı",
+            lat = 40.3652, lng = 49.8412, distance = 1.8, time = "07:30", date = "Bu gün",
+            epochDay = today.epochDay(), past = false, capacity = 12, participants = 8,
+            host = "Elvin Soltanov",
+            description = "5 km asan temp ilə səhər enerjisi. Qaçışdan sonra bulvarda birlikdə " +
+                "çay içirik — yeni başlayanlar üçün oxuyucu qrupda arxada gəlir.",
+            level = "Asan", language = "Azərbaycan dili",
+        ),
+        QoshulEvent(
             id = "e6", title = "Flutter meetup: state management", category = "Proqramlaşdırma",
             image = imgTech, city = "Bakı", location = "Techno Hub, Nərimanov",
             lat = 40.3903, lng = 49.8556, distance = 3.9, time = "14:00", date = "Noy 8",
@@ -236,8 +246,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             lat = 40.3695, lng = 49.8367, distance = 1.5, time = "07:00", date = "Keçən bazar",
             epochDay = Int.MIN_VALUE, past = true, capacity = 12, participants = 12,
             host = "Rəşad Əliyev",
-            description = "5 km asan temp. Qoşulduğun üçün +50 XP qazandın — rəyini yazaraq " +
-                "əlavə +20 XP qazana bilərsən.",
+            description = "5 km asan temp. Qoşulduğun üçün +10 XP qazandın — rəyini yazaraq əlavə +15 XP qazana bilərsən.",
         ),
         // D-026 (L.3) demo: istifadəçinin öz təşkil etdiyi, bitmiş aktivite.
         QoshulEvent(
@@ -450,6 +459,9 @@ object FakeQoshulDataSource : QoshulDataSource {
         "v2" to listOf("09:00", "11:00", "13:00", "15:00", "17:00", "19:00", "21:00"),
         "v3" to listOf("10:00", "12:00", "14:00", "16:00", "18:00"),
         "v4" to listOf("12:00", "14:00", "16:00", "18:00", "20:00"),
+        // D-055: v5/v6 rezerv axınında boş slot toru qalırdı (A6 audit)
+        "v5" to listOf("12:00", "14:00", "18:00", "20:00", "22:00"),
+        "v6" to listOf("10:00", "12:00", "16:00", "19:00"),
     )
 
     // nextDateLabels → core/data/DateLabels.kt (tarix hesablaması, mənbəyə aid deyil)

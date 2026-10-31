@@ -80,11 +80,13 @@ import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.Wordmark
 import androidx.compose.runtime.LaunchedEffect
+import az.qoshul.app.core.model.QoshulEvent
 
 /**
  * Əsas tətbiq qabığı — Flutter app_shell.dart portu (ROL C + D-034):
@@ -94,6 +96,8 @@ import androidx.compose.runtime.LaunchedEffect
  *
  * D-050: [focus] — xəritə fokus istəyi gələndə avtomatik Xəritə tabına
  * keçilir ("Yol göstər"/"Yol tap" düymələri, MapFocusState).
+ * D-055: [chatFocus] — söhbət fokusunda Söhbətlər tabına keçid;
+ * onFinishActivity/onOpenChat — Feed və Profile ekranlarına ötürülür.
  */
 @Composable
 fun AppShell(
@@ -101,12 +105,20 @@ fun AppShell(
     nav: NavState,
     onOpenCreate: () -> Unit,
     focus: MapFocusState = remember { MapFocusState() },
+    chatFocus: ChatFocusState? = null,
+    onFinishActivity: (QoshulEvent) -> Unit = {},
+    onOpenChat: (QoshulEvent) -> Unit = {},
 ) {
     var index by remember { mutableStateOf(0) }
 
     // "Yol göstər / Yol tap" → xəritə tabına keç (D-050)
     LaunchedEffect(focus.request) {
         if (focus.request != null) index = 1
+    }
+
+    // "Qrup söhbətinə bax / Söhbətə keç" → Söhbətlər tabına keç (D-055)
+    LaunchedEffect(chatFocus?.request) {
+        if (chatFocus?.request != null) index = 2
     }
 
     Column(
@@ -133,10 +145,10 @@ fun AppShell(
                 label = "tabs",
             ) { i ->
                 when (i) {
-                    0 -> FeedScreen(engine, nav, focus)
+                    0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat)
                     1 -> MapScreen(engine, nav, focus)
-                    2 -> ChatsScreen(engine)
-                    else -> ProfileScreen(engine, nav)
+                    2 -> ChatsScreen(engine, chatFocus)
+                    else -> ProfileScreen(engine, nav, onFinishActivity, onOpenChat)
                 }
             }
         }

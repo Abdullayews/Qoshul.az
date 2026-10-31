@@ -101,9 +101,17 @@ import kotlinx.coroutines.launch
  * Tədbirlər görünüşü — Flutter events_screen.dart portu (ROL TAB 3, D-034):
  * Kəşfin "Tədbirlər" daxili tabı: axtarış (pinned), kateqoriya çipləri,
  * Yaxınlaşan / Mənim tədbirlərim / Yaratdığım + D-026 L.1 sıralama.
+ * D-055: onFinishActivity/onOpenChat ötürülür — bitirmə axını və qrup
+ * söhbəti keçidi əvvəl MainAktivite-də kəsılırdı.
  */
 @Composable
-fun EventsScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
+fun EventsScreen(
+    engine: AppEngine,
+    nav: NavState,
+    focus: MapFocusState,
+    onFinishActivity: (QoshulEvent) -> Unit = {},
+    onOpenChat: (QoshulEvent) -> Unit = {},
+) {
     var tab by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("Hamısı") }
@@ -259,6 +267,8 @@ fun EventsScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                 engine, ev,
                 onDismiss = { detailEvent = null },
                 onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
+                onFinishActivity = onFinishActivity,
+                onOpenChat = onOpenChat,
             )
         }
     }
