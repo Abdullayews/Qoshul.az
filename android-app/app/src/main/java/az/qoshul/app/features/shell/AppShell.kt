@@ -190,7 +190,8 @@ private fun Header(
             Wordmark(fontSize = 25)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onPartners) {
-                Icon(Icons.Filled.Handshake, "Tərəfdaşlar", tint = Q.foreground, modifier = Modifier.size(21.dp))
+                // D-063: header ikonları vahid 22dp (əvvəl 21/22/22 qarışıq)
+                Icon(Icons.Filled.Handshake, "Tərəfdaşlar", tint = Q.foreground, modifier = Modifier.size(22.dp))
             }
             IconButton(onClick = onAssistant) {
                 Icon(Icons.Filled.SmartToy, "AI köməkçi", tint = Q.foreground, modifier = Modifier.size(22.dp))

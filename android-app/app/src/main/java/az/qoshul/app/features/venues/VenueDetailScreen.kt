@@ -166,9 +166,9 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                 InfoRow(Icons.Filled.Schedule, "${venue.hours} · " +
                     (if (openNow) "İndi açıqdır" else "Bağlıdır"),
                     color = if (openNow) Q.primary else Q.mutedFg)
-                androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 7.dp))
+                androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 8.dp))
                 InfoRow(Icons.Filled.Payments, "Qiymət aralığı: ${venue.priceRange}")
-                androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 7.dp))
+                androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 8.dp))
                 InfoRow(Icons.Filled.TableRestaurant,
                     "Rezerv: " + (if (venue.autoAccept) "avtomatik təsdiq" else "partnyor təsdiqi ilə"))
             }
@@ -247,11 +247,15 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
     }
 }
 
+/** Məkan info sətri — D-063: vertical 6dp əlavə (toxunma hədəfi ~44dp). */
 @Composable
 private fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String,
                     color: Color = Q.foreground) {
-    Row {
-        Icon(icon, null, tint = Q.mutedFg, modifier = Modifier.size(15.dp))
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+    ) {
+        Icon(icon, null, tint = Q.mutedFg, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(10.dp))
         Text(text, style = androidx.compose.ui.text.TextStyle(
             fontFamily = JakartaSans, fontSize = 12.sp, color = color))

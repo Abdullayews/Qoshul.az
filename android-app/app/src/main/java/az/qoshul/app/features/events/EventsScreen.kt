@@ -143,7 +143,9 @@ fun EventsScreen(
                 // — kateqoriya çipləri —
                 item {
                     StaggerIn(0) {
-                        Row(Modifier.horizontalScroll(rememberScrollState())) {
+                        // D-063: end 13dp — son çip ekran kənarında KƏSİLMİR
+                        // (7dp çip aralığı + 13 = 20dp content kənarı ilə düz)
+                        Row(Modifier.horizontalScroll(rememberScrollState()).padding(end = 13.dp)) {
                             groupIcons.forEach { (name, icon) ->
                                 Box(Modifier.padding(end = 7.dp)) {
                                     CategoryChip(
@@ -155,6 +157,9 @@ fun EventsScreen(
                         }
                     }
                 }
+                // D-063: çiplər → seqment 20dp ayrılıq (tək kontrol zolağı kimi
+                // birləşib görünürdü — VLM audit tapıntısı)
+                item { Spacer(Modifier.height(4.dp)) }
                 item {
                     StaggerIn(1) {
                         Segmented(

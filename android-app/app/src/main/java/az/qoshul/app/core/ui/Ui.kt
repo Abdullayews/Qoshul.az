@@ -103,7 +103,8 @@ fun SectionHeading(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 14.dp),
+            // D-063: başlıq→məzmun 12dp; bölmə ayrımı = 16dp Spacer + 4dp top = 20dp
+            .padding(top = 4.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -425,9 +426,10 @@ fun FormFieldX(
     hint: String? = null,
     content: @Composable () -> Unit,
 ) {
-    Column(Modifier.padding(top = 15.dp)) {
+    // D-063: 4dp-grid — forma sahələri arası 16dp, etiket→sahə 8dp
+    Column(Modifier.padding(top = 16.dp)) {
         Text(label, style = T.label)
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(8.dp))
         content()
         if (hint != null) {
             Spacer(Modifier.height(6.dp))
@@ -460,7 +462,8 @@ fun ChatBubble(sender: String, body: String, mine: Boolean, status: String? = nu
     Box(
         Modifier
             .fillMaxWidth()
-            .padding(top = 15.dp),
+            // D-063: balonlar arası 15→10dp — sıx söhbət ritmi
+            .padding(top = 10.dp),
         contentAlignment = if (mine) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
         Column(
@@ -636,7 +639,8 @@ fun VenueMiniCard(
                 )
             }
         }
-        Column(Modifier.padding(11.dp)) {
+        // D-063: məlumat bloku 11→12dp (şəkil full-bleed qalır)
+        Column(Modifier.padding(12.dp)) {
             Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = tStyle(13.5, FontWeight.W800))
             Spacer(Modifier.height(5.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -672,7 +676,8 @@ fun PersonMiniCard(
             .shadow(3.dp, RoundedCornerShape(Q.rLg.dp))
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
-            .padding(11.dp),
+            // D-063: mini kart daxili 11→12dp (vahid mini-kart padding-i)
+            .padding(12.dp),
     ) {
         Box {
             Image(

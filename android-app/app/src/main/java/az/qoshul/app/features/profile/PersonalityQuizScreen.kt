@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -72,41 +71,46 @@ fun PersonalityQuizScreen(engine: AppEngine, nav: NavState) {
     val answers = remember { mutableStateListOf<Int>() }
 
     PushScreenScaffold(title = "Şəxsiyyət testi", onBack = { nav.pop() }) { pad ->
-        LazyColumn(
-            modifier = pad.padding(horizontal = 20.dp),
+        // D-063: məzmun yuxarıda topa-laşib, ekranın ~60%-i boş qalırdı
+        // (VLM: "bottom 60% completely empty — looks like a loading error").
+        // fillParentMaxHeight = viewport hündürlüyü; daxildə addımlar şaquli
+        // MƏRKƏZLƏŞİR — boş sahə bərabər paylanır, kiçik ekranda da sığışır.
+        Box(
+            pad
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
         ) {
-            item {
-                AnimatedContent(
-                    targetState = step,
-                    transitionSpec = {
-                        (fadeIn(tween(Motion.D2, easing = Motion.ease)) +
-                            scaleIn(initialScale = 0.96f, animationSpec = tween(Motion.D2, easing = Motion.ease)))
-                            .togetherWith(fadeOut(tween(Motion.D2)))
-                    },
-                    label = "quizStep",
-                ) { s ->
-                    when {
-                        s < 0 -> Intro(onStart = { step = 0 })
-                        s < questions.size -> {
-                            val (text, _) = questions[s]
-                            QuestionStep(
-                                index = s, total = questions.size, text = text,
-                                onAnswer = { a ->
-                                    answers.add(a)
-                                    step = s + 1
-                                },
-                            )
-                        }
-                        else -> {
-                            val result = computeResult(questions, answers.toList(), traitLabels)
-                            QuizResult(
-                                result = result, traitLabels = traitLabels,
-                                onSave = {
-                                    engine.setPersonality(result)
-                                    nav.pop()
-                                },
-                            )
-                        }
+            AnimatedContent(
+                targetState = step,
+                transitionSpec = {
+                    (fadeIn(tween(Motion.D2, easing = Motion.ease)) +
+                        scaleIn(initialScale = 0.96f, animationSpec = tween(Motion.D2, easing = Motion.ease)))
+                        .togetherWith(fadeOut(tween(Motion.D2)))
+                },
+                label = "quizStep",
+                modifier = Modifier.fillMaxSize(),
+            ) { s ->
+                when {
+                    s < 0 -> Intro(onStart = { step = 0 })
+                    s < questions.size -> {
+                        val (text, _) = questions[s]
+                        QuestionStep(
+                            index = s, total = questions.size, text = text,
+                            onAnswer = { a ->
+                                answers.add(a)
+                                step = s + 1
+                            },
+                        )
+                    }
+                    else -> {
+                        val result = computeResult(questions, answers.toList(), traitLabels)
+                        QuizResult(
+                            result = result, traitLabels = traitLabels,
+                            onSave = {
+                                engine.setPersonality(result)
+                                nav.pop()
+                            },
+                        )
                     }
                 }
             }
@@ -119,34 +123,38 @@ fun PersonalityQuizScreen(engine: AppEngine, nav: NavState) {
 @Composable
 private fun Intro(onStart: () -> Unit) {
     StaggerIn(0) {
-        Column(
-            Modifier.fillMaxWidth().padding(top = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(Icons.Filled.Psychology, null, tint = Q.primary, modifier = Modifier.height(34.dp))
-            Spacer(Modifier.height(12.dp))
-            Text("10 sual · 2 dəqiqə", style = T.h1.copy(textAlign = TextAlign.Center))
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Cavablarına görə dominant cəhətini tapırıq. Nəticə yalnız sənin " +
-                    "profilində görünür, heç yerə göndərilmir.",
-                style = T.subtitle.copy(textAlign = TextAlign.Center, lineHeight = 21.sp),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "Nəticə profili tamamlayır: şəkil + bio + maraqlar varsa +30 XP.",
-                style = T.meta.copy(textAlign = TextAlign.Center),
-            )
-            Spacer(Modifier.height(22.dp))
-            Button(
-                onClick = onStart,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rPill),
-                colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
+        // D-063: şaquli mərkəzləşmə — intro məzmunu ekranın mərkəzində;
+        // altdan 90dp — nav pill zonası hesabına vizual mərkəzə düzəliş
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(
+                Modifier.fillMaxWidth().padding(bottom = 90.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(Icons.Filled.NorthEast, null, modifier = Modifier.height(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Testə başla", style = T.button)
+                Icon(Icons.Filled.Psychology, null, tint = Q.primary, modifier = Modifier.height(56.dp))
+                Spacer(Modifier.height(20.dp))
+                Text("10 sual · 2 dəqiqə", style = T.h1.copy(textAlign = TextAlign.Center))
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Cavablarına görə dominant cəhətini tapırıq. Nəticə yalnız sənin " +
+                        "profilində görünür, heç yerə göndərilmir.",
+                    style = T.subtitle.copy(textAlign = TextAlign.Center, lineHeight = 21.sp),
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Nəticə profili tamamlayır: şəkil + bio + maraqlar varsa +30 XP.",
+                    style = T.meta.copy(textAlign = TextAlign.Center),
+                )
+                Spacer(Modifier.height(28.dp))
+                Button(
+                    onClick = onStart,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
+                    colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
+                ) {
+                    Icon(Icons.Filled.NorthEast, null, modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Testə başla", style = T.button)
+                }
             }
         }
     }
@@ -154,42 +162,51 @@ private fun Intro(onStart: () -> Unit) {
 
 @Composable
 private fun QuestionStep(index: Int, total: Int, text: String, onAnswer: (Int) -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 14.dp)) {
-        // — gedişat —
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    // D-063: gedişat yuxarıda SABİT, sual+cavablar qalan sahənin MƏRKƏZİNDƏ —
+    // interaktiv məzmun əvvəl yuxarı 40%-də topa-laşırdı, alt 60% boş qalırdı.
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 14.dp),
+        ) {
             Text("${index + 1}/$total", style = T.button.copy(color = Q.primary, fontWeight = FontWeight.W800))
             Spacer(Modifier.width(10.dp))
             Box(Modifier.weight(1f)) {
                 XpBar(progress = index.toFloat() / total, height = 5.dp)
             }
         }
-        Spacer(Modifier.height(22.dp))
-        Text(text, style = androidx.compose.ui.text.TextStyle(
-            fontFamily = JakartaSans, fontSize = 17.sp, fontWeight = FontWeight.W800,
-            lineHeight = 26.sp))
-        Spacer(Modifier.height(24.dp))
-        listOf(
-            "Razıyam" to 2,
-            "Qismən" to 1,
-            "Razı deyiləm" to 0,
-        ).forEach { (label, score) ->
-            OutlinedButton(
-                onClick = { onAnswer(score) },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                // D-058: seçim kartı — reference dil: 16dp radius, 1.5dp kənar
-                // (düymələrdən fərqli olaraq kapsul DEYİL — reference option kartları 16px)
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, Q.border),
-            ) { Text(label, style = T.button.copy(fontWeight = FontWeight.W600)) }
-            Spacer(Modifier.height(10.dp))
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            // D-063: məzmun blokunu böyüdürük — sual 18→20sp, seçim kartları
+            // 52→56dp, aralar 10→14dp (ekranın ortasında dolğun blok dayanır)
+            Column(Modifier.fillMaxWidth().padding(bottom = 90.dp)) {
+                Text(text, style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = JakartaSans, fontSize = 20.sp, fontWeight = FontWeight.W800,
+                    lineHeight = 30.sp))
+                Spacer(Modifier.height(28.dp))
+                listOf(
+                    "Razıyam" to 2,
+                    "Qismən" to 1,
+                    "Razı deyiləm" to 0,
+                ).forEach { (label, score) ->
+                    OutlinedButton(
+                        onClick = { onAnswer(score) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        // D-058: seçim kartı — reference dil: 16dp radius, 1.5dp kənar
+                        // (düymələrdən fərqli olaraq kapsul DEYİL — reference option kartları 16px)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Q.card, contentColor = Q.foreground),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Q.border),
+                    ) { Text(label, style = T.button.copy(fontWeight = FontWeight.W600)) }
+                    Spacer(Modifier.height(14.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Cavabın dərhal növbəti suala keçirir — geri qayıtmaq olmur.",
+                    style = T.meta,
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Cavabın dərhal növbəti suala keçirir — geri qayıtmaq olmur.",
-            style = T.meta,
-        )
     }
 }
 
@@ -200,34 +217,37 @@ private fun QuizResult(
     onSave: () -> Unit,
 ) {
     PopIn {
-        Column(Modifier.fillMaxWidth().padding(top = 14.dp)) {
-            Icon(Icons.Filled.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(30.dp))
-            Spacer(Modifier.height(10.dp))
-            Text(result.type, style = T.h1)
-            Spacer(Modifier.height(8.dp))
-            Text(result.summary, style = T.subtitle.copy(lineHeight = 21.sp))
-            Spacer(Modifier.height(18.dp))
-            // — trait zolaqları (ProfileScreen TraitBars pariteti) —
-            result.traits.forEach { (trait, pct) ->
-                Column(Modifier.padding(vertical = 7.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(traitLabels[trait] ?: trait, style = T.meta.copy(fontWeight = FontWeight.W700))
-                        Text("$pct%", style = T.meta.copy(color = Q.primary, fontWeight = FontWeight.W800))
+        // D-063: nəticə də mərkəzdə; altdan 90dp — nav pill zonası nəzərə alınır
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(Modifier.fillMaxWidth().padding(bottom = 90.dp)) {
+                Icon(Icons.Filled.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(30.dp))
+                Spacer(Modifier.height(10.dp))
+                Text(result.type, style = T.h1)
+                Spacer(Modifier.height(8.dp))
+                Text(result.summary, style = T.subtitle.copy(lineHeight = 21.sp))
+                Spacer(Modifier.height(18.dp))
+                // — trait zolaqları (ProfileScreen TraitBars pariteti) —
+                result.traits.forEach { (trait, pct) ->
+                    Column(Modifier.padding(vertical = 7.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(traitLabels[trait] ?: trait, style = T.meta.copy(fontWeight = FontWeight.W700))
+                            Text("$pct%", style = T.meta.copy(color = Q.primary, fontWeight = FontWeight.W800))
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        XpBar(progress = pct / 100f, height = 6.dp)
                     }
-                    Spacer(Modifier.height(6.dp))
-                    XpBar(progress = pct / 100f, height = 6.dp)
                 }
-            }
-            Spacer(Modifier.height(18.dp))
-            Button(
-                onClick = onSave,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rPill),
-                colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
-            ) {
-                Icon(Icons.Filled.Psychology, null, modifier = Modifier.height(16.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Profildə göstər", style = T.button)
+                Spacer(Modifier.height(18.dp))
+                Button(
+                    onClick = onSave,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
+                    colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
+                ) {
+                    Icon(Icons.Filled.Psychology, null, modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Profildə göstər", style = T.button)
+                }
             }
         }
     }

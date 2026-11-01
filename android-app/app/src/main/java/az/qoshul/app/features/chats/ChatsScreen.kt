@@ -73,6 +73,7 @@ import az.qoshul.app.core.motion.TypingDots
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.ChatBubble
+import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.SectionHeading
 import az.qoshul.app.core.ui.ViewHeading
@@ -201,7 +202,8 @@ private fun ChatList(
 
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 20.dp, end = 20.dp, top = 21.dp, bottom = 128.dp
+            // D-063: alt 128→132dp — bütün tab ekranlarında vahid
+            start = 20.dp, end = 20.dp, top = 21.dp, bottom = 132.dp
         ),
     ) {
         item { ViewHeading(title = "Söhbətlər", subtitle = "Görüşdən əvvəl tanış olaq.") }
@@ -255,6 +257,18 @@ private fun ChatList(
                     }
                 }
             }
+            // D-063: siyahı qısa olanda ekranda böyük boş sahə qalırdı —
+            // (VLM: "bottom 60% blank — looks like a loading error").
+            // Söhbət açma yollarını izah edən bilgi kartı boşluğu doldurur.
+            item {
+                Spacer(Modifier.height(20.dp))
+                CommunityBanner(
+                    icon = Icons.Outlined.ChatBubble,
+                    title = "Yeni söhbətlər burada açılır",
+                    subtitle = "Tədbirə qoşulanda onun qrup söhbəti, match/dostluq " +
+                        "qəbulunda isə şəxsi söhbət siyahıda görünür.",
+                )
+            }
         }
     }
 }
@@ -266,14 +280,17 @@ private fun ChatRow(imageKey: String, title: String, subtitle: String, onClick: 
         modifier = Modifier
             .fillMaxWidth()
             .androidxChatTap(onClick)
-            .padding(vertical = 18.dp),
+            // D-063: sətir padding 18→12dp — sıx, müasir söhbət siyahısı ritmi
+            // (VLM: "rows quite tall ~24dp+ padding — sparse")
+            .padding(vertical = 12.dp),
     ) {
         Image(
             painter = imagePaint(imageKey), contentDescription = title,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(58.dp).androidxChatClip(),
+            // D-063: 58→56dp (8dp-grid)
+            modifier = Modifier.size(56.dp).androidxChatClip(),
         )
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = androidx.compose.ui.text.TextStyle(
@@ -419,7 +436,8 @@ private fun ChatView(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 20.dp, top = 8.dp)
+                        // D-063: çiplər 8→10dp yuxarı; padding genişlənib (aşağıda)
+                        .padding(start = 20.dp, top = 10.dp)
                         .horizontalScroll(rememberScrollState()),
                 ) {
                     quickReplies.forEach { qr ->
@@ -432,7 +450,8 @@ private fun ChatView(
                                 .padding(end = 8.dp)
                                 .androidxChatTap { sendAction(qr) }
                                 .background(Q.muted, RoundedCornerShape(Q.rPill))
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                // D-063: 14/8→16/9dp — toxunma sahəsi geniş (VLM: "cramped")
+                                .padding(horizontal = 16.dp, vertical = 9.dp),
                         )
                     }
                 }
@@ -450,14 +469,16 @@ private fun ChatView(
                 Button(
                     onClick = { sendAction(text) },
                     enabled = text.isNotBlank(),
-                    modifier = Modifier.size(42.dp),
+                    // D-063: 42→52dp — yazma sahəsi (~56dp) ilə eyni hündürlük;
+                    // 42dp balaca görünüb mərkəzdən kənarda dayanırdı (VLM sev 4)
+                    modifier = Modifier.size(52.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Q.primary, contentColor = Q.primaryFg,
                         disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, "Göndər", modifier = Modifier.size(16.dp))
+                    Icon(Icons.AutoMirrored.Filled.Send, "Göndər", modifier = Modifier.size(18.dp))
                 }
             }
         }

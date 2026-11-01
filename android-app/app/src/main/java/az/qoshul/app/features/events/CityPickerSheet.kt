@@ -52,16 +52,17 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
                 style = T.subtitle)
             Spacer(Modifier.height(12.dp))
             // axtarış sətri
+            // D-063: 43→48dp (toxunma hədəfi standartı), ikon 16→18dp
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(43.dp)
+                    .height(48.dp)
                     .background(Q.card, RoundedCornerShape(12.dp))
                     .androidxSearchBorder()
                     .padding(horizontal = 12.dp),
             ) {
-                Icon(Icons.Filled.Search, null, tint = Q.mutedFg, modifier = Modifier.height(16.dp))
+                Icon(Icons.Filled.Search, null, tint = Q.mutedFg, modifier = Modifier.height(18.dp))
                 Spacer(Modifier.padding(4.dp))
                 androidx.compose.foundation.text.BasicTextField(
                     value = query, onValueChange = { query = it }, singleLine = true,
@@ -76,15 +77,16 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
                 }
                 items(list) { c ->
                     val active = st.city == c.name
+                    // D-063: sətir padding 10→12dp — ~48dp toxunma hədəfi;
+                    // xarici 2dp artıq boşluq silindi (ikiqat padding idi)
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 2.dp)
                             .androidxCityRow(active) {
                                 engine.setCity(c.name)
                                 onDismiss()
                             }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                     ) {
                         Text(c.name, style = androidx.compose.ui.text.TextStyle(

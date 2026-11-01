@@ -167,6 +167,8 @@ fun CreateEventSheet(
                         }
                     }
                     Spacer(Modifier.height(8.dp))
+                    // D-063: AI input → AI düymə arası 8→12dp (VLM: "gap small")
+                    Spacer(Modifier.height(4.dp))
                     Button(
                         onClick = { aiFill() },
                         enabled = !aiBusy && idea.isNotBlank(),
@@ -449,7 +451,9 @@ fun FinishActivitySheet(
                     // — statik QR —
                     PopIn {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            QrCode(payload = "STATIC-${acct.venueId}-${acct.venueName}", size = 148.dp)
+                            // D-063: 148→200dp — kamera üçün etibarlı oxuma ölçüsü
+                            // (VLM: "~160dp looks too small for reliable scanning")
+                            QrCode(payload = "STATIC-${acct.venueId}-${acct.venueName}", size = 200.dp)
                         }
                     }
                     Spacer(Modifier.height(12.dp))
@@ -646,7 +650,8 @@ fun FinishActivitySheet(
                     }
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            // D-063: 24→8dp — SheetScaffold özü artıq 24dp alt boşluq verir
+            Spacer(Modifier.height(8.dp))
         }
     }
 }

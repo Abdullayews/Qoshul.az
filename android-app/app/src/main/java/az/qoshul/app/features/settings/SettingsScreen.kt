@@ -370,10 +370,12 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
 
 @Composable
 private fun SectionLabel(title: String) {
+    // D-063: bölmə başlığı üstü 6→16dp — kart qrupları arası tənəffüs
+    // (VLM: "very little top margin — groups feel cramped")
     Text(title, style = androidx.compose.ui.text.TextStyle(
         fontFamily = JakartaSans, fontSize = 12.5.sp, fontWeight = FontWeight.W700,
         color = Q.mutedFg),
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp, top = 6.dp))
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp, top = 16.dp))
 }
 
 @Composable
@@ -391,7 +393,7 @@ private fun RowItem(icon: ImageVector, label: String, value: String,
     valueColor: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color.Unspecified) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 13.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Icon(icon, null, tint = Q.mutedFg, modifier = Modifier.height(17.dp))
         Spacer(Modifier.padding(6.dp))
@@ -414,7 +416,7 @@ private fun NavRow(
         modifier = Modifier
             .fillMaxWidth()
             .androidxNavRowTap(enabled, onClick)
-            .padding(horizontal = 14.dp, vertical = 13.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Icon(icon, null, tint = Q.mutedFg, modifier = Modifier.height(17.dp))
         Spacer(Modifier.padding(6.dp))

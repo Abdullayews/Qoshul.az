@@ -235,9 +235,10 @@ private fun ForYouView(
                 }
             }
             item {
-                Spacer(Modifier.height(16.dp))
-                StaggerIn(1) { XpTrack(xp = st.xp) }
+                // D-063: salamlaşma→XP eyni qrup (12dp), XP→növbəti bölmə 16+4=20dp
                 Spacer(Modifier.height(12.dp))
+                StaggerIn(1) { XpTrack(xp = st.xp) }
+                Spacer(Modifier.height(16.dp))
             }
             // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
             val active = engine.activeEvents
@@ -261,7 +262,8 @@ private fun ForYouView(
                             )
                         }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    // D-063: karusel→bölmə 16dp (heading top 4 ilə = 20dp vahid ritm)
+                    Spacer(Modifier.height(16.dp))
                 }
             }
             // — AI seçimi (D-056): aiRecommendations əvvəlcədən var idi, UI-a bağlı deyildi —
@@ -285,7 +287,8 @@ private fun ForYouView(
                                 onClick = { detailEvent = e })
                         }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    // D-063: 20→16dp (vahid ritm)
+                    Spacer(Modifier.height(16.dp))
                 }
             }
             // — Populyar məkanlar —
@@ -316,7 +319,8 @@ private fun ForYouView(
                             )
                         }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    // D-063: 20→16dp (vahid ritm)
+                    Spacer(Modifier.height(16.dp))
                 }
             }
             // — Sənə uyğun insanlar —
@@ -354,7 +358,8 @@ private fun ForYouView(
                             )
                         }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    // D-063: 20→16dp (vahid ritm)
+                    Spacer(Modifier.height(16.dp))
                 }
             }
             // — Endirimli təkliflər —
@@ -383,7 +388,8 @@ private fun ForYouView(
                             )
                         }
                     }
-                    Spacer(Modifier.height(20.dp))
+                    // D-063: 20→16dp (vahid ritm)
+                    Spacer(Modifier.height(16.dp))
                 }
             }
             // — cəmiyyət banneri (D-055: ölü banner deyil — Tərəfdaşlara aparır) —
@@ -452,7 +458,8 @@ private fun AiPickCard(event: QoshulEvent, reason: String, joined: Boolean, onCl
             .androidxLiveTap(interaction, onClick)
             .background(Q.aiBoxBg, RoundedCornerShape(Q.rLg.dp))
             .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
-            .padding(13.dp),
+            // D-063: kart daxili 13→14dp (vahid kart padding-i)
+            .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(14.dp))
@@ -463,11 +470,13 @@ private fun AiPickCard(event: QoshulEvent, reason: String, joined: Boolean, onCl
         Spacer(Modifier.height(8.dp))
         // D-057: 14.5sp — 232dp kartda 2 sətirə rahat yerləşir (16sp-də
         // başlıq ortadan ellipsizə olunurdu — VLM audit tapıntısı)
-        Text(event.title, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        // D-063: minLines=2 — başlıq 1 sətir olsa da kartlar eyni hündür qalır
+        Text(event.title, maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
             style = androidx.compose.ui.text.TextStyle(
                 fontFamily = JakartaSans, fontSize = 14.5.sp, fontWeight = FontWeight.W800))
         Spacer(Modifier.height(6.dp))
-        Text(reason, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        // D-063: minLines=2 — səbəb sətri də vahid hündürlük verir
+        Text(reason, maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
             style = T.meta.copy(lineHeight = 17.sp))
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -513,7 +522,9 @@ private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean,
         }
         // — məlumat —
         Column(Modifier.padding(12.dp)) {
-            Text(event.title, maxLines = 2, overflow = TextOverflow.Ellipsis, style = T.eventTitle)
+            // D-063: minLines=2 — başlıq 1 sətir olsa da kartlar eyni hündür
+            // (dpi ekranda qeyri-bərabər karusel görünürdü — VLM audit sev 4)
+            Text(event.title, maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis, style = T.eventTitle)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.LocationOn, null, tint = Q.mutedFg, modifier = Modifier.size(13.5.dp))

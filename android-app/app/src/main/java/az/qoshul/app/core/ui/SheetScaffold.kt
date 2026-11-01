@@ -53,7 +53,9 @@ fun SheetScaffold(
                 // açıqda yalnız ime, qapalıyken yalnız nav tətbiq olunur.
                 .navigationBarsPadding()
                 .imePadding()
-                .padding(bottom = 12.dp)
+                // D-063: 12→24dp — son düymə/sahə sheet-in alt kənarından
+                // uzaq dursun (gesture nav təhlükəsi, VLM audit tapıntısı)
+                .padding(bottom = 24.dp)
         ) {
             // tutamaq xətti (Flutter-dəki 36x4 qapaq)
             Box(

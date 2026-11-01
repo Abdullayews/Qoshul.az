@@ -2,7 +2,9 @@ package az.qoshul.app.features.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -168,11 +170,15 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             .padding(horizontal = 28.dp)
             .imePadding(),
     ) {
-        Spacer(Modifier.height(44.dp))
-        LogoMark(size = 64.dp)
-        Spacer(Modifier.height(18.dp))
-        Wordmark(fontSize = 27)
-        Spacer(Modifier.height(20.dp))
+        // D-063: üst boşluq 44→36dp; marka ÜFYQİ lockup (logo + wordmark yan-yana) —
+        // əvvəl üst-üstə idi və ikisi üfüqi düzülüşdə "kəsik" görünürdü (VLM audit)
+        Spacer(Modifier.height(36.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LogoMark(size = 46.dp)
+            Spacer(Modifier.width(12.dp))
+            Wordmark(fontSize = 26)
+        }
+        Spacer(Modifier.height(24.dp))
         Text(title, style = T.h1)
         Spacer(Modifier.height(4.dp))
         Text(subtitle, style = T.subtitle)
@@ -257,16 +263,35 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 Spacer(Modifier.width(8.dp))
                 Text("Apple ilə davam et", style = T.button)
             }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                "və ya",
+            Spacer(Modifier.height(12.dp))
+            // D-063: "və ya" ayırıcısı — xətlərlə balanslı (əvvəl 14/6dp
+            // qeyri-bərabər boşluq idi — VLM: "unbalanced margin")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 12.5.sp, color = Q.mutedFg
-                ),
-            )
-            Spacer(Modifier.height(6.dp))
+            ) {
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(1.dp)
+                        .androidxAuthDivider(),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "və ya",
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = JakartaSans, fontSize = 12.5.sp, color = Q.mutedFg
+                    ),
+                )
+                Spacer(Modifier.width(12.dp))
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(1.dp)
+                        .androidxAuthDivider(),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
             if (mode == AuthMode.UP) {
                 FormFieldX("Ad və soyad") {
                     QoshulTextField(value = name, onValueChange = { name = it })
@@ -416,4 +441,9 @@ fun qoshulTextFieldColors() = OutlinedTextFieldDefaults.colors(
     unfocusedTextColor = Q.foreground,
     focusedPlaceholderColor = Q.mutedFg,
     unfocusedPlaceholderColor = Q.mutedFg,
+)
+
+// D-063: "və ya" ayırıcı xətti
+private fun Modifier.androidxAuthDivider(): Modifier = this.then(
+    Modifier.background(Q.border)
 )

@@ -411,13 +411,14 @@ private fun CardFace(
             Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
-                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp)
+                // D-063: alt padding 14→16dp (VLM: "cramped text stacking")
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             Text("${person.firstName}, ${person.age}",
                 style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 19.sp,
+                    fontFamily = JakartaSans, fontSize = 20.sp,
                     fontWeight = FontWeight.W800, color = Color.White))
-            Spacer(Modifier.height(3.dp))
+            Spacer(Modifier.height(4.dp))
             Row {
                 Icon(Icons.Filled.LocationOn, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(11.dp))
                 Spacer(Modifier.width(3.dp))
@@ -449,7 +450,8 @@ private fun CardFace(
                     }
                 }
             }
-            Spacer(Modifier.height(6.dp))
+            // D-063: çiplər → səbəb 6→8dp
+            Spacer(Modifier.height(8.dp))
             Row {
                 Icon(Icons.Filled.AutoAwesome, null,
                     tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
@@ -460,29 +462,31 @@ private fun CardFace(
                         lineHeight = 17.sp, color = Color.White.copy(alpha = 0.7f)))
             }
             if (showActions) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(14.dp))
                 Row {
-                    GlassPill(modifier = Modifier.weight(1f), horizontal = 12.dp, vertical = 11.dp) {
+                    // D-063: həb padding 11→14dp vertikal, mətn 12→13sp —
+                    // əsas fəaliyyət düymələri ~50dp toxunma hədəfi (VLM: "undersized")
+                    GlassPill(modifier = Modifier.weight(1f), horizontal = 12.dp, vertical = 14.dp) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().androidxPassTap(onPass),
                         ) {
-                            Icon(Icons.Filled.Close, null, tint = Q.foreground, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Close, null, tint = Q.foreground, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Keç", style = T.glassText(size = 12))
+                            Text("Keç", style = T.glassText(size = 13))
                         }
                     }
                     Spacer(Modifier.width(10.dp))
-                    GlassPill(modifier = Modifier.weight(2f), horizontal = 12.dp, vertical = 11.dp) {
+                    GlassPill(modifier = Modifier.weight(2f), horizontal = 12.dp, vertical = 14.dp) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().androidxPassTap(onInterested),
                         ) {
-                            Icon(Icons.Filled.Favorite, null, tint = Q.primary, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Filled.Favorite, null, tint = Q.primary, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Maraqlıyam", style = T.glassText(size = 12))
+                            Text("Maraqlıyam", style = T.glassText(size = 13))
                         }
                     }
                 }

@@ -101,9 +101,10 @@ fun EventDetailSheet(
         Column(Modifier.padding(horizontal = 20.dp)) {
             ShadedImage(assetKey = event.image, height = 180.dp,
                 modifier = Modifier.androidxDetailClip())
-            Spacer(Modifier.height(14.dp))
+            // D-063: şəkil→başlıq 14→16dp (VLM: "very little separation")
+            Spacer(Modifier.height(16.dp))
             Text(event.title, style = T.h2)
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 "${event.host} tərəfindən təşkil olunur" +
                     if (event.approval) " · qoşulma təsdiq tələb edir" else "",

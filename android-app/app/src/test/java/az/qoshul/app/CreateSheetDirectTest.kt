@@ -46,15 +46,18 @@ class CreateSheetDirectTest {
         compose.waitForIdle()
     }
 
-    /** Kollaps sətirinə klik ([current] görünən dəyər) → aç. */
+    /** Kollaps sətirinə klik ([current] görünən dəyər) → aç.
+     *  D-063: forma sahələrinin yeri dəyişə bilər — əvvəl scroll et
+     *  (görünməyən node-a klik səssiz uğursuz olur — D-062 dərsi). */
     private fun open(current: String) {
-        compose.onAllNodesWithText(current)[0].performClick()
+        compose.onAllNodesWithText(current)[0].performScrollTo().performClick()
         settle()
     }
 
-    /** Açıq listdən [option] seç (yalnız option kimi mövcud olan mətn). */
+    /** Açıq listdən [option] seç (yalnız option kimi mövcud olan mətn).
+     *  D-063: uzun siyahılarda option scroll gətirilərək kliklənir. */
     private fun pick(option: String) {
-        compose.onNodeWithText(option).performClick()
+        compose.onNodeWithText(option).performScrollTo().performClick()
         settle()
     }
 
@@ -95,6 +98,12 @@ class CreateSheetDirectTest {
         pick("06:00")
 
         // ── İştirak haqqı: Pulsuz → Ödənişli → Pulsuz ──
+        // D-063: forma sahələrinin boşluqları artdı — açılan 200dp siyahı
+        // viewport-dan aşağı düşüb klik səssiz itirdi. Əvvəl formanın ALTDAKI
+        // elementini görünürə gətir → haqq dropdown-u viewportun yuxarısında
+        // qalır və açılan siyahı sığışır (D-062 "görünməyən node" dərsi).
+        compose.onNodeWithText("Qoşulma istəklərini özüm təsdiqləyim").performScrollTo()
+        settle()
         open("Pulsuz")
         compose.onNodeWithText("Ödənişli").assertExists()
         pick("Ödənişli")

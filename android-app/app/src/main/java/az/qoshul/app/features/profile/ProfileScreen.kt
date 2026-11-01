@@ -110,17 +110,19 @@ fun ProfileScreen(
 
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 20.dp, end = 20.dp, top = 13.dp, bottom = 128.dp
+            // D-063: alt 128→132dp — bütün tab ekranlarında vahid (Feed/Events 132)
+            start = 20.dp, end = 20.dp, top = 13.dp, bottom = 132.dp
         ),
     ) {
         // redaktə / ayarlar
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = { editOpen = true }) {
-                    Icon(Icons.Filled.Edit, "Profili redaktə et", modifier = Modifier.size(20.dp))
+                    // D-063: app-header ikonları ilə vahid 22dp (əvvəl 20)
+                    Icon(Icons.Filled.Edit, "Profili redaktə et", modifier = Modifier.size(22.dp))
                 }
                 IconButton(onClick = { nav.push(Route.Settings) }) {
-                    Icon(Icons.Filled.Settings, "Ayarlar", modifier = Modifier.size(20.dp))
+                    Icon(Icons.Filled.Settings, "Ayarlar", modifier = Modifier.size(22.dp))
                 }
             }
         }
@@ -141,9 +143,9 @@ fun ProfileScreen(
                         modifier = Modifier.size(84.dp).androidxAvatarClip(),
                     )
                 }
-                Spacer(Modifier.height(15.dp))
+                Spacer(Modifier.height(12.dp))
                 Text(st.profileName, style = T.h1.copy(fontSize = 24.sp))
-                Spacer(Modifier.height(9.dp))
+                Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RankBadge(label = st.rank)
                     if (st.phoneVerified) {
@@ -162,7 +164,7 @@ fun ProfileScreen(
                         }
                     }
                 }
-                Spacer(Modifier.height(9.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     st.city + " · " + engine.statusLabel(st.status) +
                         (if (st.university.isNotEmpty()) " · ${st.university}"
@@ -174,7 +176,8 @@ fun ProfileScreen(
         // maraqlar (D-054: FlowRow — yan-yana, sətir dolanda qırılır)
         if (st.interests.isNotEmpty()) {
             item {
-                Spacer(Modifier.height(20.dp))
+                // D-063: identiklik qrupu içində 16dp (əvvəl 20 — qeyri-vahid ritm)
+                Spacer(Modifier.height(16.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -192,7 +195,8 @@ fun ProfileScreen(
         // şəxsiyyət testi — D-056: nəticə YOXDURSA CTA banneri, VARSA nəticə + zolaqlar
         if (st.personality == null) {
             item {
-                Spacer(Modifier.height(16.dp))
+                // D-063: bölmə ayrımı 20dp (banner müstəqil bölmədir)
+                Spacer(Modifier.height(20.dp))
                 CommunityBanner(
                     icon = Icons.Filled.Psychology,
                     title = "Şəxsiyyət testi",
@@ -203,7 +207,8 @@ fun ProfileScreen(
             }
         } else {
             item {
-                Spacer(Modifier.height(16.dp))
+                // D-063: bölmə ayrımı 20dp
+                Spacer(Modifier.height(20.dp))
                 // D-061: !! əvəzinə yerli dəyişən — personality recompose
                 // arasında null olsa (nə olar əgər) banner sadəcə gizlənir.
                 val pr = st.personality
@@ -220,7 +225,8 @@ fun ProfileScreen(
         }
         // nişanlar (D-054: FlowRow — yan-yana, alt-alta YOX)
         item {
-            Spacer(Modifier.height(18.dp))
+            // D-063: 18→16dp (heading top 4 ilə = 20dp vahid)
+            Spacer(Modifier.height(16.dp))
             SectionHeading(title = "Nişanlar", icon = Icons.Filled.MilitaryTech)
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -235,7 +241,8 @@ fun ProfileScreen(
         }
         // tez keçidlər
         item {
-            Spacer(Modifier.height(16.dp))
+            // D-063: bölmə ayrımı 20dp (nişanlar→tez keçidlər)
+            Spacer(Modifier.height(20.dp))
             Row {
                 QuickCard(icon = Icons.Filled.TableRestaurant, title = "Rezervlərim",
                     value = "${st.reservations.size}", modifier = Modifier.weight(1f),
@@ -255,9 +262,11 @@ fun ProfileScreen(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 20.dp)
+                    // D-063: 20→16dp — statistika bloku həddindən artıq hündür idi
+                    // (VLM: "vertical padding 30-40dp — wasteful")
+                    .padding(top = 16.dp)
                     .androidxStatsBorders()
-                    .padding(vertical = 20.dp),
+                    .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.Center,
             ) {
                 Row(
@@ -273,7 +282,7 @@ fun ProfileScreen(
         }
         // XP progress
         item {
-            Spacer(Modifier.height(13.dp))
+            Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(prog.nextName ?: "Maksimum",
                     style = androidx.compose.ui.text.TextStyle(
@@ -414,14 +423,15 @@ private fun TraitBars(traits: Map<String, Int>, labels: Map<String, String>) {
     Column {
         labels.forEach { (key, label) ->
             traits[key]?.let { v ->
-                Column(Modifier.padding(bottom = 10.dp)) {
+                // D-063: sətir arası 10→12dp, etiket→bar 4→6dp
+                Column(Modifier.padding(bottom = 12.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(label, style = androidx.compose.ui.text.TextStyle(
                             fontFamily = JakartaSans, fontSize = 11.5.sp, color = Q.mutedFg))
                         Text("$v", style = androidx.compose.ui.text.TextStyle(
                             fontFamily = JakartaSans, fontSize = 11.5.sp, fontWeight = FontWeight.W600))
                     }
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(6.dp))
                     XpBar(progress = v / 100f, height = 4.dp)
                 }
             }

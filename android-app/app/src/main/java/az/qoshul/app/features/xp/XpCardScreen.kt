@@ -109,7 +109,8 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
                         }
                     }
                 }
-                Spacer(Modifier.height(18.dp))
+                // D-063: 18→16dp (vahid bölmə ritmi)
+                Spacer(Modifier.height(16.dp))
             }
             // — 2-ci XP: obyekt bazaları —
             items(accounts.size) { i ->
