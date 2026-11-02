@@ -1,6 +1,8 @@
 package az.qoshul.app.features.shell
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -57,7 +60,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -65,7 +70,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
@@ -85,8 +93,8 @@ import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.Wordmark
-import androidx.compose.runtime.LaunchedEffect
 import az.qoshul.app.core.model.QoshulEvent
+import kotlin.math.roundToInt
 
 /**
  * Əsas tətbiq qabığı — Flutter app_shell.dart portu (ROL C + D-034):
@@ -240,6 +248,14 @@ private fun Header(
  * fon demək olar opaq (şəffaflıq istifadəçi direktivi ilə geri çəkildi),
  * şüşə aksentləri (spekulyar kənar + işıq qradiyenti + yumşaq kölgə)
  * yalnız 10% gücdə. Ölçülər dəyişməz (68dp hündürlük, 24dp radius).
+ *
+ * D-064: Ghost-Downloader-3 (qfluentwidgets NavigationBar) hərəkət dili —
+ * sadələşdirilmiş variant, düymə məntiqi DƏYİŞMƏZ (istifadəçi direktivi):
+ * 1) VAHİD aksent indikator (20×4dp pill) tab-lar ARASINDA sürüşür —
+ * onların NavigationIndicator.startAnimation prinsipi (slot mərkəzləri
+ * layout-dan özüllənir, ölçü/text-scale-dən asılı deyil);
+ * 2) aktiv ikon ~3dp aşağı enir (iconAni.slideDown — bounce LƏĞV);
+ * 3) aktiv item yumşaq kapsul (10% tint) qalır — "tint background".
  */
 @Composable
 private fun GlassNav(
@@ -256,6 +272,10 @@ private fun GlassNav(
         Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
     )
 
+    // Slot mərkəzləri nav koordinatlarında (px) — sürüşən indikator üçün.
+    val slotCenters = remember { mutableStateListOf(0f, 0f, 0f, 0f) }
+    val measured = slotCenters.all { it > 0f }
+
     LiquidGlassSurface(
         modifier = modifier
             .padding(horizontal = 12.dp)
@@ -263,21 +283,49 @@ private fun GlassNav(
         shape = RoundedCornerShape(24.dp),
         intensity = 0.1f,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .height(68.dp)
-                .padding(horizontal = 6.dp),
-        ) {
-            items.forEachIndexed { i, item ->
-                if (i == 2) CreateButton(onCreate)
-                NavItem(
-                    icon = item.icon,
-                    activeIcon = item.activeIcon,
-                    label = item.label,
-                    active = index == i,
-                    onClick = { onChanged(i) },
-                    modifier = Modifier.weight(1f),
+        Box(Modifier.height(68.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 6.dp),
+            ) {
+                items.forEachIndexed { i, item ->
+                    if (i == 2) CreateButton(onCreate)
+                    NavItem(
+                        icon = item.icon,
+                        activeIcon = item.activeIcon,
+                        label = item.label,
+                        active = index == i,
+                        onClick = { onChanged(i) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .onGloballyPositioned { coords ->
+                                val cx = coords.boundsInParent().center.x
+                                if (slotCenters[i] != cx) slotCenters[i] = cx
+                            },
+                    )
+                }
+            }
+            // Ghost-vari sürüşən indikator — ilk ölçmədən sonra görünür
+            // (ilkin dəyər birbaşa hədəfdə doğulur, soldan sürüşmə YOX).
+            if (measured) {
+                val x by animateFloatAsState(
+                    targetValue = slotCenters[index],
+                    animationSpec = tween(Motion.D2, easing = Motion.ease),
+                    label = "navIndicator",
+                )
+                Box(
+                    Modifier
+                        .align(Alignment.BottomStart)
+                        .offset {
+                            IntOffset(
+                                (x - 10.dp.toPx()).roundToInt(),
+                                -5.dp.roundToPx(),
+                            )
+                        }
+                        .size(width = 20.dp, height = 4.dp)
+                        .background(Q.primary, RoundedCornerShape(2.dp))
                 )
             }
         }
@@ -327,7 +375,12 @@ private fun Modifier.shadowNav(): Modifier = this.then(
     )
 )
 
-/** Alt nav item — aktiv: yaşıl kapsul (10%) + filled ikon bounce + nöqtə (D-033). */
+/**
+ * Alt nav item — D-064 Ghost hərəkət dili: aktiv ikon ~3dp AŞAĞI enir
+ * (iconAni.slideDown; bounce LƏĞV), rəng + filled ikon keçidi qalır;
+ * kapsul (10% tint) = Ghost "tint background" qatı. Item-altı nöqtə LƏĞV —
+ * onu nav səviyyəsində SÜRÜŞƏN indikator əvəz edir.
+ */
 @Composable
 private fun NavItem(
     icon: ImageVector,
@@ -338,10 +391,10 @@ private fun NavItem(
     modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val scale by androidx.compose.animation.core.animateFloatAsState(
-        targetValue = if (active) 1.12f else 1f,
-        animationSpec = tween(Motion.D2, easing = if (active) Motion.enter else Motion.ease),
-        label = "navIcon",
+    val dip by animateDpAsState(
+        targetValue = if (active) 3.dp else 0.dp,
+        animationSpec = tween(Motion.D1, easing = Motion.ease),
+        label = "navIconDip",
     )
     val tint by androidx.compose.animation.animateColorAsState(
         targetValue = if (active) Q.primary else Q.mutedFg,
@@ -362,36 +415,16 @@ private fun NavItem(
             if (active) activeIcon else icon, label, tint = tint,
             modifier = Modifier
                 .size(23.dp)
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                },
+                .graphicsLayer { translationY = dip.toPx() },
         )
         Spacer(Modifier.height(5.dp))
-        Box {
-            Text(
-                label,
-                style = androidx.compose.ui.text.TextStyle(
-                    fontFamily = JakartaSans, fontSize = 10.5.sp,
-                    fontWeight = if (active) FontWeight.W700 else FontWeight.W400,
-                    color = if (active) Q.primary else Q.mutedFg,
-                ),
-            )
-            // aktiv nöqtə göstəricisi
-            val dot by androidx.compose.animation.core.animateDpAsState(
-                targetValue = if (active) 4.dp else 0.dp,
-                animationSpec = tween(Motion.D1, easing = Motion.ease),
-                label = "navDot",
-            )
-            if (dot > 0.dp) {
-                Box(
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .graphicsLayer { translationY = 5.dp.toPx() }
-                        .size(dot)
-                        .background(Q.primary, CircleShape)
-                )
-            }
-        }
+        Text(
+            label,
+            style = androidx.compose.ui.text.TextStyle(
+                fontFamily = JakartaSans, fontSize = 10.5.sp,
+                fontWeight = if (active) FontWeight.W700 else FontWeight.W400,
+                color = if (active) Q.primary else Q.mutedFg,
+            ),
+        )
     }
 }
