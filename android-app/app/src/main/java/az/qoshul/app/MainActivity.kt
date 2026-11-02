@@ -1,0 +1,194 @@
+package az.qoshul.app
+
+import android.os.Bundle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import az.qoshul.app.core.engine.AppEngine
+import az.qoshul.app.core.model.EventProposal
+import az.qoshul.app.core.model.Partner
+import az.qoshul.app.core.model.QoshulEvent
+import az.qoshul.app.core.model.parseAssistantEvent
+import az.qoshul.app.core.ui.ChatFocusState
+import az.qoshul.app.core.ui.GlassNavHost
+import az.qoshul.app.core.ui.MapFocusState
+import az.qoshul.app.core.ui.NavState
+import az.qoshul.app.core.ui.Route
+import az.qoshul.app.core.ui.rememberNavState
+import az.qoshul.app.core.theme.QoshulTheme
+import az.qoshul.app.features.assistant.AssistantScreen
+import az.qoshul.app.features.auth.AuthScreen
+import az.qoshul.app.features.coupons.CouponsScreen
+import az.qoshul.app.features.events.CreateEventSheet
+import az.qoshul.app.features.events.FinishActivitySheet
+import az.qoshul.app.features.match.MatchScreen
+import az.qoshul.app.features.notifications.NotificationsScreen
+import az.qoshul.app.features.onboarding.OnboardingScreen
+import az.qoshul.app.features.partners.PartnersScreen
+import az.qoshul.app.features.profile.PersonalityQuizScreen
+import az.qoshul.app.features.reservations.ReservationsScreen
+import az.qoshul.app.features.safety.SafetyScreen
+import az.qoshul.app.features.settings.SettingsScreen
+import az.qoshul.app.features.shell.AppShell
+import az.qoshul.app.features.venues.VenueDetailScreen
+import az.qoshul.app.features.xp.XpCardScreen
+import kotlinx.coroutines.Dispatchers
+
+/**
+ * Tək Activity (D-036): bütün UI Compose; naviqasiya öz back-stack
+ * abstraksiyasıdır (Flutter Navigator pariteti — qərar docs/decisions.md D-036).
+ *
+ * Edge-to-edge (D-031 pariteti): enableEdgeToEdge — məzmun şəffaf status/nav
+ * barların altından axır; insetlər statusBarsPadding/navigationBarsPadding ilə.
+ */
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        // D-051: full-screen sizing — çentikli (cutout) ekranlarda məzmun
+        // bütün displeyə yayılır (default letterbox/qara zolaqlar əvəzinə).
+        if (android.os.Build.VERSION.SDK_INT >= 27) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        setContent {
+            QoshulTheme {
+                QoshulApp()
+            }
+        }
+    }
+}
+
+/**
+ * Kök — Flutter main.dart portu: Auth → Onboarding → AppShell (4 tab).
+ * Mühərrik tətbiq miqyasındadır (composition-da bir dəfə yaradılır);
+ * push-ekranlar GlassNavHost ilə (GlassPageRoute pariteti).
+ * D-050: xəritə fokus vəziyyəti (MapFocusState) burada sahiblənir —
+ * AppShell (tab keçidi) və push-ekranlar (VenueDetail "Yol tap") paylaşır.
+ * D-055: [chatFocus] — Söhbətlər tabına keçid siqnalı (MapFocus pariteti);
+ * onFinishActivity — EventDetail → FinishActivitySheet (əvvəl kəsılırdı,
+ * bitirmə axını bütün 695 sətirlik sheet UI-dan əlçatmaz idi).
+ */
+@Composable
+fun QoshulApp() {
+    val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
+    // M1 (D-078): MOCK → NoopSync; SUPABASE → SupabaseSync (BuildConfig-dən).
+    val sync = remember { az.qoshul.app.core.backend.BackendSync.create(scope) }
+    val engine = remember { AppEngine(scope = scope, sync = sync) }
+    val st by engine.state.collectAsStateWithLifecycle()
+    val nav = rememberNavState()
+    val focus = remember { MapFocusState() }
+    val chatFocus = remember { ChatFocusState() }
+
+    // modal sheet vəziyyətləri
+    var createOpen by remember { mutableStateOf(false) }
+    var createVenue by remember { mutableStateOf<Partner?>(null) }
+    var assistantProposal by remember { mutableStateOf<EventProposal?>(null) }
+    var finishEvent by remember { mutableStateOf<QoshulEvent?>(null) }
+
+    // U2.4 (UI-10): AppShell-ə ötürülən lambda-lar stabilləşdirilir —
+    // yoxsa hər emit-də yeni instansiyalar AppShell-in tam recompose-unu
+    // məcbur edirdi (audit UI-10). Closure delegate üzərindən oxuyur/yazır.
+    val openCreate: () -> Unit = remember { { createOpen = true } }
+    val finishActivity: (QoshulEvent) -> Unit = remember { { e -> finishEvent = e } }
+    val openChat: (QoshulEvent) -> Unit = remember { { e -> chatFocus.event(e.id) } }
+
+    Box(Modifier.fillMaxSize()) {
+        when {
+            !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() }, engine = engine)
+            !st.onboarded -> OnboardingScreen(engine)
+            else -> GlassNavHost(
+                nav = nav,
+                home = {
+                    AppShell(
+                        engine = engine,
+                        nav = nav,
+                        onOpenCreate = openCreate,
+                        focus = focus,
+                        chatFocus = chatFocus,
+                        onFinishActivity = finishActivity,
+                        onOpenChat = openChat,
+                    )
+                },
+            ) { route ->
+                RouteScreen(
+                    route = route,
+                    engine = engine,
+                    nav = nav,
+                    focus = focus,
+                    chatFocus = chatFocus,
+                    onOpenCreateAtVenue = { v -> createVenue = v; createOpen = true },
+                    onOpenAssistantCreate = { proposal ->
+                        assistantProposal = proposal; createOpen = true
+                    },
+                )
+            }
+        }
+    }
+
+    // — Modal sheet-lər (yaratma / bitirmə) —
+    if (createOpen) {
+        CreateEventSheet(
+            engine = engine,
+            onDismiss = {
+                createOpen = false
+                createVenue = null
+                assistantProposal = null
+            },
+            initial = assistantProposal,
+            venue = createVenue,
+        )
+    }
+    // D-055: finishEvent axını İNDİ canlıdır — əvvəl heç kim bu state-i
+    // yazmırdı (EventDetail onFinishActivity {} idi), FinishActivitySheet
+    // (QR → şəkil → taq → XP) 695 sətirlik ölü kod idi.
+    finishEvent?.let { ev ->
+        FinishActivitySheet(engine = engine, event = ev, onDismiss = { finishEvent = null })
+    }
+}
+
+/** Push-ekran yönləndirməsi. */
+@Composable
+private fun RouteScreen(
+    route: Route,
+    engine: AppEngine,
+    nav: NavState,
+    focus: MapFocusState,
+    chatFocus: ChatFocusState,
+    onOpenCreateAtVenue: (Partner) -> Unit,
+    onOpenAssistantCreate: (EventProposal) -> Unit,
+) {
+    when (route) {
+        Route.Partners -> PartnersScreen(engine, nav, onOpenCreateAtVenue)
+        Route.Assistant -> AssistantScreen(engine, nav,
+            onOpenCreate = { lastProposal(engine)?.let(onOpenAssistantCreate) })
+        Route.Notifications -> NotificationsScreen(engine, nav)
+        Route.Match -> MatchScreen(engine, nav,
+            onOpenChat = { p -> chatFocus.friend(p.id) })
+        Route.Coupons -> CouponsScreen(engine, nav)
+        Route.Reservations -> ReservationsScreen(engine, nav)
+        Route.XpCard -> XpCardScreen(engine, nav)
+        Route.Settings -> SettingsScreen(engine, nav)
+        Route.Safety -> SafetyScreen(nav)
+        Route.Quiz -> PersonalityQuizScreen(engine, nav) // D-056
+        is Route.VenueDetail -> VenueDetailScreen(engine, nav, route.venueId, focus)
+    }
+}
+
+/** Assistant-dan son [TƏDBİR] təklifi (create sheet prefill). */
+private fun lastProposal(engine: AppEngine): EventProposal? {
+    val lastAi = engine.state.value.assistantMsgs.lastOrNull { !it.mine } ?: return null
+    return parseAssistantEvent(lastAi.body).proposal
+}
