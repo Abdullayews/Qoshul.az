@@ -1,0 +1,14 @@
+[package]
+name = "qoshul-fonts"
+description = "Qoshul.az font AUDİT CLI (M3, D-081) — subset_fonts.py əvəzi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+
+[[bin]]
+name = "qoshul-fonts"
+path = "src/main.rs"
+
+[dependencies]
+skrifa.workspace = true

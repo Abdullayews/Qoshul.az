@@ -1,0 +1,17 @@
+[package]
+name = "qoshul-jni"
+description = "Qoshul.az JNI körpüsü — Android/Java-VM üçün cdylib (M2, D-080)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+
+[lib]
+name = "qoshul_jni"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+qoshul-core.workspace = true
+jni.workspace = true
+
+[dev-dependencies]
