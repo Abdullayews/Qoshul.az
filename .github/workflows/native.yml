@@ -1,5 +1,5 @@
 # Qoshul.az native (Kotlin + Compose) CI — D-036/D-040.
-# Mövcud Flutter pipeline-i (apk.yml) toxunulmaz; bu job paralel işləyir.
+# Yeganə pipeline: testlər + APK (köhnə Flutter apk.yml D-065 ilə silindi).
 name: Native
 
 on:

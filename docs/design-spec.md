@@ -106,12 +106,15 @@ tünd `Q.foreground` və ya ağ (şəkil üzərində).
 
 ## 4. Fayl strukturu
 
+> D-036 native yenidən yazmadan sonra (2026-11-07, D-065 — köhnə `mobile/` silindi):
+> implementasiya `android-app/`-də, eyni modul bölgüsü ilə.
+
 ```
-mobile/lib/core/widgets/
-├── glass.dart    ← YENİ: GlassSurface, GlassPill, glassText, GlassQuality
-├── motion.dart   ← YENİ: Motion tokenləri + 8 primitiv + GlassPageRoute
-├── ui.dart       ← XpTrack (animasiyalı), CategoryChip (bounce), ...
-└── rol.dart      ← VenueMiniCard/PersonMiniCard (ScaleTap), ...
+android-app/app/src/main/java/az/qoshul/app/core/
+├── glass/Glass.kt   ← GlassSurface, GlassPill, glassText, GlassQuality
+├── motion/Motion.kt ← Motion tokenləri + primitivlər
+├── ui/Ui.kt         ← XpTrack (animasiyalı), CategoryChip (bounce), ...
+└── ui/Nav.kt        ← naviqasiya qatı
 ```
 
 ## 5. Gələcək (backend fazasından sonra)

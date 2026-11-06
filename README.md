@@ -1,190 +1,79 @@
 <div align="center">
 
-# 🤝 Qoshul.az
+# 🤝 Qoshul.az — `server-only` branch
 
-**The social platform of Azerbaijan — profiles, live chat, nearby matches, maps, events and an AI assistant.**
+**Azərbaycanın sosial platforması — profillər, canlı söhbət, yaxınlıqdakı insanlar, xəritə, tədbirlər və AI köməkçi.**
 
-*“Qoşul” means “join.” Target region: Azerbaijan · Interface language: Azerbaijani.*
+⚠️ **Bu branch SERVER_ONLY rejimidir** — server qoşulana qədər heç bir məlumat yoxdur.
 
-[![Flutter](https://img.shields.io/badge/Mobile-Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
-[![NestJS](https://img.shields.io/badge/Backend-NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)](https://nestjs.com)
-[![PostgreSQL](https://img.shields.io/badge/DB-PostgreSQL_17%20%2B%20PostGIS-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![Redis](https://img.shields.io/badge/Cache%2FQueue-Redis%20%2B%20BullMQ-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
-[![Docker](https://img.shields.io/badge/Infra-Docker%20arm64-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
-[![Caddy](https://img.shields.io/badge/Proxy-Caddy-1F73C1?style=for-the-badge&logo=caddy&logoColor=white)](https://caddyserver.com)
+*“Qoşul” sözü “join” deməkdir. Hədəf bölgə: Azərbaycan · İnterfeys dili: Azərbaycan dili.*
+
+[![Kotlin](https://img.shields.io/badge/Dil-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
+[![Compose](https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
+[![CI](https://img.shields.io/github/actions/workflow/status/Abdullayews/Qoshul.az/native.yml?branch=server-only&style=for-the-badge&label=CI)](https://github.com/Abdullayews/Qoshul.az/actions/workflows/native.yml)
 
 </div>
 
 ---
 
-## 🧭 What is this?
+## 🧭 Bu branch nədir?
 
-**Qoshul.az** is a full-stack social platform built for the Azerbaijani
-market. On the surface: user profiles, live chat, a **nearby-people match
-system** powered by PostGIS geography, an interactive map, real-time
-notifications and events — with an AI assistant on call underneath.
+**SERVER_ONLY rejimi** (D-050/D-052): tətbiq **heç bir demo/fake məlumat
+ehtiva etmir** — bütün siyahılar boşdur, giriş yalnız real server
+autentifikasiyası ilə (`POST /auth/login`, OkHttp `ApiClient`). Paket adı
+`az.qoshul.app.server` (main branch-dakı demo APK ilə paralel quraşdırma),
+adı **“Qoshul Server”**.
 
-Under the hood it's a carefully-argued architecture: a **Flutter mobile
-app** in strict Clean Architecture (BLoC, feature-first), a **NestJS
-modular monolith**, **PostgreSQL 17 + PostGIS 3** for data and geo
-queries, **Socket.IO over a Redis adapter** for realtime, **BullMQ** for
-jobs, and a full **Oracle Cloud Always Free** hosting topology — with
-every technical decision written down and sourced in
-[`docs/decisions.md`](docs/decisions.md).
+Demo məlumatlı tam versiya **`main`** branch-dadır.
 
-## ✨ Product features
+## ✨ Məhsul funksiyaları (server qoşulanda aktivləşəcək)
 
 | | |
 |---|---|
-| 👤 **Profiles** | Accounts with verification, photos, interests |
-| 📍 **Match & map** | Nearby-people matching on PostGIS `geometry(Point)` + interactive map |
-| 💬 **Live chat** | Socket.IO + Redis adapter, read receipts |
-| 🔔 **Real-time notifications** | FCM push via BullMQ queues |
-| 📅 **Events** | Discover and join local events |
-| 🏟️ **Venues & partners** | Browse places and partner spots |
-| 🎟️ **Coupons & reservations** | Deals and bookings through partners |
-| 🛡️ **Safety** | Reporting & blocking, image moderation *(planned m4+)* |
-| 🤖 **AI assistant** | Per-user rate-limited AI proxy |
-| 🌐 **AZ-first** | Interface fully in Azerbaijani |
+| 👤 **Profillər** | Şəxsiyyət testi, maraqlar, şəkillər |
+| 📍 **Match & xəritə** | Yaxınlıqdakı insanlar + canlı xəritə (OpenFreeMap) |
+| 💬 **Söhbətlər** | Canlı söhbət axınları (backend fazasında real vaxt rejimi) |
+| 🔔 **Bildirişlər** | Tədbir/XP/rezerv bildirişləri |
+| 📅 **Tədbirlər** | Kəşf, yaratma, iştirak, bitirmə (XP verir) |
+| 🏟️ **Obyektlər & partnyorlar** | Məkanlar, partnyor endirimləri, biznes rejimi |
+| 🎟️ **Kuponlar & rezervasiyalar** | QR kod ilə təsdiq (real, skan edilən QR) |
+| ⚡ **İkili XP** | Peşəkarlıq XP + obyektə-məxsus Endirim XP |
+| 🛡️ **Təhlükəsizlik** | Şikayət/blok müdafiə qatı |
+| 🤖 **AI köməkçi** | Tədbir təklifi edən köməkçi (backend fazasında proxy) |
+| 🌐 **AZ-first** | İnterfeys tam Azərbaycan dilində |
 
-## 🛠️ Tech stack — the immutable set
+## 🛠️ Texniki stack
 
-| Layer | Technology |
+| Qat | Texnologiya |
 |---|---|
-| Mobile | **Native Kotlin + Jetpack Compose** (`android-app/` — D-036; AGP 9.5, Compose BOM 2026.09, saf-Kotlin mühərrik + StateFlow) · köhnə: Flutter (`mobile/`, paritet təsdiqinə qədər) |
-| API contract | OpenAPI schema → generated Dart client |
-| Backend | **NestJS** (TypeScript) — modular monolith (no microservices / gRPC) |
-| Realtime | **Socket.IO + Redis adapter** |
-| Database | **PostgreSQL 17 + PostGIS 3** (Drizzle ORM; coordinates as `geometry(Point)`, geo ops in raw SQL) |
-| Cache / queue | **Redis + BullMQ** |
-| Auth | Custom **JWT (access + refresh)**, Google/Apple ID token validation, email verification; optional SMS OTP with hard rate limits |
-| Media | Oracle Cloud Object Storage (S3-compatible API) — public bucket, CDN planned later |
-| Push | **FCM** |
-| Proxy | **Caddy** (TLS/ACME) |
-| CI/CD | **GitHub Actions** — lint, Vitest, build, multi-arch Docker (arm64 mandatory), APK |
-| Monitoring | Prometheus + Grafana · Sentry (optional) |
+| Dil | **Kotlin** (AGP 9.5, Gradle 9.8.2) |
+| UI | **Jetpack Compose** (Material 3) |
+| Arxitektura | Tək `:app` modulu; saf-Kotlin `AppEngine` + `StateFlow`; `QoshulDataSource` kontraktı — bu branchda `ServerQoshulDataSource` (boş) + OkHttp `ApiClient` |
+| Xəritə | **MapLibre Compose + OpenFreeMap** — açarsız, pulsuz (D-048) |
+| QR | **Nayuki QR-Code-generator v1.8.0** (vendored, MIT) + ZXing sübut testləri (D-041) |
+| Test | **87 JVM testi** — məntiq + QR sübutu + Robolectric UI + ServerMode |
+| CI | **GitHub Actions** — `native.yml` (bu branchda da işləyir) |
 
-## ☁️ Hosting topology — Oracle Cloud Always Free (Ampere A1)
+## 🌿 İkili versiya (D-050)
 
-```
-             ┌──────────── Oracle A1 (ARM, 2 OCPU / 12 GB total) ────────────┐
-             │ VM1 (1 OCPU / 6 GB)              VM2 (1 OCPU / 6 GB)         │
-Flutter(APK)─▶│  Caddy :443 (TLS/ACME)           PostgreSQL 17 + PostGIS     │
-             │   └─ NestJS :4000 (modules)       :5432 — VM1 only           │
-             │   └─ Redis :6379 (cache/BullMQ)  (private VCN; NSG notes:    │
-             │        private network ─────────▶   runbook.md §2)            │
-             └────────────────────────────┬─────────────────────────────────┘
-                                          │ daily pg_dump (via VM1)
-                                          ▼
-                              Oracle Object Storage (same tenancy)
-                              · qoshul-media (public)  — media
-                              · qoshul-backup (private) — backups
-                              (S3 compat API · 20 GB · 50K req/mo · 10 TB egress)
-```
-
-Block volume: **200 GB total** = 2×47 GB boot + ~106 GB on VM2
-(`/mnt/qoshul-pgdata`).
-
-**External dependencies** (can't move into Oracle — see
-`docs/decisions.md` D-020): GitHub (code+CI) · FCM · Google/Apple OAuth ·
-AI provider · SMTP provider (OCI blocks port 25) · DNS.
-
-## 📁 Repository structure
-
-```
-Qoshul.az/
-├── README.md · Makefile · .env.example · .editorconfig
-├── docs/            architecture.md · runbook.md · decisions.md
-├── android-app/     Native (Kotlin + Compose) — D-036 yenidən yazma (beta)
-├── mobile/          Flutter — core/ + features/<name>/{data, domain, presentation} (paritet təsdiqinə qədər saxlanılır)
-│                    features: auth · profile · match · map · chats · feed · events
-│                             venues · partners · coupons · reservations · safety
-│                             notifications · onboarding · settings · assistant · shell
-├── backend/         NestJS — common · config · database · queue · modules/
-│                    modules: auth · profile · match · map · chat · events
-│                            notifications · assistant
-└── infra/
-    ├── docker/      postgres/ (PG17+PostGIS, arm64) · backend.Dockerfile · caddy/
-    ├── compose/     dev.yml · vm1.yml · vm2.yml (host-agnostic — moving to Hetzner = .env + DNS)
-    ├── backup/      pg_dump → object storage
-    ├── monitoring/  Prometheus / Grafana / Sentry
-    └── ci/          GitHub Actions multi-arch
-```
-
-## 🚦 Phase status
-
-| # | Phase | Status |
+| Branch | Rejim | Nə deməkdir |
 |---|---|---|
-| 1 | Monorepo + Docker Compose (arm64) + .env.example + README | ✅ |
-| 2 | Backend skeleton: NestJS, Drizzle, PostGIS migration, health, Swagger | ⬜ |
-| 3 | Auth: registration, login, refresh, Google/Apple, email verification | ⬜ |
-| 4 | Profile + Match (PostGIS proximity) + Events | ⬜ |
-| 5 | Chat: Socket.IO + Redis adapter, read receipts | ⬜ |
-| 6 | Notifications: FCM + BullMQ | ⬜ |
-| 7 | Flutter: skeleton, OpenAPI client, auth + profile screens | ⬜ |
-| 8 | Flutter: map, chat, notifications | ⬜ |
+| `main` | **PLACEHOLDER** | Bütün funksiyalar demo məlumatla dolu; vahid demo hesabı ilə bir toxunuşla giriş |
+| `server-only` ◀ | **SERVER_ONLY** | Server qoşulana qədər heç bir məlumat yoxdur; yalnız real server auth |
 
-### Native yenidən yazma (D-036, 2026-10-30)
+## 📚 Sənədlər
 
-`android-app/` — Flutter tətbiqinin **Kotlin + Jetpack Compose** native portu: eyni məhsul
-məntiqi (ROL B–I + D-026 XP iqtisadiyyatı), eyni vizual dil (Q/T tokenləri, Liquid Glass
-minimal, hərəkət dili). Baza auditi: `docs/audit-flutter-v0.7.0.md`.
-Müqayisə (ölçülə bilən metrikalar): release APK **27.4 MB** (arm64-v8a + armeabi-v7a —
-MapLibre vektor xəritə nüvəsi daxil; öz-renderer dövründə 2.5 MB idi), kod 11 900+ sətir Kotlin,
-**77 JVM testi** (67 məntiq + 7 QR-sübut + 3 Robolectric UI).
-Paritet təsdiqi + owner razılığına qədər hər iki tətbiq mövcuddur; CI:
-`.github/workflows/native.yml`. Optimizasiya qatı (D-041..D-046): **real skan edilən QR**
-(Nayuki vendored + ZXing sübut testi), başlanğıc baseline profile + profileinstaller,
-font subsetting (484→327 KB, AZ qlifləri proqramla yoxlanılıb), şəkillər WebP (625→439 KB,
-PSNR >38 dB), R8 full mode + resource optimization, Gradle configuration cache,
-predictive-back opt-in, müvəqqəti brend nişanı (web favicon motivi — hamısı dəyişəcək).
-Xəritə (D-048): **MapLibre Compose 0.20 + OpenFreeMap** — GPU vektor render, hamar
-pinch/pan/fırlanma, stil qatları pinlər, açarsız və pulsuz (istifadəçi direktivi
-"MapLibre yaxşıdırsa onu işlət"; D-038-in öz-renderer seçimi ləğv edildi).
+- [`docs/decisions.md`](docs/decisions.md) — hər texniki qərar + mənbəsi
+- [`docs/product-spec.md`](docs/product-spec.md) — məhsul spektri: rollar, axınlar, XP/kupon/rezerv qaydaları
+- [`docs/design-spec.md`](docs/design-spec.md) — Liquid Glass minimal dizayn dili + hərəkət dili
 
-**İkili versiya (D-050, v0.9.0/4 — 81 test):** iki branch, iki rejim —
-`AppConfig.MODE` ilə:
-- **`main` = PLACEHOLDER**: bütün funksiyalar fake/demo məlumatla dolu görünür +
-  **vahid hardcoded demo hesabı** (`engine.signInDemo()` — bir toxunuşla dolu profil).
-  UI sınağı, investor demo, marketinq üçün.
-- **`server-only` = SERVER_ONLY**: serverə qoşulana qədər HEÇ BİR məlumat yoxdur —
-  giriş yalnız real server auth (`POST /auth/login`) ilə, mənbə siyahıları boş,
-  `applicationId az.qoshul.app.server` (paralel quraşdırma), ad "Qoshul Server".
-  Fake data koda sızmır: bütün UI `engine.dataSource` kontraktından oxuyur.
+## 🗃️ Tarixçə qeydi
 
-v0.9.0 mükəmməlləşdirmə turu (D-051): bütün ölü naviqasiya düymələri canlandı —
-feed kartları (məkan → detal, insan → Match, endirim → Kuponlar), xəritə alt kartının
-"Ətraflı/Rezerv et/Tanış ol" düymələri, "Yol göstər"/"Yol tap" (xəritəyə uçur —
-`MapFocusState`), "Məkan rezerv et" bannerı.
-| 9 | AI assistant proxy (per-user limits) | ⬜ |
-| 10 | Infra: Caddy prod, multi-arch CI, backups, monitoring | ⬜ |
+Bu depo əvvəl Flutter tətbiqi (`mobile/`) + backend/infra skeletini ehtiva edirdi.
+Native yenidən yazma (D-036) pariteti təsdiqləndikdən sonra köhnə qalıqlar
+silindi (D-065, 2026-11-07) — tarixə `git log` ilə geri qayıtmaq olar.
 
-## 🚀 Quickstart (local dev)
+## 📄 Lisenziya
 
-```bash
-cp .env.example .env      # fill POSTGRES_PASSWORD — enough for local dev
-make dev                  # brings up PG17+PostGIS (built) + Redis
-# PG: 127.0.0.1:5432 · Redis: 127.0.0.1:6379
-```
-
-> Also works on ARM Macs — all images are verified `linux/arm64`
-> (`docs/decisions.md`). The official `postgis/postgis` image is
-> amd64-only, so this repo builds **its own** PostGIS image
-> (`infra/docker/postgres/`) — reasoning in `docs/decisions.md` D-002.
-
-## 📚 Documentation
-
-- [`docs/architecture.md`](docs/architecture.md) — request flow, modules, queues, contracts
-- [`docs/runbook.md`](docs/runbook.md) — provisioning, NSG, deploys, the **20% idle-reclaim rule**, backups, moving to Hetzner
-- [`docs/decisions.md`](docs/decisions.md) — every technical claim with its source (rule 2 registry)
-
-## 📏 Working rules (short version)
-
-1. Secrets only in `.env` (chmod 600) and CI secrets — never in code.
-2. Every technical claim is sourced in `docs/decisions.md`; unsourced = “unproven”.
-3. Every endpoint: DTO + input validation + rate limit. Every module: Vitest.
-4. Image moderation + report/block flows are designed in from m4+.
-
-## 📄 License
-
-Personal startup project — built in the open, one phase at a time.
+Şəxsi startap layihəsi — açıq şəkildə, mərhələ-mərhələ qurulur.
