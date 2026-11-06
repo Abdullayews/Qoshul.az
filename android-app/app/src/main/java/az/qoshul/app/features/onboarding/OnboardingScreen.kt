@@ -332,7 +332,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                 when {
                     name.isBlank() -> error = "Adını yaz."
                     birth == null -> error = "Doğum tarixini seç."
-                    birth?.let { !XpRules.isAdult(it) } == true ->
+                    birth?.let { !XpRules.isAdult(it, engine.today()) } == true ->
                         error = "Qoshul 18+ platformadır. (Rəsmi yaş həddi təsdiq gözləyir)"
                     else -> {
                         val parts = name.trim().split(Regex("\\s+"))
@@ -411,13 +411,15 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
         Text("Maraqlarını seç", style = T.h1)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Ən azı ${XpRules.MIN_INTERESTS}, ən çoxu ${XpRules.MAX_INTERESTS} kateqoriya. " +
+            // D-074 (istifadəçi qərarı, 2026-11-07): maraq seçimi LIMITSİZ —
+            // köhnə maksimum-8 həddi ləğv olundu; minimum 3 qalır.
+            "Ən azı ${XpRules.MIN_INTERESTS} kateqoriya — limit yoxdur, istədiyin qədər seç. " +
                 "Bunlar kəşf axınını, match sırasını və bildirişləri müəyyən edir.",
             style = T.subtitle,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Seçilib: ${selected.value.size}/${XpRules.MAX_INTERESTS}",
+            "Seçilib: ${selected.value.size}",
             style = androidx.compose.ui.text.TextStyle(
                 fontFamily = JakartaSans, fontSize = 12.5.sp, fontWeight = FontWeight.W700
             ),
@@ -440,9 +442,8 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
                         RoundedCornerShape(Q.rLg.dp),
                     )
                     .clickable {
-                        selected.value = if (isSel) selected.value - c
-                        else if (selected.value.size < XpRules.MAX_INTERESTS) selected.value + c
-                        else selected.value
+                        // D-074: limitsiz — maksimum hədd yoxdur
+                        selected.value = if (isSel) selected.value - c else selected.value + c
                     }
                     .padding(horizontal = 14.dp, vertical = 13.dp),
             ) {

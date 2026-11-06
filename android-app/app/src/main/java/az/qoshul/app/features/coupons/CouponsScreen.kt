@@ -40,6 +40,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
+import az.qoshul.app.core.model.CouponOffer
+import az.qoshul.app.core.model.CouponPurchase
+import az.qoshul.app.core.model.SpendError
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.motion.StaggerIn
@@ -60,6 +63,8 @@ import az.qoshul.app.core.ui.Segmented
 fun CouponsScreen(engine: AppEngine, nav: NavState) {
     var tab by remember { mutableIntStateOf(0) }
     var qrCoupon by remember { mutableStateOf<az.qoshul.app.core.model.UserCoupon?>(null) }
+    // N2 (M0): kupon alışı uğursuzluğu SƏBƏBİ İLƏ görünəndir (səssiz-null yox)
+    var buyError by remember { mutableStateOf<String?>(null) }
     val st by engine.state.collectAsState()
 
     PushScreenScaffold(title = "Endirimlər", onBack = { nav.pop() }) { mod ->
@@ -90,6 +95,11 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                     }
                     Spacer(Modifier.height(14.dp))
                     Segmented(listOf("Endirimlər", "Kuponlarım"), tab) { tab = it }
+                    // N2 (M0): alınış uğursuzsa səbəb burada görünür
+                    buyError?.let { msg ->
+                        Spacer(Modifier.height(10.dp))
+                        Text(msg, style = T.meta.copy(color = Q.destructive))
+                    }
                 }
                 if (tab == 0) {
                     val visible = engine.visibleOffers
@@ -113,7 +123,11 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                     } else {
                                         {
                                             Button(
-                                                onClick = { engine.buyCoupon(o.id) },
+                                                onClick = {
+                                                    val r = engine.buyCoupon(o.id)
+                                                    buyError = (r as? CouponPurchase.Failure)
+                                                        ?.let { buyErrorText(it.error, o) }
+                                                },
                                                 enabled = o.unlockedFor(st.rankIndex) &&
                                                     (st.venueXp[o.venueId]?.balance ?: 0) >= o.xpPrice,
                                                 modifier = Modifier.height(32.dp),
@@ -139,23 +153,24 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                         }
                     } else {
                         itemsIndexed(st.coupons) { _, c ->
+                            val active = c.isActive(engine.now()) // A2: vahid clock
                             Column(
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 12.dp)
-                                    .androidxCouponCard(c.isActive)
+                                    .androidxCouponCard(active)
                                     .padding(14.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         Modifier
                                             .size(46.dp)
-                                            .androidxCouponIconBg(c.isActive),
+                                            .androidxCouponIconBg(active),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Icon(
-                                            if (c.isActive) Icons.Filled.ConfirmationNumber else Icons.Filled.Block,
-                                            null, tint = if (c.isActive) Q.accentFg else Q.mutedFg,
+                                            if (active) Icons.Filled.ConfirmationNumber else Icons.Filled.Block,
+                                            null, tint = if (active) Q.accentFg else Q.mutedFg,
                                             modifier = Modifier.size(21.dp),
                                         )
                                     }
@@ -166,14 +181,15 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                             fontWeight = FontWeight.W800))
                                         Spacer(Modifier.height(4.dp))
                                         Text(
-                                            c.venueName + " · " + c.code + "\n" + c.statusLabel +
-                                                (if (c.isActive) " · ${c.daysLeft} gün qalıb" else ""),
+                                            c.venueName + " · " + c.code + "\n" +
+                                                c.statusLabel(engine.now()) +
+                                                (if (active) " · ${c.daysLeft(engine.now())} gün qalıb" else ""),
                                             style = T.meta,
                                         )
                                     }
                                     TextButton(
                                         onClick = { qrCoupon = c },
-                                        enabled = c.isActive,
+                                        enabled = active,
                                     ) { Text("QR göstər") }
                                 }
                             }
@@ -215,6 +231,18 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
 private fun Modifier.androidxBannerBg(): Modifier = this.then(
     Modifier.background(Q.secondary, RoundedCornerShape(Q.rLg.dp))
 )
+
+/** N2 (M0): typed alış xətasının istifadəçiyə görünən mətni. */
+private fun buyErrorText(error: SpendError, offer: CouponOffer): String = when (error) {
+    SpendError.OFFER_NOT_FOUND -> "Təklif tapılmadı."
+    SpendError.AUTO_ONLY -> "Bu endirim səviyyə ilə avtomatik açılır — XP ilə alınmır."
+    SpendError.LEVEL_LOCKED ->
+        "Bu endirim üçün səviyyə çatmır — ${XpRules.rankNames[offer.minRankIndex]}+ lazımdır."
+    SpendError.NO_ACCOUNT -> "Bu obyektin XP hesabı tapılmadı."
+    SpendError.INSUFFICIENT_BALANCE ->
+        "Balansda kifayət qədər XP yoxdur — yalnız hesabda olan qədər istifadə oluna bilər."
+    else -> "Kupon alınmadı."
+}
 
 private fun Modifier.androidxCouponCard(active: Boolean): Modifier = this.then(
     Modifier

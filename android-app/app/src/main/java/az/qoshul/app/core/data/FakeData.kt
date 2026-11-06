@@ -30,7 +30,18 @@ object FakeQoshulDataSource : QoshulDataSource {
     private val imgFriends = ImageKey.FRIENDS
 
     private fun LocalDate.epochDay(): Int = toEpochDay().toInt()
-    private val today: LocalDate = LocalDate.now()
+
+    /**
+     * N10 (M0): demo datasının "bu gün"ü — LAZY + test hook.
+     * `todayOverride` İLK TOXUNMADAN ƏVVƏL təyin edilsə, bütün tarix-nisli
+     * demo data (events, bildirişlər) həmin tarixə görə qurulur — gecə yarısı
+     * keçidi (e2 epochDay = today) flake-i aradan qalxır, testlər tam frozen
+     * olur. Produksiyada toxunulmur → LocalDate.now(). A2-nin tək-plateau
+     * qaydası: engine clock-u ilə eyni gün təyin edilsə, tutarlılıq tamdır.
+     */
+    @Volatile var todayOverride: LocalDate? = null
+
+    private val today: LocalDate by lazy { todayOverride ?: LocalDate.now() }
 
     /** Növbəti həftə günü (bugündən sonra). */
     private fun nextDow(dow: DayOfWeek): Int {
@@ -108,7 +119,8 @@ object FakeQoshulDataSource : QoshulDataSource {
     // findCity — interfeys default-metodudur (City?; çağıran fallback edir).
 
     // ── Mock tədbirlər — realistik Azərbaycan məzmunu (birebir port) ──
-    override val events = listOf(
+    // N10: LAZY — `today` ilk oxunuşda dondurulur (todayOverride hook-u işləsin)
+    override val events: List<QoshulEvent> by lazy { listOf(
         QoshulEvent(
             id = "e1", title = "Şənbə səhəri qəhvə və söhbət", category = "Qəhvə",
             image = imgCoffee, city = "Bakı", location = "Coffee Lab, Nərimanov",
@@ -271,7 +283,7 @@ object FakeQoshulDataSource : QoshulDataSource {
                 "oyunçular üçün. Yeni başlayanlara ayrıca masa olacaq.",
             level = "Peşəkar", price = 10,
         ),
-    )
+    ) }
 
     // ── Mock insanlar — web data.ts + ROL D kart sahələri ──
     override val people = listOf(
@@ -514,8 +526,8 @@ object FakeQoshulDataSource : QoshulDataSource {
         ),
     )
 
-    // ── İlkin bildirişlər (ROL H) ──
-    override val initialNotifications = listOf(
+    // ── İlkin bildirişlər (ROL H) — N10: LAZY (todayOverride ilə tutarlı) ──
+    override val initialNotifications: List<AppNotification> by lazy { listOf(
         AppNotification(
             id = "n1", type = NotifType.NEARBY_EVENT,
             title = "Yaxınlıqda uyğun tədbir",
@@ -534,7 +546,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             body = "Padel oyunu — bu gün 18:00, Padel Arena.",
             at = LocalDateTime.now().minusDays(1).minusHours(3), read = true,
         ),
-    )
+    ) }
 
     // ── D-026 (L.2): ilkin obyektə-məxsus Endirim XP hesabları ──
     // FRESH instance-lar (mutable hesablar singleton-da paylaşıla bilməz);
@@ -578,6 +590,12 @@ object FakeQoshulDataSource : QoshulDataSource {
                     "Təşkilatçı + 4 taq edilən iştirakçı — \"Piknik günü\"",
                     LocalDateTime.of(2026, 10, 4, 17, 20)),
             )),
+        // A3 (M0, 2026-11-07): v3 (Techno Hub) əvvəllər YOX idi — partners ⊆
+        // venueXp invariantı pozulurdu (o5 → v3 yolu səssiz-null idi).
+        // Balans 0: obyektdə hələ XP aktivitesi keçirilməyib (o5 səviyyə-avto);
+        // "yalnız hesabda var olan qədər" qaydası ilə 0 balans = xərcləmə yoxdur.
+        "v3" to account("v3", "Techno Hub", 0,
+            VenueXpConfig(xpPerAzn = 20, maxDiscountPercent = 15, minBillAzn = 0), emptyList()),
     )
 
     private fun account(

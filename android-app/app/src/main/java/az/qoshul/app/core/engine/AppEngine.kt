@@ -10,6 +10,7 @@ import az.qoshul.app.core.model.AssistantParse
 import az.qoshul.app.core.model.BadgeDef
 import az.qoshul.app.core.model.ChatMessage
 import az.qoshul.app.core.model.CouponOffer
+import az.qoshul.app.core.model.CouponPurchase
 import az.qoshul.app.core.model.EventProposal
 import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.model.MapVisibility
@@ -22,6 +23,7 @@ import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.model.ReportEntry
 import az.qoshul.app.core.model.ResvStatus
 import az.qoshul.app.core.model.Reservation
+import az.qoshul.app.core.model.SpendError
 import az.qoshul.app.core.model.SpendPreview
 import az.qoshul.app.core.model.UserCoupon
 import az.qoshul.app.core.model.VenueXpAccount
@@ -58,7 +60,15 @@ class AppEngine(
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
 ) {
-    private fun now(): LocalDateTime = clock()
+    /**
+     * A2 (M0): vahid vaxt mənbəyi — ARTIQ PUBLİK. Modellerin/UI-ın bütün
+     * "indi" ehtiyacları bu tək nöqtədən ötürülür (clock injeksiyası
+     * bypass edilə bilmir); testlərdə frozen clock məcburidir.
+     */
+    fun now(): LocalDateTime = clock()
+
+    /** A2: tarix ehtiyacı olan UI-lar üçün (xəritə "indi açıqdır", tarix seçici). */
+    fun today(): LocalDate = now().toLocalDate()
 
     // ═══════════════ Daxili dəyişən hal (Flutter field-ləri) ═══════════════
 
@@ -97,15 +107,51 @@ class AppEngine(
     private val xpEventIds = mutableSetOf<String>()
     private val earnedBadgesV = mutableSetOf<String>()
     private var matchXpToday = 0
-    private var matchXpDay: LocalDate = LocalDate.now()
+    // A2: field-initsializatorlar artıq clock-dan bəslənir (bypass yoxdur)
+    private var matchXpDay: LocalDate = clock().toLocalDate()
     private var reviewXpThisWeek = 0
-    private var reviewXpWeekKey = weekKey(LocalDate.now())
+    private var reviewXpWeekKey = weekKey(clock().toLocalDate())
     private var loginStreakV = 1
-    private var dailyLoginDone = false
+    // B2: son giriş günü (epochDay) — gap semantikası üçün; dailyLoginDone
+    // proses-bayrağı əvəzinə (proseslərarası/saat-keçidi düzgün işləyir)
+    private var lastLoginDayV: Long? = null
 
     // — XP 2: Endirim (obyektə-məxsus, D-026) —
     val venueXp: Map<String, VenueXpAccount> =
         dataSource.initialVenueXp()
+
+    /**
+     * A3 (M0): başlanğıc data invariantları — pozuntu SƏSSİZ deyil, qurulma
+     * anda dərhal xəta (fail-fast; köhnə: v3 Techno Hub hesabsız qalıb
+     * buyCoupon səssiz-null edirdi). M1-də FK, M2-də typed ID-lər bunu
+     * tip səviyyəsinə daşıyacaq.
+     */
+    init {
+        val problems = dataInvariants()
+        check(problems.isEmpty()) {
+            "DataSource invariantları pozulub (A3): ${problems.joinToString("; ")}"
+        }
+    }
+
+    private fun dataInvariants(): List<String> = buildList {
+        dataSource.partners.forEach { p ->
+            if (venueXp[p.id] == null) {
+                add("partner ${p.id} (${p.name}) üçün venue XP hesabı yoxdur")
+            }
+        }
+        dataSource.offers.forEach { o ->
+            if (dataSource.partners.none { it.id == o.venueId }) {
+                add("təklif ${o.id} naməlum obyektə (${o.venueId}) istinad edir")
+            }
+        }
+        dataSource.events.forEach { e ->
+            val vid = e.venueId ?: return@forEach
+            if (dataSource.partners.none { it.id == vid }) {
+                add("tədbir ${e.id} naməlum obyektə ($vid) istinad edir")
+            }
+        }
+    }
+
     private val finishedActivitiesV = mutableSetOf<String>()
     private var xpCardV: XpCardCode? = null
     private var xpCardVenueIdV: String? = null
@@ -206,7 +252,7 @@ class AppEngine(
     val cityEvents: List<QoshulEvent> get() = upcoming.filter { it.city == cityV }
     /** D-054: bugünkü tədbirlər — ana ekranda "Aktiv tədbirlər" zolağı üçün. */
     val activeEvents: List<QoshulEvent>
-        get() = cityEvents.filter { it.epochDay == LocalDate.now().toEpochDay().toInt() }
+        get() = cityEvents.filter { it.epochDay == today().toEpochDay().toInt() }
     val rank: String get() = XpRules.rankForXp(xpV)
     val rankIndex: Int get() = XpRules.rankIndexForXp(xpV)
     val xpProgress: XpRules.XpProgress get() = XpRules.xpProgress(xpV)
@@ -292,16 +338,31 @@ class AppEngine(
         emit()
     }
 
-    /** ROL F: günlük giriş +5; 7 günlük seriya bonusu +30. */
-    fun dailyLogin(today: LocalDate = LocalDate.now()) {
-        if (dailyLoginDone) return
-        dailyLoginDone = true
-        award("login-${today}", XpRules.DAILY_LOGIN_XP)
+    /**
+     * ROL F: günlük giriş +5; 7 günlük seriya bonusu +30.
+     *
+     * B2 (istifadəçi qərarı, 2026-11-07): seriya gap semantikası —
+     *  - dünən gəlibsə: seriya +1 (ardıcıl);
+     *  - 1-2 gün gəlməsə: seriya DONDURULUR (dəyəri yerində qalır);
+     *  - 3+ gün gəlməsə: seriya SIFIRLANIR (bugünkü gün yeni seriyanın 1-inci günüdür).
+     * Giriş edilen hər gün +5 XP verilir; 7-yə çatanda +30 bonus və dövrə yenidən başlayır.
+     * A2: default parametr clock-dan.
+     */
+    fun dailyLogin(today: LocalDate = now().toLocalDate()) {
+        val day = today.toEpochDay()
+        val last = lastLoginDayV
+        if (last != null && day <= last) return // bu gün artıq sayılıb / saat geri
+        val missedDays = if (last == null) 0 else (day - last - 1).toInt()
+        when {
+            missedDays <= 0 -> loginStreakV++ // ardıcıl gün
+            missedDays <= XpRules.STREAK_FREEZE_DAYS -> Unit // dondurulma (B2)
+            else -> loginStreakV = 1 // 3+ gün → sıfırlanma (B2)
+        }
+        lastLoginDayV = day
+        award("login-$today", XpRules.DAILY_LOGIN_XP)
         if (loginStreakV == 7) {
-            award("streak-7-${today}", XpRules.STREAK_BONUS_XP)
+            award("streak-7-$today", XpRules.STREAK_BONUS_XP)
             loginStreakV = 1
-        } else {
-            loginStreakV++
         }
         emit()
     }
@@ -366,8 +427,8 @@ class AppEngine(
         emit()
     }
 
-    /** ROL B axınının sonu: +50 XP, demo host adoptu, günlük giriş, onboarded. */
-    fun finishOnboarding(today: LocalDate = LocalDate.now()) {
+    /** ROL B axınının sonu: +50 XP, demo host adoptu, günlük giriş, onboarded. A2: default clock-dan. */
+    fun finishOnboarding(today: LocalDate = now().toLocalDate()) {
         completeRegistration()
         onboardedV = true
         adoptDemoHostedEvent()
@@ -475,7 +536,7 @@ class AppEngine(
                 time = time,
                 // D-051 fix: ISO tarix yerinə etiket ("Bu gün"/"Sabah"/"Noy 2") —
                 // fake data ilə eyni format, kartlar və "Bu axşam" sayğısı tutarlı.
-                date = dateLabelFor(epochDay.toLong()),
+                date = dateLabelFor(epochDay.toLong(), today()),
                 epochDay = epochDay, past = false,
                 capacity = capacity, participants = 1, host = profileNameV,
                 description = description,
@@ -489,16 +550,24 @@ class AppEngine(
         emit()
     }
 
-    /** ROL F: rəy +15, həftədə max 3. A2 düzəlişi: həftə dönüşündə sıfırlanır. */
-    fun addReview(eventId: String, rating: Int, comment: String, today: LocalDate = LocalDate.now()): Boolean {
+    /**
+     * ROL F: rəy +15, həftədə max 3. A2: həftə dönüşündə sıfırlanır; default clock-dan.
+     *
+     * N3 (M0): həftə slotu yalnız REAL mükafatdan sonra yanır — eyni tədbirə
+     * təkrar rəy (award idempotensiyası) slot YANDIRMIR. Əlavə: tədbir
+     * mövcud olmalıdır (naməlum ID rədd).
+     */
+    fun addReview(eventId: String, rating: Int, comment: String, today: LocalDate = now().toLocalDate()): Boolean {
+        if (eventById(eventId) == null) return false
         val key = weekKey(today)
         if (key != reviewXpWeekKey) {
             reviewXpWeekKey = key
             reviewXpThisWeek = 0
         }
+        if (xpEventIds.contains("review-$eventId")) return false // N3: təkrar — slot yanmır
         if (reviewXpThisWeek >= XpRules.REVIEW_XP_WEEKLY_CAP) return false
+        if (!award("review-$eventId", XpRules.REVIEW_XP)) return false
         reviewXpThisWeek++
-        award("review-$eventId", XpRules.REVIEW_XP)
         emit()
         return true
     }
@@ -534,7 +603,7 @@ class AppEngine(
             "Yeni match: ${p.fullName}",
             "Qarşılıqlı maraq yarandı — söhbəti başlat!",
         )
-        val today = LocalDate.now()
+        val today = now().toLocalDate()
         if (matchXpDay != today) {
             matchXpDay = today
             matchXpToday = 0
@@ -568,7 +637,7 @@ class AppEngine(
         var coupon: UserCoupon? = null
         if (couponCode != null) {
             coupon = couponsV.firstOrNull { it.code == couponCode }
-            if (coupon == null || !coupon.isActive || coupon.venueId != venue.id) return null
+            if (coupon == null || !coupon.isActive(now()) || coupon.venueId != venue.id) return null
         }
         val id = "r${reservationsV.size + 1}"
         val resv = Reservation(
@@ -640,14 +709,27 @@ class AppEngine(
     val visibleOffers: List<CouponOffer>
         get() = offersV.filter { o -> if (o.autoByLevel) o.unlockedFor(rankIndex) else true }
 
-    /** D-026 (L.6): XP ilə kupon al — həmin obyektin Endirim XP balansından. */
-    fun buyCoupon(offerId: String): UserCoupon? {
-        val offer = offersV.firstOrNull { it.id == offerId } ?: return null
-        if (offer.autoByLevel) return null
-        if (!offer.unlockedFor(rankIndex)) return null
-        val acct = venueXp[offer.venueId] ?: return null
-        if (acct.balance < offer.xpPrice) return null
-        acct.spend(offer.xpPrice, "Kupon alındı: ${offer.label}", "xl${ledgerSeq++}")
+    /**
+     * D-026 (L.6): XP ilə kupon al — həmin obyektin Endirim XP balansından.
+     *
+     * N2/A3 (M0): köhnə 5 səssiz-null yolu typed nəticə ilə GÖRÜNƏNDİR —
+     * [CouponPurchase.Failure.error] səbəbi UI-da izahat kimi göstərilir.
+     * B6/istifadəçi qərarı (2026-11-07): balansda VAR OLANDAN çox xərcləmək
+     * olmaz — kupon diskret alışdır, qismən alınmır → REDD.
+     */
+    fun buyCoupon(offerId: String): CouponPurchase {
+        val offer = offersV.firstOrNull { it.id == offerId }
+            ?: return CouponPurchase.Failure(SpendError.OFFER_NOT_FOUND)
+        if (offer.autoByLevel) return CouponPurchase.Failure(SpendError.AUTO_ONLY)
+        if (!offer.unlockedFor(rankIndex)) return CouponPurchase.Failure(SpendError.LEVEL_LOCKED)
+        val acct = venueXp[offer.venueId]
+            ?: return CouponPurchase.Failure(SpendError.NO_ACCOUNT)
+        if (acct.balance < offer.xpPrice) return CouponPurchase.Failure(SpendError.INSUFFICIENT_BALANCE)
+        // B6: spend artıq mənfiləşmir — uğursuzluq (balans preview arası
+        // dəyişibsə) yenə balans xətası kimi görünəndir.
+        if (!acct.spend(offer.xpPrice, "Kupon alındı: ${offer.label}", "xl${ledgerSeq++}", now())) {
+            return CouponPurchase.Failure(SpendError.INSUFFICIENT_BALANCE)
+        }
         val coupon = UserCoupon(
             id = "uc$couponSeq",
             offerId = offer.id,
@@ -667,35 +749,43 @@ class AppEngine(
                 "Vaxtı bitərsə XP geri qaytarılmır.",
         )
         emit()
-        return coupon
+        return CouponPurchase.Success(coupon)
     }
 
-    /** Bu məkanda rezervə tətbiq edilə bilən aktiv kuponlar (ROL E-3). */
+    /** Bu məkanda rezervə tətbiq edilə bilən aktiv kuponlar (ROL E-3). A2: now parametrli. */
     fun activeCouponsFor(venueId: String): List<UserCoupon> =
-        couponsV.filter { it.isActive && it.venueId == venueId }
+        couponsV.filter { it.isActive(now()) && it.venueId == venueId }
 
     // ═════════════════════════ Endirim XP (D-026, product-spec L) ═════════════════════════
 
-    /** L.4-4: xərcləmə önizləməsi — məzənnə + limit yoxlaması. */
+    /**
+     * L.4-4: xərcləmə önizləməsi — məzənnə + limit yoxlaması.
+     *
+     * A1 (M0): xəta açarları TYPED ([SpendError]) — köhnə "hesap" tipo-
+     * orfoqrafiyası UI-da `else -> ""` ilə səssiz yox olurdu.
+     * C1 (istifadəçi qərarı, 2026-11-07): cap/balans aşımında əməliyyat
+     * REDD edilir (CLAMP deyil) — "yalnız hesabda var olan qədəri istifadə
+     * oluna bilər".
+     */
     fun previewSpend(venueId: String, xpAmount: Int, billAzn: Double): SpendPreview {
         val acct = venueXp[venueId]
-            ?: return SpendPreview(false, 0.0, "hesap")
+            ?: return SpendPreview(false, 0.0, SpendError.NO_ACCOUNT)
         if (xpAmount <= 0 || billAzn <= 0) {
-            return SpendPreview(false, 0.0, "hesab")
+            return SpendPreview(false, 0.0, SpendError.INVALID_INPUT)
         }
         // D-061 "nə olar əgər": xp_per_azn konfiqurasiyası 0/negativ gəlsə
         // (gələcək server xp_config cədvəli) sıfıra bölmə/Infinity olmasın.
         if (acct.config.xpPerAzn <= 0) {
-            return SpendPreview(false, 0.0, "hesap")
+            return SpendPreview(false, 0.0, SpendError.BAD_CONFIG)
         }
-        if (acct.balance < xpAmount) return SpendPreview(false, 0.0, "balans")
+        if (acct.balance < xpAmount) return SpendPreview(false, 0.0, SpendError.INSUFFICIENT_BALANCE)
         if (acct.config.minBillAzn > 0 && billAzn < acct.config.minBillAzn) {
-            return SpendPreview(false, 0.0, "minBill")
+            return SpendPreview(false, 0.0, SpendError.BILL_BELOW_MIN)
         }
         val discount = xpAmount.toDouble() / acct.config.xpPerAzn
         val cap = billAzn * acct.config.maxDiscountPercent / 100
         if (discount > cap + 0.001) {
-            return SpendPreview(false, cap, "cap")
+            return SpendPreview(false, cap, SpendError.CAP_EXCEEDED)
         }
         return SpendPreview(true, discount, null)
     }
@@ -710,7 +800,9 @@ class AppEngine(
         // D-061 "nə olar əgər" — preview ilə spend arası hesab yoxa çıxsa
         // (gələcək server sinxronu) !! əvəzinə təyin olunmuş null qayıdışı.
         val acct = venueXp[venueId] ?: return null
-        acct.spend(xpAmount, note, "xl${ledgerSeq++}")
+        // B6 (M0): atomik xərcləmə — spend mənfi balansa yol vermir;
+        // uğursuzluq (preview arası balans dəyişibsə) səssiz deyil.
+        if (!acct.spend(xpAmount, note, "xl${ledgerSeq++}", now())) return null
         notify(
             NotifType.COUPON_EXPIRING,
             "XP endirimi tətbiq olundu",
@@ -739,7 +831,7 @@ class AppEngine(
     /** XP kartı etibarlıdırmı (venue uyğun + vaxt bitməyib + işlənməyib). */
     fun xpCardValidFor(venueId: String): Boolean =
         // D-061: !! zənciri əvəzinə null-safe (vəziyyət paralel dəyişə bilər)
-        xpCardV?.let { card -> xpCardVenueIdV == venueId && card.isValid } == true
+        xpCardV?.let { card -> xpCardVenueIdV == venueId && card.isValid(now()) } == true
 
     // — L.3: təşkilatçı bitirmə axını (statik QR → şəkil → taq) —
 
@@ -758,11 +850,12 @@ class AppEngine(
         val acct = venueXp[venueId] ?: return null
         finishedActivitiesV.add(e.id)
 
-        // Təşkilatçı mükafatı — obyekt bazasına grant.
+        // Təşkilatçı mükafatı — obyekt bazasına grant (A2: at = vahid clock).
         acct.grant(
             XpRules.ORGANIZER_XP,
             "Təşkilatçı mükafatı — \"${e.title}\"",
             "xl${ledgerSeq++}",
+            now(),
         )
 
         val result = ActivityXpResult(
@@ -1016,9 +1109,11 @@ class AppEngine(
     private fun nextSaturdayIso(): String {
         // D-061: nə olar əgər saat/vaxt mənbəyi nasazdırsa — limitsiz
         // dövr qadağanı (7 gündən çox fırlanma mantıq xətası deməkdir).
-        var d = LocalDate.now()
+        // A2: tək vaxt mənbəyi — clock (keçmişdə 2 ayrı LocalDate.now()).
+        val today = now().toLocalDate()
+        var d = today
         var guard = 0
-        while ((d.dayOfWeek != java.time.DayOfWeek.SATURDAY || !d.isAfter(LocalDate.now())) && guard < 400) {
+        while ((d.dayOfWeek != java.time.DayOfWeek.SATURDAY || !d.isAfter(today)) && guard < 400) {
             d = d.plusDays(1)
             guard++
         }

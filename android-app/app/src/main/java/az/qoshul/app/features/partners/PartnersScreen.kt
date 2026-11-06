@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
+import az.qoshul.app.core.model.SpendError
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.VenueXpAccount
 import az.qoshul.app.core.motion.PopIn
@@ -365,12 +366,17 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     val billD = bill.replace(',', '.').toDoubleOrNull() ?: 0.0
                     val xpI = xpSpend.toIntOrNull() ?: 0
                     val p = engine.previewSpend(venueId, xpI, billD)
+                    // A1 (M0): xətalar TYPED — "hesap" tipo-orfoqrafiyası
+                    // səssiz udulurdu; indi hər yolun öz izahatı var.
                     val errText = when (p.error) {
-                        "balans" -> "Balansda kifayət qədər XP yoxdur."
-                        "minBill" -> "Hesab minimum ${acct.config.minBillAzn} ₼ olmalıdır (obyekt qaydası)."
-                        "cap" -> "Endirim hesabın ${acct.config.maxDiscountPercent}%-i həddini aşır — " +
+                        SpendError.INSUFFICIENT_BALANCE -> "Balansda kifayət qədər XP yoxdur — " +
+                            "yalnız hesabda olan qədər istifadə oluna bilər."
+                        SpendError.BILL_BELOW_MIN -> "Hesab minimum ${acct.config.minBillAzn} ₼ olmalıdır (obyekt qaydası)."
+                        SpendError.CAP_EXCEEDED -> "Endirim hesabın ${acct.config.maxDiscountPercent}%-i həddini aşır — " +
                             String.format("%.2f", p.discount) + " ₼-dən çox ola bilməz. Daha az XP yaz."
-                        "hesab" -> "Məbləğ və XP düzgün daxil edilməyib."
+                        SpendError.INVALID_INPUT -> "Məbləğ və XP düzgün daxil edilməyib."
+                        SpendError.NO_ACCOUNT -> "Bu obyektin XP hesabı tapılmadı."
+                        SpendError.BAD_CONFIG -> "Bu obyektin XP məzənnəsi düzgün qurulmayıb — obyektlə əlaqə saxlayın."
                         else -> ""
                     }
                     QoshulTextField(value = bill, onValueChange = { bill = it }, hint = "48.00")

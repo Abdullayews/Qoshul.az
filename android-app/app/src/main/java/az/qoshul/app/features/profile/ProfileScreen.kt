@@ -253,7 +253,7 @@ fun ProfileScreen(
                     onClick = { nav.push(Route.XpCard) })
                 Spacer(Modifier.width(10.dp))
                 QuickCard(icon = Icons.Filled.ConfirmationNumber, title = "Kuponlarım",
-                    value = "${st.coupons.count { it.isActive }}", modifier = Modifier.weight(1f),
+                    value = "${st.coupons.count { it.isActive(engine.now()) }}", modifier = Modifier.weight(1f), // A2: vahid clock
                     onClick = { nav.push(Route.Coupons) })
             }
         }

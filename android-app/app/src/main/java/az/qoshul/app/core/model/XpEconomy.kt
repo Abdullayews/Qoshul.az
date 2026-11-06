@@ -55,14 +55,28 @@ class VenueXpAccount(
     private val _ledger = mutableListOf<XpLedgerEntry>()
     val ledger: List<XpLedgerEntry> get() = _ledger
 
-    fun grant(amount: Int, note: String, id: String, at: LocalDateTime = LocalDateTime.now()) {
+    /**
+     * Qazanma — balansı artırır (L.2).
+     * A2: `at` məcburidir — gizli LocalDateTime.now() bypass-ları aradan qalxıb;
+     * çağıran tərəf (AppEngine) vahid clock-dan ötürür.
+     */
+    fun grant(amount: Int, note: String, id: String, at: LocalDateTime) {
         balance += amount
         _ledger.add(XpLedgerEntry(id, venueId, true, amount, balance, note, at))
     }
 
-    fun spend(amount: Int, note: String, id: String, at: LocalDateTime = LocalDateTime.now()) {
+    /**
+     * Xərcləmə — B6 düzəlişi (M0, 2026-11-07): mənfi balans MÜMKÜN DEYİL.
+     * İstifadəçi qərarı: "kupon XP-si yalnız hesabda var olan qədəri istifadə
+     * oluna bilər" → amount ≤ 0 və ya amount > balans olduqda FALSE qayıdır
+     * və ledger-ə HEÇ NƏ yazılmır (atomiklik: ya tam, ya heç).
+     * A2: `at` məcburidir (vahid clock).
+     */
+    fun spend(amount: Int, note: String, id: String, at: LocalDateTime): Boolean {
+        if (amount <= 0 || amount > balance) return false
         balance -= amount
         _ledger.add(XpLedgerEntry(id, venueId, false, amount, balance, note, at))
+        return true
     }
 
     /** Tarixçə seed-i — balansı DƏYİŞMİR (fake ilkin ledger üçün). */
@@ -82,24 +96,41 @@ class XpCardCode private constructor(
 ) {
     var used: Boolean = false
 
-    val isValid: Boolean get() = !used && LocalDateTime.now().isBefore(expiresAt)
+    /** A2: `at` məcburi — gizli now() yoxdur; çağıran vahid clock verir. */
+    fun isValid(at: LocalDateTime): Boolean = !used && at.isBefore(expiresAt)
 
-    val secondsLeft: Int
-        get() = java.time.Duration.between(LocalDateTime.now(), expiresAt).seconds
+    fun secondsLeft(at: LocalDateTime): Int =
+        java.time.Duration.between(at, expiresAt).seconds
             .toInt().coerceIn(0, XpRules.XP_CARD_TTL_SECONDS)
 
     companion object {
         private var nonceSeq = 7
 
-        /** Yeni kod — TTL 60 saniyə (D-026). Mock deterministik "random". */
-        fun fresh(now: LocalDateTime = LocalDateTime.now()): XpCardCode {
-            val seed = (now.nano / 1000) xor nonceSeq++.hashCode()
-            val rnd = (seed and 0x7FFFFFFF) % 1000000
+        /**
+         * Yeni kod — TTL 60 saniyə (D-026).
+         *
+         * B5 (M0 interfeys hazırlığı): [codeSource] injeksiya olunur — mock
+         * deterministikdir; M1/M2-də server CSPRNG nonce-u EYNİ imza ilə
+         * veriləcək (rand crate). [az.qoshul.app.core.model.XpRules.FALLBACK_CODE_DIGITS]
+         * rəqəm sayı artıq hardcode deyil (N7).
+         */
+        fun fresh(
+            now: LocalDateTime,
+            codeSource: () -> Int = { mockCode(now) },
+        ): XpCardCode {
+            val raw = ((codeSource() % 1_000_000) + 1_000_000) % 1_000_000
+            val code = raw.toString().padStart(XpRules.FALLBACK_CODE_DIGITS, '0')
             return XpCardCode(
-                nonce = "QSHUL-XP-${rnd.toString().padStart(6, '0')}-${(seed and 0x7FFFFFFF) % 97}",
-                fallbackCode = rnd.toString().padStart(6, '0'),
+                nonce = "QSHUL-XP-$code-${raw % 97}",
+                fallbackCode = code,
                 expiresAt = now.plusSeconds(XpRules.XP_CARD_TTL_SECONDS.toLong()),
             )
+        }
+
+        /** Mock deterministik kod (B5 sənədi: crypto-random DEYİL — M1-də əvəz olunur). */
+        private fun mockCode(now: LocalDateTime): Int {
+            val seed = (now.nano / 1000) xor nonceSeq++.hashCode()
+            return (seed and 0x7FFFFFFF) % 1_000_000
         }
     }
 }
@@ -116,10 +147,47 @@ data class ActivityXpResult(
     val total: Int get() = organizerXp + participantsTotal
 }
 
+/**
+ * Xərcləmə/kupon xətaları — TYPED (A1 düzəlişi, 2026-11-07 M0).
+ *
+ * Keçmiş: string açarlar ("hesap"/"hesab"/"balans"/"minBill"/"cap") —
+ * "hesap" tipo-orfoqrafiyası UI-da `else -> ""` ilə SƏSSİM udulurdu.
+ * Rust miqrasiyasında `enum SpendError` paraleli (M2); string açarlar qadağan.
+ */
+enum class SpendError {
+    /** Obyektin XP hesabı tapılmadı (keçmiş "hesap"/"hesab"). */
+    NO_ACCOUNT,
+    /** Məbləğ və ya XP ≤ 0 (keçmiş "hesab"). */
+    INVALID_INPUT,
+    /** xp_config pozuntusu: xpPerAzn ≤ 0 (keçmiş "hesab"). */
+    BAD_CONFIG,
+    /** Hesabda kifayət qədər XP yoxdur (keçmiş "balans") —
+     *  istifadəçi qərarı (2026-11-07): yalnız hesabda VAR OLAN qədər XP
+     *  istifadə oluna bilər, mənfi balans mümkün deyil. */
+    INSUFFICIENT_BALANCE,
+    /** Hesab minimum məbləğdən aşağıdır (keçmiş "minBill"). */
+    BILL_BELOW_MIN,
+    /** Endirim hesabın maksimum faizini aşır (keçmiş "cap"). */
+    CAP_EXCEEDED,
+    // — buyCoupon-a məxsus yollar (N2: 5 səssiz-null yolu görünəndir) —
+    /** Belə təklif yoxdur. */
+    OFFER_NOT_FOUND,
+    /** Səviyyə-avto təklif XP ilə alınmır (yalnız səviyyə ilə açılır). */
+    AUTO_ONLY,
+    /** Səviyyə tələbi ödənilməyib. */
+    LEVEL_LOCKED,
+}
+
 /** previewSpend nəticəsi (L.4-4). */
 data class SpendPreview(
     val ok: Boolean,
     val discount: Double,
-    /** null / 'balans' / 'minBill' / 'cap' / 'hesab' */
-    val error: String?,
+    /** Uğursuzluq səbəbi — typed (A1); uğurda null. */
+    val error: SpendError?,
 )
+
+/** buyCoupon nəticəsi (N2: uğursuzluq səbəbsiz SƏSSİZ deyil, görünəndir). */
+sealed interface CouponPurchase {
+    data class Success(val coupon: UserCoupon) : CouponPurchase
+    data class Failure(val error: SpendError) : CouponPurchase
+}

@@ -6,12 +6,15 @@ import java.time.LocalDate
  * Növbəti günlərin etiketləri: "Bu gün", "Sabah", "Noy 14" (D-050-dən
  * FakeQoshulDataSource-dan ayrıldı — təqvim hesablaması data mənbəyindən
  * asılı deyil, hər iki rejimdə eyni işləyir).
+ *
+ * A2 (M0): `today` məcburidir — gizli LocalDate.now() bypass-ı yoxdur;
+ * çağıran vahid clock-dan (AppEngine.today()) ötürür.
  */
 private val MONTHS = listOf(
     "Yan", "Fev", "Mar", "Apr", "May", "İyn", "İyl", "Avq", "Sen", "Okt", "Noy", "Dek"
 )
 
-fun nextDateLabels(count: Int = 7, today: LocalDate = LocalDate.now()): List<String> {
+fun nextDateLabels(count: Int = 7, today: LocalDate): List<String> {
     return (0 until count).map { i ->
         when (i) {
             0 -> "Bu gün"
@@ -22,7 +25,7 @@ fun nextDateLabels(count: Int = 7, today: LocalDate = LocalDate.now()): List<Str
 }
 
 /** "Noy 14" formatlı gün etiketi (fake data ilə eyni format, D-051). */
-fun dayLabel(d: LocalDate, today: LocalDate = LocalDate.now()): String =
+fun dayLabel(d: LocalDate, today: LocalDate): String =
     "${MONTHS[d.monthValue - 1]} ${d.dayOfMonth}"
 
 /**
@@ -33,7 +36,7 @@ fun dayLabel(d: LocalDate, today: LocalDate = LocalDate.now()): String =
  * D-061 "nə olar əgər": epochDay aralığın xaricində olsa (korlanmış
  * dəyər) LocalDate.ofEpochDay atır — Safety.of "—" placeholder-i qaytarır.
  */
-fun dateLabelFor(epochDay: Long, today: LocalDate = LocalDate.now()): String =
+fun dateLabelFor(epochDay: Long, today: LocalDate): String =
     az.qoshul.app.core.safety.Safety.of(tag = "date-label", fallback = "—") {
         val d = LocalDate.ofEpochDay(epochDay)
         when (d) {

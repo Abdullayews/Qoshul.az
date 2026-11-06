@@ -21,7 +21,11 @@ data class CouponOffer(
     fun unlockedFor(rankIndex: Int): Boolean = rankIndex >= minRankIndex
 }
 
-/** İstifadəçinin aldığı kupon: unikal kod + müddət + birdəfəlik. */
+/** İstifadəçinin aldığı kupon: unikal kod + müddət + birdəfəlik.
+ *
+ * A2 (M0): vaxt hesablamaları gizli LocalDateTime.now() YOX — `at`
+ * parametri ilə; çağıran (AppEngine/UI) vahid clock-dan ötürür.
+ */
 data class UserCoupon(
     val id: String,
     val offerId: String,
@@ -33,22 +37,22 @@ data class UserCoupon(
     val purchasedAt: LocalDateTime,
     var used: Boolean = false,
 ) {
-    val isExpired: Boolean get() = LocalDateTime.now().isAfter(expiresAt)
+    fun isExpired(at: LocalDateTime): Boolean = at.isAfter(expiresAt)
 
     /** 'AKTİV' | 'İSTİFADƏ OLUNDU' | 'VAXTIBİTMİŞ' */
-    val statusLabel: String
-        get() = when {
+    fun statusLabel(at: LocalDateTime): String =
+        when {
             used -> "İSTİFADƏ OLUNDU"
-            isExpired -> "VAXTIBİTMİŞ"
+            isExpired(at) -> "VAXTIBİTMİŞ"
             else -> "AKTİV"
         }
 
-    val isActive: Boolean get() = !used && !isExpired
+    fun isActive(at: LocalDateTime): Boolean = !used && !isExpired(at)
 
     /** Qalan gün sayı. */
-    val daysLeft: Int
-        get() = if (isExpired) 0
-        else java.time.Duration.between(LocalDateTime.now(), expiresAt).toDays().toInt() + 1
+    fun daysLeft(at: LocalDateTime): Int =
+        if (isExpired(at)) 0
+        else java.time.Duration.between(at, expiresAt).toDays().toInt() + 1
 }
 
 // ═══════════════════ Rezervlər (ROL E) — reservation.dart portu ═══════════════════

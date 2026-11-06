@@ -231,9 +231,11 @@ private fun DynamicQrSection(account: VenueXpAccount, engine: AppEngine) {
         }
     }
     val card = engine.state.value.xpCard
+    // A2: kartın etibarlığı/saniyə sayğacı vahid clock-dan (engine.now())
+    val now = engine.now()
     val valid = card != null &&
-        engine.state.value.xpCardVenueId == account.venueId && card.isValid
-    val seconds = card?.secondsLeft ?: 0
+        engine.state.value.xpCardVenueId == account.venueId && card.isValid(now)
+    val seconds = card?.secondsLeft(now) ?: 0
 
     Column {
         Row(verticalAlignment = Alignment.Top) {

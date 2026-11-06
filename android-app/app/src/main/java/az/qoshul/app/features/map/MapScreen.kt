@@ -168,7 +168,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     // D-061: stil yüklənmə uğursuzsa "Yenidən dənə" bütün xəritə qatını
     // (key dəyişdiyi üçün state də daxil) sıfırdan qurur — təkrar cəhd.
     var mapRetry by remember { mutableStateOf(0) }
-    val hour = remember { java.time.LocalDateTime.now().hour }
+    val hour = remember { engine.now().hour } // A2: vahid clock
 
     val myLat = 40.4093
     val myLng = 49.8671

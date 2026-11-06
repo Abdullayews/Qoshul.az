@@ -1,11 +1,17 @@
 package az.qoshul.app
 
 import az.qoshul.app.core.data.FakeQoshulDataSource
+import az.qoshul.app.core.data.QoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
+import az.qoshul.app.core.model.CouponOffer
+import az.qoshul.app.core.model.CouponPurchase
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.model.NotifType
 import az.qoshul.app.core.model.ResvStatus
+import az.qoshul.app.core.model.SpendError
+import az.qoshul.app.core.model.VenueXpAccount
 import az.qoshul.app.core.model.VenueXpConfig
+import az.qoshul.app.core.model.XpCardCode
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.model.isQuietHours
@@ -14,6 +20,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.time.LocalDateTime
 
@@ -269,7 +276,7 @@ class XpEngineTest {
         val e = engine()
         // o3: v4, 100 XP qiyməti, balans 150 ≥ 100, minRank 0 → alınır
         val c = e.buyCoupon("o3")
-        assertNotNull(c)
+        assertTrue(c is CouponPurchase.Success)
         val coupon = e.state.value.coupons.first()
         val v4 = FakeQoshulDataSource.partners.first { it.id == "v4" } // avto-tesdiq
         val r = e.createReservation(
@@ -325,19 +332,20 @@ class XpEngineTest {
         assertFalse(CouponOfferMinRankCheck.o4unlockedFor(0))
     }
 
-    @Test fun `buyCoupon səviyyə catmırsa null`() {
+    @Test fun `buyCoupon uyğun şərtlərdə alınır`() {
         val e = engine() // Aktiv idx 2
         // o2 minRank 2 — uyğundur; balans v1=340 ≥ 300 → alınır
         val c = e.buyCoupon("o2")
-        assertNotNull(c)
+        assertTrue(c is CouponPurchase.Success)
         assertEquals(340 - 300, e.venueXpFor("v1")!!.balance)
     }
 
-    @Test fun `buyCoupon balans catmırsa null`() {
+    @Test fun `buyCoupon balans catmırsa typed xəta ilə rədd (D-072)`() {
         val e = engine()
-        // o1: v2 balans 120 < 200
+        // o1: v2 balans 120 < 200 — "yalnız hesabda var olan qədər istifadə oluna bilər"
         val c = e.buyCoupon("o1")
-        assertNull(c)
+        assertTrue(c is CouponPurchase.Failure)
+        assertEquals(SpendError.INSUFFICIENT_BALANCE, (c as CouponPurchase.Failure).error)
     }
 
     @Test fun `kupon alışı obyekt bazasından düşür — peşəkar XP dəyişmir`() {
@@ -398,6 +406,7 @@ class XpEngineTest {
         assertEquals(0, e.venueXpFor("v6")!!.balance)
         assertEquals(340, e.venueXpFor("v1")!!.balance)
         assertEquals(150, e.venueXpFor("v4")!!.balance)
+        assertEquals(0, e.venueXpFor("v3")!!.balance) // A3: Techno Hub artıq hesablıdır
         assertEquals(325 + 120 + 0 + 340 + 150, e.discountXpTotal)
     }
 
@@ -405,14 +414,14 @@ class XpEngineTest {
         val e = engine()
         val p = e.previewSpend("v2", 200, 50.0)
         assertFalse(p.ok)
-        assertEquals("balans", p.error)
+        assertEquals(SpendError.INSUFFICIENT_BALANCE, p.error)
     }
 
     @Test fun `previewSpend minBill tələbi`() {
         val e = engine()
         val p = e.previewSpend("v5", 100, 5.0) // v5 minBill=10
         assertFalse(p.ok)
-        assertEquals("minBill", p.error)
+        assertEquals(SpendError.BILL_BELOW_MIN, p.error)
     }
 
     @Test fun `previewSpend cap həddi`() {
@@ -420,7 +429,7 @@ class XpEngineTest {
         // v1: maks 30%, 340 balans; 300 XP = 15₼ endirim; hesab 40₼ → cap 12₼ < 15₼
         val p = e.previewSpend("v1", 300, 40.0)
         assertFalse(p.ok)
-        assertEquals("cap", p.error)
+        assertEquals(SpendError.CAP_EXCEEDED, p.error)
         assertEquals(12.0, p.discount, 0.01)
     }
 
@@ -459,8 +468,8 @@ class XpEngineTest {
         assertFalse(e.xpCardValidFor("v2")) // başqa obyekt
         val card = e.state.value.xpCard!!
         assertTrue(card.nonce.startsWith("QSHUL-XP-"))
-        assertEquals(6, card.fallbackCode.length)
-        assertTrue(card.secondsLeft in 0..60)
+        assertEquals(XpRules.FALLBACK_CODE_DIGITS, card.fallbackCode.length)
+        assertTrue(card.secondsLeft(e.now()) in 0..60)
         e.markXpCardUsed()
         assertFalse(e.xpCardValidFor("v5")) // işlənib
     }
@@ -514,20 +523,26 @@ class XpEngineTest {
         val w1 = LocalDate.of(2026, 10, 26) // həftə A
         val w2 = LocalDate.of(2026, 11, 9)  // həftə B
         assertTrue(e.addReview("e0", 5, "əla", w1))
-        assertTrue(e.addReview("e0", 5, "əla", w1))
-        assertTrue(e.addReview("e0", 5, "əla", w1))
-        assertFalse(e.addReview("e0", 5, "əla", w1)) // cap
-        assertTrue(e.addReview("e0", 5, "əla", w2))  // yeni həftə — sıfırlıb
+        assertTrue(e.addReview("e1", 5, "əla", w1))
+        assertTrue(e.addReview("e2", 5, "əla", w1))
+        assertFalse(e.addReview("e3", 5, "əla", w1)) // cap
+        assertTrue(e.addReview("e3", 5, "əla", w2))  // yeni həftə — sıfırlıb
     }
 
-    @Test fun `rəy həftəlik cap 3 (ROL F)`() {
+    @Test fun `rəy həftəlik cap 3 — təkrar rəy slot yandırmır (N3)`() {
         val e = engine()
         e.join("e0")
         val day = LocalDate.of(2026, 10, 26)
         assertTrue(e.addReview("e0", 5, "1", day))
-        assertTrue(e.addReview("e0", 5, "2", day))
-        assertTrue(e.addReview("e0", 5, "3", day))
-        assertFalse(e.addReview("e0", 5, "4", day))
+        assertFalse(e.addReview("e0", 5, "təkrar", day)) // N3: eyni tədbir — slot yanmır
+        assertTrue(e.addReview("e1", 5, "2", day))
+        assertTrue(e.addReview("e2", 5, "3", day))
+        assertFalse(e.addReview("e3", 5, "4", day)) // cap — 3 slot dolub
+    }
+
+    @Test fun `naməlum tədbirə rəy yazılmır (N3)`() {
+        val e = engine()
+        assertFalse(e.addReview("e-nope", 5, "x", LocalDate.of(2026, 10, 26)))
     }
 
     // ── Yaratma ──
@@ -603,6 +618,195 @@ class XpEngineTest {
         assertEquals(MapVisibility.FRIENDS, e.state.value.mapVisibility)
         e.setMapVisibility(MapVisibility.OFF)
         assertEquals(MapVisibility.OFF, e.state.value.mapVisibility)
+    }
+
+    // ═════ M0 (2026-11-07): A1/A2/A3/A4/B2/B5/B6/N2/N3/N7 düzəliş testləri ═════
+
+    /** JUnit4-də assertFailsWith yoxdur (kotlin-test asılılığı almırıq). */
+    private inline fun <reified T : Throwable> assertThrows(block: () -> Unit) {
+        try {
+            block()
+        } catch (ex: Throwable) {
+            if (ex is T) return
+            throw AssertionError(
+                "Gözlənilən ${T::class.simpleName}, alınan ${ex::class.simpleName}", ex,
+            )
+        }
+        fail("Gözlənilən ${T::class.simpleName} atılmadı")
+    }
+
+    @Test fun `A1 typed xətalar — hesab yoxdur və yanlış input`() {
+        val e = engine()
+        assertEquals(SpendError.NO_ACCOUNT, e.previewSpend("v-nope", 100, 50.0).error)
+        assertEquals(SpendError.INVALID_INPUT, e.previewSpend("v1", 0, 50.0).error)
+        assertEquals(SpendError.INVALID_INPUT, e.previewSpend("v1", 100, 0.0).error)
+    }
+
+    @Test fun `A1 BAD_CONFIG — xpPerAzn sıfır olan obyekt`() {
+        val ds = object : QoshulDataSource by FakeQoshulDataSource {
+            override fun initialVenueXp() =
+                FakeQoshulDataSource.initialVenueXp() +
+                    ("v9" to VenueXpAccount("v9", "Test Obyekt", 100, VenueXpConfig(xpPerAzn = 0)))
+        }
+        val e = AppEngine(dataSource = ds)
+        assertEquals(SpendError.BAD_CONFIG, e.previewSpend("v9", 50, 100.0).error)
+    }
+
+    @Test fun `A4 pct-100 invariantı — 0-dan 3000-ə bütün nöqtələr`() {
+        for (xp in 0..3000) {
+            val p = XpRules.xpProgress(xp)
+            if (p.toNext == 0) assertEquals("xp=$xp", 100, p.pct)
+            else assertTrue("xp=$xp pct=${p.pct}", p.pct < 100)
+        }
+    }
+
+    @Test fun `A4 sərhəd dəyərləri — pct 99, toNext 1`() {
+        listOf(99, 299, 699, 1499, 2999).forEach { xp ->
+            val p = XpRules.xpProgress(xp)
+            assertEquals("xp=$xp", 99, p.pct)
+            assertEquals("xp=$xp", 1, p.toNext)
+        }
+    }
+
+    @Test fun `A3 invariant — xəbərdar edən təklif qurulmanı dayandırır`() {
+        val broken = object : QoshulDataSource by FakeQoshulDataSource {
+            override val offers = FakeQoshulDataSource.offers + CouponOffer(
+                id = "o-ghost", venueId = "v-ghost", venueName = "X", label = "Y",
+            )
+        }
+        assertThrows<IllegalStateException> { AppEngine(dataSource = broken) }
+    }
+
+    @Test fun `A3 invariant — hesabsız partner qurulmanı dayandırır`() {
+        val broken = object : QoshulDataSource by FakeQoshulDataSource {
+            override fun initialVenueXp() = FakeQoshulDataSource.initialVenueXp() - "v3"
+        }
+        assertThrows<IllegalStateException> { AppEngine(dataSource = broken) }
+    }
+
+    @Test fun `A3 bütün partnyorların venue XP hesabı var (partners ⊆ venueXp)`() {
+        val e = engine()
+        FakeQoshulDataSource.partners.forEach { assertNotNull("partner=${it.id}", e.venueXpFor(it.id)) }
+    }
+
+    @Test fun `N2 buyCoupon uğursuzluq səbəbləri görünəndir`() {
+        val e = engine() // 320 XP → Aktiv (idx 2)
+        val r1 = e.buyCoupon("o-nope")
+        assertTrue(r1 is CouponPurchase.Failure)
+        assertEquals(SpendError.OFFER_NOT_FOUND, (r1 as CouponPurchase.Failure).error)
+        // o5: səviyyə-avto təklif — XP ilə alınmır
+        val r2 = e.buyCoupon("o5")
+        assertEquals(SpendError.AUTO_ONLY, (r2 as CouponPurchase.Failure).error)
+    }
+
+    @Test fun `N2 buyCoupon səviyyə qapısı LEVEL_LOCKED`() {
+        val ds = object : QoshulDataSource by FakeQoshulDataSource {
+            override val offers = FakeQoshulDataSource.offers + CouponOffer(
+                id = "o-high", venueId = "v1", venueName = "Padel Arena",
+                label = "50% endirim", percent = 50, minRankIndex = 5, xpPrice = 10,
+            )
+        }
+        val e = AppEngine(dataSource = ds) // idx 2 < 5 → bağlı
+        val r = e.buyCoupon("o-high")
+        assertTrue(r is CouponPurchase.Failure)
+        assertEquals(SpendError.LEVEL_LOCKED, (r as CouponPurchase.Failure).error)
+    }
+
+    @Test fun `B6 hesab mənfi balansa düşə bilməz`() {
+        val a = VenueXpAccount("v-test", "Test", 100)
+        val t = LocalDateTime.of(2026, 11, 7, 12, 0)
+        assertTrue(a.spend(60, "test", "x1", t))
+        assertEquals(40, a.balance)
+        assertFalse(a.spend(50, "test", "x2", t)) // 50 > 40 — REDD
+        assertEquals(40, a.balance)
+        assertEquals(1, a.ledger.size) // uğursuz cəhd ledger-ə yazılmır
+        assertFalse(a.spend(0, "test", "x3", t))  // ≤ 0 — REDD
+        assertFalse(a.spend(-5, "test", "x4", t))
+        assertEquals(1, a.ledger.size)
+    }
+
+    @Test fun `B2 seriya — ardıcıl günlər artır`() {
+        val e = engine()
+        val d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)              // 1 → 2
+        e.dailyLogin(d.plusDays(1))  // 2 → 3
+        assertEquals(3, e.state.value.loginStreak)
+    }
+
+    @Test fun `B2 seriya — 1 gün buraxılanda DONDURULUR`() {
+        val e = engine()
+        val d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)              // 2
+        e.dailyLogin(d.plusDays(2))  // 1 gün buraxılıb → dondurma
+        assertEquals(2, e.state.value.loginStreak)
+        // giriş günləri +5 verilməyə davam edir
+        assertEquals(320 + 5 + 5, e.state.value.xp)
+    }
+
+    @Test fun `B2 seriya — 2 gün buraxılanda da DONDURULUR`() {
+        val e = engine()
+        val d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)
+        e.dailyLogin(d.plusDays(3)) // 2 gün buraxılıb → dondurma
+        assertEquals(2, e.state.value.loginStreak)
+    }
+
+    @Test fun `B2 seriya — 3 gün buraxılanda SIFIRLANIR`() {
+        val e = engine()
+        val d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)              // 2
+        e.dailyLogin(d.plusDays(1))  // 3
+        e.dailyLogin(d.plusDays(5))  // 3 gün buraxılıb → reset
+        assertEquals(1, e.state.value.loginStreak)
+    }
+
+    @Test fun `B2 seriya — eyni gün təkrar giriş sayılmır`() {
+        val e = engine()
+        val d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)
+        val xp = e.state.value.xp
+        e.dailyLogin(d) // təkrar
+        assertEquals(xp, e.state.value.xp)
+        assertEquals(2, e.state.value.loginStreak)
+    }
+
+    @Test fun `B2 7 günlük bonus dondurma sonrası da işləyir`() {
+        val e = engine()
+        var d = LocalDate.of(2026, 11, 2)
+        e.dailyLogin(d)                                    // 2
+        repeat(4) { d = d.plusDays(1); e.dailyLogin(d) }   // 3,4,5,6
+        d = d.plusDays(3); e.dailyLogin(d)                 // 2 gün dondurma → 6 qalır
+        assertEquals(6, e.state.value.loginStreak)
+        d = d.plusDays(1); e.dailyLogin(d)                 // 7 → bonus +30, reset
+        assertEquals(1, e.state.value.loginStreak)
+        // 7 giriş × 5 XP + 30 bonus (başlanğıc 320)
+        assertEquals(320 + 7 * 5 + 30, e.state.value.xp)
+    }
+
+    @Test fun `B5 XP kartı kod injeksiya olunur, N7 fallback rəqəm sayı`() {
+        val now = LocalDateTime.of(2026, 11, 7, 12, 0)
+        val card = XpCardCode.fresh(now) { 42 }
+        assertEquals("000042", card.fallbackCode)
+        assertEquals(XpRules.FALLBACK_CODE_DIGITS, card.fallbackCode.length)
+        assertTrue(card.nonce.startsWith("QSHUL-XP-000042-"))
+        assertTrue(card.isValid(now))
+        assertFalse(card.isValid(now.plusSeconds(61)))
+        assertEquals(60, card.secondsLeft(now))
+        val card2 = XpCardCode.fresh(now) { 1_999_999 } // mod 1e6 → 999999
+        assertEquals("999999", card2.fallbackCode)
+    }
+
+    @Test fun `A2 frozen clock — günlük giriş və şənbə təklifi clock-dan`() {
+        val t0 = LocalDateTime.of(2026, 11, 7, 10, 0) // şənbə
+        val e = AppEngine(clock = { t0 })
+        val xp0 = e.state.value.xp
+        e.dailyLogin() // default = clock()
+        assertEquals(xp0 + 5, e.state.value.xp)
+        e.sendAssistant("şənbə üçün tədbir fikri ver")
+        val reply = e.state.value.assistantMsgs.last { !it.mine }.body
+        val parsed = az.qoshul.app.core.model.parseAssistantEvent(reply)
+        // t0 şənbədir → növbəti şənbə +7 gün (keçmişdə real vaxtdan asılı idi)
+        assertEquals("2026-11-14", parsed.proposal!!.date)
     }
 }
 

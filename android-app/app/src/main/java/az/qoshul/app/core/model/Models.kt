@@ -161,10 +161,17 @@ object XpRules {
     const val NO_SHOW_RESTRICTION_DAYS = 7
     const val COUPON_VALIDITY_DAYS = 14
 
-    // onboarding qaydaları (ROL B)
+    // B2 (istifadəçi qərarı, 2026-11-07): ardıcıl seriya semantikası —
+    // 1-2 gün gəlməyəndə seriya DONDURULUR (dəyişməz qalır),
+    // 3+ gün gəlməyəndə SIFIRLANIR (yeni seriya 1-dən başlayır).
+    const val STREAK_FREEZE_DAYS = 2
+    const val STREAK_RESET_DAYS = 3
+
+    // onboarding qaydaları (ROL B).
+    // İstifadəçi qərarı (2026-11-07): maraq seçimi LIMITSİZ — köhnə
+    // MAX_INTERESTS = 8 həddi ləğv olundu (D-074); minimum 3 qalır.
     const val MIN_AGE = 18
     const val MIN_INTERESTS = 3
-    const val MAX_INTERESTS = 8
     const val BIO_LIMIT = 150
     const val MAX_PHOTOS = 6
 
@@ -199,23 +206,38 @@ object XpRules {
 
     data class XpProgress(val nextName: String?, val toNext: Int, val pct: Int)
 
-    /** {nextName, toNext, pct} — web xpProgress portu. */
+    /**
+     * {nextName, toNext, pct} — web xpProgress portu.
+     *
+     * A4 invariantı (M0): **pct == 100 ⟺ toNext == 0**.
+     * Keçmişdə xp tam rankMax sərhəddinə çatanda (99/299/699/1499/2999)
+     * pct = 100 VƏ toNext = 1 eyni anda qayıdırdı ("100% tamamlandıb, amma
+     * 1 XP qalıb" ziddiyyəti). Artıq sərhəddə pct 99-da saxlanılır —
+     * toNext düzgün qalır (yalan danılmır), 100% yalnız terminal haldadır
+     * (Əfsanə, xp ≥ 3000). Rust paraleli M2-də proptest ilə sübut olunacaq.
+     */
     fun xpProgress(xp: Int): XpProgress {
         var lower = 0
         for (i in rankMax.indices) {
             val max = rankMax[i]
             if (xp <= max) {
                 val span = max - lower
-                val pct = (((xp - lower) * 100.0 / span).toInt()).coerceIn(0, 100)
-                return XpProgress(rankNames[i + 1], max + 1 - xp, pct)
+                val toNext = max + 1 - xp
+                val pct = (((xp - lower) * 100.0 / span).toInt())
+                    .coerceIn(0, if (toNext == 0) 100 else 99)
+                return XpProgress(rankNames[i + 1], toNext, pct)
             }
             lower = max
         }
         return XpProgress(null, 0, 100)
     }
 
-    /** ROL B: 18+ yoxlaması. */
-    fun isAdult(birth: LocalDate, now: LocalDate = LocalDate.now()): Boolean {
+    /**
+     * ROL B: 18+ yoxlaması.
+     * A2: `now` məcburidir — gizli LocalDate.now() bypass-ı aradan qalxıb;
+     * çağıran vahid clock-dan ötürür.
+     */
+    fun isAdult(birth: LocalDate, now: LocalDate): Boolean {
         var age = now.year - birth.year
         val hadBirthday = now.monthValue > birth.monthValue ||
             (now.monthValue == birth.monthValue && now.dayOfMonth >= birth.dayOfMonth)

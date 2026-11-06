@@ -1,6 +1,8 @@
 # Qoshul.az — Rust + Kotlin Miqrasiya Araşdırma Hesabatı (Mərhələ 1)
 
-> **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb — M0 qapısı istifadəçi təsdiqini gözləyir.
+> **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb ✅ · **M0 (bug fixlər) icra olundu**
+> (istifadəçi təsdiqi: 2026-11-07 „bəli düzəlişlərə başla" — QAYDA 0 qapısı açıldı;
+> qərarlar D-072…D-075, 140 test). Növbəti qapı: **M1** (Supabase backend).
 > **Tarix:** 2026-11-07 · **Executor icra promptu:** v1.0 (2026-11-07)
 > **Yoxlanan baza:** `main` @ `9c553d6` (D-065, v0.15.0) · `server-only` @ `9f1fb01`
 > **Metod:** yalnız read-only əməliyyatlar (QAYDA 0); hər iddia fayl:sətir dəlili ilə;
@@ -356,6 +358,22 @@ Mənbə: `https://crates.io/api/v1/crates/<ad>` (User-Agent ilə; 2026-11-07).
 
 ## 6. Risklər və açıq suallar (istifadəçiyə yönəldilmiş)
 
+**2026-11-07 yeniləmə — 1/3/4/5/6-CEVABLANDI (M0 ilə bağlandı):**
+1. ✅ **C1 → REDD + balans sərhədi (D-072)** — istifadəçi: „yalnız hesabda var olan
+   qədəri istifadə oluna bilər"; mənfi balans qadağan (B6), səbəb typed göstərilir.
+2. ⬜ JVM testləri × JNI (arxitektura riski, M2) — dəyişməyib.
+3. ⬜ supabase-kt rəsmiləşməsi (M1) — dəyişməyib.
+4. ⬜ Font subsetting Rust stack-i (M3) — dəyişməyib.
+5. ✅ **Streak semantikası (B2) → dondurulma modeli (D-073)** — 1-2 gün dondurulur,
+   3+ gün sıfırlanır.
+6. ✅ **„Maraqlıyam" limiti → LIMITSİZ (D-074)** — həm onboarding maraq seçimində
+   maksimum-8 həddi ləğv olundu, həm match gündəlik hərəkət limiti yoxdur
+   (XP mükafatı gündə max 3 qalır).
+7. ⬜ Partnyor paneli: veb yoxsa mobil-daxili — M1 sxeminə təsir edir (açıq qalır).
+8. ⬜ D-reyestri (N12) main-kanonik siyasəti (D-071) — açıq qalır.
+
+Orijinal siyahı (arxiv):
+
 1. **C1 qərarı (bloklayıcı, M0-a təsir edir):** cap aşarsa — REDD (cari:
    „Daha az XP yaz") yoxsa CLAMP (cap qədər xərclə, qalan saxla)?
 2. **JVM testləri × JNI (arxitektura riski, M2):** 121 test `testDebugUnitTest`
@@ -379,6 +397,20 @@ Mənbə: `https://crates.io/api/v1/crates/<ad>` (User-Agent ilə; 2026-11-07).
 ---
 
 ## 7. Nəticə və M0 qapısı
+
+**M0 İCRA OLUNDU (2026-11-07, D-075):** §7-dəki siyahının hamısı həyata keçdi —
+A1 (typed SpendError + „hesap" tipo-orfoqrafiyası aradan qalxdı), A2 (vahid clock —
+tam siyahı, 17 nöqtə), A3 (invariant check + v3 hesabı + görünən buyCoupon),
+A4 (pct/toNext invariantı), B5 (injeksiya interfeysi), B6 (mənfi balans qadağası),
+N3 (review slot), N7 (ölü sabit istifadə olunur) + istifadəçi qərarları D-072/D-073/D-074.
+Testlər: 121 → **140** (103-ü lokal JVM-də icra olundu — 86 XpEngine+Rules, 17 WhatIf;
+qalan Robolectric/UI testləri CI qapısında). Lokal icra üçün kotlinc 2.1.0 +
+kotlinx-coroutines 1.10.2 istifadə olundu (sandbox-da Android SDK yoxdur).
+**Növbəti qapı: M1 (Supabase backend — sxem, FK, RLS, supabase-kt 3.9.0 pin).**
+
+---
+
+### Arxiv: M0 qapısı (2026-11-07, istifadəçi təsdiqindən əvvəl)
 
 - §2.2-nin **hamısı** (A1–A4, B1–B7, C1, D1) fayl:sətir dəlilləri ilə yoxlanıldı:
   12 TƏSDİQ, 1 TƏSDİQ-qərar-gözləyir (C1), 1 TƏSDİQ-bug-yoxdur (D1), A1/A3 dəqiqləşdirildi.

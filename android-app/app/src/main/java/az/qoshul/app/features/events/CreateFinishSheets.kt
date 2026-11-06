@@ -93,7 +93,7 @@ fun CreateEventSheet(
     var format by remember { mutableStateOf("Oflayn") }
     // D-051 fix: əvvəl düyməsiz ölü placeholder idi (onSelect boş, tipo "üçun")
     var ageLimit by remember { mutableStateOf("Hamı üçün") }
-    var date by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
+    var date by remember { mutableStateOf(engine.today().plusDays(1)) } // A2: vahid clock
     var time by remember { mutableStateOf("18:00") }
     // D-053 fix: capacity artıq xam mətn kimi saxlanılır — əvvəl Int state
     // sahəni idarə edirdi, "1" yazmaq (15-in ilk rəqəmi) SİLMİŞ sayılırdı
@@ -225,14 +225,14 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine("Tarix") {
                         DropdownLine(
-                            options = nextDateLabels(14),
+                            options = nextDateLabels(14, engine.today()),
                             // D-053 fix: əvvəl selected = "01.11" formatında idi —
                             // options siyahısında ("Bu gün"/"Sabah"/"Noy 2") yox idi,
                             // heç bir seçim vurğulanmırdı. Artıq eyni etiket sistemi.
-                            selected = dateLabelFor(date.toEpochDay()),
+                            selected = dateLabelFor(date.toEpochDay(), engine.today()),
                             onSelect = { sel ->
-                                val idx = nextDateLabels(14).indexOf(sel)
-                                if (idx >= 0) date = LocalDate.now().plusDays(idx.toLong())
+                                val idx = nextDateLabels(14, engine.today()).indexOf(sel)
+                                if (idx >= 0) date = engine.today().plusDays(idx.toLong())
                             },
                         )
                     }

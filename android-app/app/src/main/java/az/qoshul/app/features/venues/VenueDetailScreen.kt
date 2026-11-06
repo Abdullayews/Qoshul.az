@@ -94,7 +94,7 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
     val st by engine.state.collectAsState()
     val venue = engine.venueById(venueId) ?: return
     var reserveOpen by remember { mutableStateOf(false) }
-    val hour = remember { java.time.LocalDateTime.now().hour }
+    val hour = remember { engine.now().hour } // A2: vahid clock
     val openNow = venue.isOpenAt(hour)
     val reviews = engine.venueReviews(venue.id)
 
@@ -273,7 +273,7 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
     var couponCode by remember { mutableStateOf<String?>(null) }
     var result by remember { mutableStateOf<az.qoshul.app.core.model.Reservation?>(null) }
     val st by engine.state.collectAsState()
-    val dates = remember { nextDateLabels() }
+    val dates = remember { nextDateLabels(today = engine.today()) } // A2: vahid clock
     val slots = engine.venueSlots(venue.id)
     val myCoupons = engine.activeCouponsFor(venue.id)
     val canConfirm = date != null && time != null

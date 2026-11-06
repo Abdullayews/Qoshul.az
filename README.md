@@ -24,7 +24,7 @@ rezervasiyalar (real skan edilən QR ilə), ikili XP iqtisadiyyatı, təhlükəs
 (qeydiyyat/blok) və AI köməkçi.
 
 Bütün texniki qərarlar mənbəsi ilə birlikdə
-[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-065).
+[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-075).
 
 ## ✨ Məhsul funksiyaları
 
@@ -51,7 +51,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Arxitektura | Tək `:app` modulu, package-by-feature; saf-Kotlin `AppEngine` + `StateFlow` (manual DI) |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR | **Nayuki QR-Code-generator v1.8.0** (vendored, MIT) + ZXing sübut testləri (D-041) |
-| Test | **121 JVM testi** — məntiq + QR sübutu + Robolectric UI (D-042) |
+| Test | **140 JVM testi** — məntiq + QR sübutu + Robolectric UI (D-042; M0 paketi D-075) |
 | APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · font subsetting |
 | CI | **GitHub Actions** — `native.yml`: testlər + release APK artifaktı |
 
@@ -65,7 +65,7 @@ Qoshul.az/
 │   │                       chats · coupons · events · feed · map · match ·
 │   │                       notifications · onboarding · partners · profile ·
 │   │                       reservations · safety · settings · shell · venues · xp)
-│   └── app/src/test/       121 JVM testi (Robolectric daxil)
+│   └── app/src/test/       140 JVM testi (Robolectric daxil)
 ├── docs/                   decisions.md · product-spec.md · design-spec.md
 └── .github/workflows/      native.yml (test + APK)
 ```
@@ -85,7 +85,7 @@ GitHub-dan gəlir). Beta imzası ilə imzalanıb (D-016).
 
 ## 📚 Sənədlər
 
-- [`docs/decisions.md`](docs/decisions.md) — hər texniki qərar + mənbəsi (D-001…D-065)
+- [`docs/decisions.md`](docs/decisions.md) — hər texniki qərar + mənbəsi (D-001…D-075)
 - [`docs/product-spec.md`](docs/product-spec.md) — məhsul spektri: rollar, axınlar, XP/kupon/rezerv qaydaları
 - [`docs/design-spec.md`](docs/design-spec.md) — Liquid Glass minimal dizayn dili + hərəkət dili
 

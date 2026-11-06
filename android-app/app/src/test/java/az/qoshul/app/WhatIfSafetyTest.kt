@@ -3,6 +3,8 @@ package az.qoshul.app
 import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.AssistantParse
+import az.qoshul.app.core.model.CouponPurchase
+import az.qoshul.app.core.model.SpendError
 import az.qoshul.app.core.model.parseAssistantEvent
 import az.qoshul.app.core.safety.Safety
 import az.qoshul.app.core.ui.MapLogGate
@@ -96,13 +98,14 @@ class WhatIfSafetyTest {
 
     @Test fun `dateLabelFor bugün və sabah`() {
         val today = java.time.LocalDate.now()
-        assertEquals("Bu gün", dateLabelFor(today.toEpochDay()))
-        assertEquals("Sabah", dateLabelFor(today.plusDays(1).toEpochDay()))
+        assertEquals("Bu gün", dateLabelFor(today.toEpochDay(), today))
+        assertEquals("Sabah", dateLabelFor(today.plusDays(1).toEpochDay(), today))
     }
 
     @Test fun `dateLabelFor korlanmış epochDay-də placeholder verir`() {
-        assertEquals("—", dateLabelFor(Long.MAX_VALUE))
-        assertEquals("—", dateLabelFor(Long.MIN_VALUE))
+        val today = java.time.LocalDate.now()
+        assertEquals("—", dateLabelFor(Long.MAX_VALUE, today))
+        assertEquals("—", dateLabelFor(Long.MIN_VALUE, today))
     }
 
     // ── MapLogGate — rate-limit məntiqi ──
@@ -148,8 +151,10 @@ class WhatIfSafetyTest {
         assertNull(engine.spendVenueXp("no-such-venue", 100, 50.0))
     }
 
-    @Test fun `naməlum təklifdə kupon alınmır`() {
-        assertNull(engine.buyCoupon("no-such-offer"))
+    @Test fun `naməlum təklifdə kupon alınmır — typed xəta (N2)`() {
+        val r = engine.buyCoupon("no-such-offer")
+        assertTrue(r is CouponPurchase.Failure)
+        assertEquals(SpendError.OFFER_NOT_FOUND, (r as CouponPurchase.Failure).error)
     }
 
     @Test fun `naməlum tədbirə qoşulma false`() {

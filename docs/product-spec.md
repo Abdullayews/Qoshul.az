@@ -28,7 +28,7 @@
 - Ad, doğum tarixi (18+ məhdudiyyəti: **[TƏSDİQ GÖZLƏYİR]**), cins (isteğe bağlı), şəkil (1 məcburi, 6-ya qədər), qısa bio (150 simvol).
 - Şəkil yüklənir → storage (OSS) → moderasiya növbəsi (BullMQ). Təsdiqlənənə qədər profil "yoxlanılır" statusundadır.
 
-**Addım 4.** Kateqoriya seçimi (maraqlar), minimum 3, maksimum 8:
+**Addım 4.** Kateqoriya seçimi (maraqlar), minimum 3, üst hədd YOXDUR — limitsiz (istifadəçi qərarı, 2026-11-07, D-074):
 1. Əyləncə və Gecə həyatı (klub, bar, karaoke)
 2. Kafe və Yemək (kafe, restoran, kofe görüşləri)
 3. İdman və Aktivlik (futbol, tennis, qaçış, velosiped, fitnes)
@@ -106,7 +106,7 @@ nav-dan çıxarıldı, tam tədbir kəşfi Kəşfin daxili tabına keçdi).
 - Kəşf-də və ya ayrıca "Tanış ol" ekranında kartlar: şəkil, ad, yaş, məsafə, ortaq maraqlar.
 - Hərəkətlər: "Maraqlıyam" / "Keç".
 - Hər iki tərəf "Maraqlıyam" bassa → match + bildiriş + chat açılır + hər ikisinə **+10 XP** (gündə maksimum 3 match XP-si).
-- Sıralama: ortaq kateqoriya sayı + məsafə + son aktivlik. Gündəlik "Maraqlıyam" limiti: **[TƏSDİQ GÖZLƏYİR]**.
+- Sıralama: ortaq kateqoriya sayı + məsafə + son aktivlik. Gündəlik "Maraqlıyam" limiti: **LIMITSİZ** (istifadəçi qərarı, 2026-11-07, D-074) — "Maraqlıyam" hərəkəti məhdudlaşdırılmır; məhdudiyyət yalnız XP mükafatındadır (gündə max 3 match XP-si).
 - Sorğu: ST_DWithin + gist index, nəticələr səhifələnir.
 
 ## E. Məkanlar və rezerv
@@ -137,7 +137,7 @@ nav-dan çıxarıldı, tam tədbir kəşfi Kəşfin daxili tabına keçdi).
 | Qeydiyyatı tamamlama | +50 | bir dəfə |
 | Profil 100% doldurma (şəkil, bio, maraqlar) | +30 | bir dəfə |
 | Telefon/hesab təsdiqi | +40 | bir dəfə |
-| Günlük giriş (ardıcıl seriya) | +5 | 7 günlük seriya bonusu +30 |
+| Günlük giriş (ardıcıl seriya) | +5 | 7 günlük seriya bonusu +30; 1-2 gün fasilədə seriya DONDURULUR, 3+ gün fasilədə SIFIRLANIR (istifadəçi qərarı, 2026-11-07, D-073) |
 | Match | +10 | gündə max 3 |
 | Tədbirə qoşulma | +10 | — |
 | Tədbirdə check-in (faktiki iştirak) | +40 | — |
@@ -293,6 +293,11 @@ xərcləmə müştərinin dinamik QR-ı ilə (bilet/loyallıq kartı modeli).
 maksimum endirim = hesabın X%-i (obyekt ziyanından qorunma), minimum hesab
 məbləği (isteğe bağlı). MVP: müştəri təsdiqsiz, receipt push dərhal; yüksək
 məbləğ üçün obyekt təsdiq tələbi sonradan açıla bilər.
+
+**Xərcləmə balans qaydası (istifadəçi qərarı, 2026-11-07, D-072):** XP
+xərcləməsi yalnız hesabda mövcud olan qədər mümkündür — mənfi balans yoxdur;
+cap və ya balans aşımında əməliyyat REDD edilir və səbəb istifadəçiyə
+göstərilir (CLAMP deyil — kupon diskret alışdır, qismən alınmır).
 
 ### L.5. Kanal qaydaları
 
