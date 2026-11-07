@@ -68,20 +68,24 @@ jobs:
         working-directory: rust-core
         run: cargo run -p qoshul-fonts -- --root ../android-app
 
-      - name: cargo-ndk + Android .so (arm64-v8a + armeabi-v7a)
+      - name: Android .so (arm64-v8a + armeabi-v7a) — birbaşa NDK toolchain
         working-directory: rust-core
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
-          # ubuntu-latest SDK quraşdırılıdır; sdkmanager PATH-da YOX — tam yol:
-          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          "$SDKM" --licenses > /dev/null 2>&1 <<< "y" || true
-          "$SDKM" --install "ndk;28.2.13676358" > /dev/null 2>&1 \
-            || "$SDKM" --install "ndk;28.1.13382995" > /dev/null 2>&1 \
-            || "$SDKM" --install "ndk;27.2.12479018" > /dev/null 2>&1
-          ls "$ANDROID_HOME/ndk/" || true
-          cargo install --locked cargo-ndk --version 3.5.5
-          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../android-app/app/src/main/jniLibs build --release -p qoshul-jni
+          # QEYD (D-082): cargo-ndk 3.5.5 crates.io-dan YANK edilib — birbaşa
+          # NDK linkerdən istifadə (runner-da NDK 28.2/29/30 artıq PREINSTALLED)
+          NDK_VER=$(ls "$ANDROID_HOME/ndk/" | sort -V | tail -1)
+          echo "NDK: $NDK_VER"
+          TC="$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          rustup target add aarch64-linux-android armv7-linux-androideabi
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TC/aarch64-linux-android24-clang"
+          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="$TC/armv7a-linux-androideabi24-clang"
+          cargo build --release --target aarch64-linux-android -p qoshul-jni
+          cargo build --release --target armv7-linux-androideabi -p qoshul-jni
+          mkdir -p ../android-app/app/src/main/jniLibs/arm64-v8a ../android-app/app/src/main/jniLibs/armeabi-v7a
+          cp target/aarch64-linux-android/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/arm64-v8a/
+          cp target/armv7-linux-androideabi/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/armeabi-v7a/
           ls -la ../android-app/app/src/main/jniLibs/*/
 
       - name: JDK 21
