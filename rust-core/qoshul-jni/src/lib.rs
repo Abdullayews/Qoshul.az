@@ -11,7 +11,7 @@
 
 #![allow(non_snake_case)] // JNI param adları Kotlin external fun-ları ilə eyni saxlanılır
 
-use jni::objects::JClass;
+use jni::objects::{JClass, JIntArray};
 use jni::sys::{jboolean, jdouble, jint, jlong};
 use jni::EnvUnowned;
 
@@ -253,4 +253,27 @@ pub extern "system" fn Java_az_qoshul_app_core_rust_QoshulNative_previewSpendCod
             SpendError::CapExceeded => 5,
         },
     }
+}
+
+// ── QR (M3, D-081): qrcodegen 1.8.0 — Nayuki Java-nın Rust portu ──────────
+
+/// QrGeometry.of pariteti: data[0] = size (21..177), data[1..1+size²] = 0/1.
+/// Xəta yoxdur (geometry_for_ui heç vaxt iflas etmir); siqnal — RuntimeException.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_az_qoshul_app_core_rust_QoshulNative_qrEncodeUi<'caller>(
+    mut env: jni::EnvUnowned<'caller>,
+    _class: JClass<'caller>,
+    payload: jni::objects::JString<'caller>,
+) -> JIntArray<'caller> {
+    env.with_env(|e| -> Result<JIntArray<'_>, jni::errors::Error> {
+        let text: String = payload.try_to_string(e)?;
+        let m = qoshul_core::qr::geometry_for_ui(&text);
+        let mut data: Vec<i32> = Vec::with_capacity(1 + m.dark.len());
+        data.push(m.size as i32);
+        data.extend(m.dark.iter().map(|&b| i32::from(b)));
+        let arr = e.new_int_array(data.len())?;
+        arr.set_region(e, 0, &data)?;
+        Ok(arr)
+    })
+    .resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

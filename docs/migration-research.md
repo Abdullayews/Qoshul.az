@@ -3,7 +3,7 @@
 > **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb ✅ · **M0 (bug fixlər) icra olundu**
 > (istifadəçi təsdiqi: 2026-11-07 „bəli düzəlişlərə başla" — QAYDA 0 qapısı açıldı;
 > qərarlar D-072…D-075, 140 test). **M1 (Supabase backend) icra olundu**
-> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim; CI yaşıl + v0.17.0-beta release). **M2 (Rust nüvə + JNI) icra olundu** (D-080, 176+27 test; paritet host .so ilə sübut). Növbəti qapı: **M3** (Nayuki Java → Rust qrcodegen; Python → Rust fonts; ZXing → quircs).
+> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim; CI yaşıl + v0.17.0-beta release). **M2 (Rust nüvə + JNI) icra olundu** (D-080, 176+27 test; paritet host .so ilə sübut; CI yaşıl + v0.18.0-beta release). **M3 (dil miqrasiyası) icra olundu** (D-081, 178+35 test; io.nayuki silindi, .py silindi, ZXing silindi → quircs). Növbəti qapı: **M4** (axum mikroservis: FCM HTTP v1, idempotent joblar, admin API).
 > **Tarix:** 2026-11-07 · **Executor icra promptu:** v1.0 (2026-11-07)
 > **Yoxlanan baza:** `main` @ `9c553d6` (D-065, v0.15.0) · `server-only` @ `9f1fb01`
 > **Metod:** yalnız read-only əməliyyatlar (QAYDA 0); hər iddia fayl:sətir dəlili ilə;
@@ -422,10 +422,17 @@ SQL struktur lint-i (CI-da). Testlər: 140 → **165** (lokal JVM: 100/100).
 
 **M2 İCRA OLUNDU (2026-11-07, D-080):** `rust-core/` (qoshul-core: types/clock/rules/
 economy/geo; qoshul-jni: cdylib, numerik səth) — A4 proptest 0..3100 TAM, D-073 matris,
-B6 double-spend, haversine simmetriyası; `RustParityTest` 11/11 host .so ilə; CI-də
+B6 double-spend, haversine simmetriyası; `RustParityTest` host .so ilə; CI-də
 cargo-ndk jniLibs (APK-da real Rust) + JVM testləri host .so məcburiyyəti (risk 2,
-variant (a) təsdiqləndi). Engine Kotlin fallback-də qalır — paritet sübut olundu,
-keçid M3-də qiymətləndirilir.
+variant (a) təsdiqləndi). Engine Kotlin fallback-də qalır — paritet sübut olundu.
+
+**M3 İCRA OLUNDU (2026-11-07, D-081):** io.nayuki Java (4 fayl) → Rust qrcodegen 1.8.0
+JNI (qrEncodeUi); ZXing → quircs dekod sübutu (tests/qr_decode.rs — AZ mətn, uzun
+payload); subset_fonts.py → qoshul-fonts bin (skrifa; eyni audit/sübut; REAL bug tapdı:
+U+2713 ✓ tofu — stringlərdən çıxarıldı); write-fonts 0.55 subsetter YOXDUR (təsdiq) —
+regenerasiya gələcək mərhələdə. `git grep io.nayuki` boş, `.py` yoxdur — §4 hədəfi
+TAMAM. CI fəsli: android-actions/setup-android atıldı (runner-də sdkmanager tools
+iflas edir) — birbaşa sdkmanager ndk quraşdırması.
 
 ---
 

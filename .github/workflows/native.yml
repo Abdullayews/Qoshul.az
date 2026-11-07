@@ -55,7 +55,7 @@ jobs:
           cargo fmt --all -- --check
           cargo clippy --all-targets -- -D warnings
 
-      - name: Rust testləri (27 — unit + proptest)
+      - name: Rust testləri (35 — unit + proptest + quircs QR dekod sübutu)
         working-directory: rust-core
         run: cargo test --release
 
@@ -63,13 +63,22 @@ jobs:
         working-directory: rust-core
         run: cargo build --release -p qoshul-jni
 
-      - name: Android NDK (jniLibs üçün)
-        uses: android-actions/setup-android@v3
+      - name: Font AUDİT (M3, D-081 — subset_fonts.py əvəzi)
+        working-directory: rust-core
+        run: cargo run -p qoshul-fonts -- --root ../android-app
 
       - name: cargo-ndk + Android .so (arm64-v8a + armeabi-v7a)
         working-directory: rust-core
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
-          sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1 || sdkmanager --install "ndk;27.2.12479018" > /dev/null 2>&1
+          # ubuntu-latest SDK quraşdırılıdır (cmdline-tools daxil) — setup-android
+          # action-u lazımsız (sdkmanager tools addımı runner-də iflas edir)
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1 \
+            || sdkmanager --install "ndk;28.1.13382995" > /dev/null 2>&1 \
+            || sdkmanager --install "ndk;27.2.12479018" > /dev/null 2>&1
+          ls "$ANDROID_HOME/ndk/" || true
           cargo install --locked cargo-ndk --version 3.5.5
           cargo ndk -t arm64-v8a -t armeabi-v7a -o ../android-app/app/src/main/jniLibs build --release -p qoshul-jni
           ls -la ../android-app/app/src/main/jniLibs/*/

@@ -1,5 +1,7 @@
 package az.qoshul.app.core.ui
 
+import az.qoshul.app.core.rust.QoshulNative
+import az.qoshul.app.core.safety.Safety
 import az.qoshul.app.core.theme.Q
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -18,20 +20,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.nayuki.qrcodegen.QrCode as NayukiQrCode
-import io.nayuki.qrcodegen.QrCode.Ecc
-import io.nayuki.qrcodegen.QrSegment
 
 /**
- * REAL QR kod generasiyası (D-041) — Nayuki v1.8.0 vendored (io.nayuki.qrcodegen,
- * MIT) üzərində brend render qatı.
+ * REAL QR kodu (D-041 → M3/D-081) — Rust `qrcodegen` 1.8.0 (Nayuki-nin
+ * rəsmi Rust portu) JNI üzərindən. Vendored Java (io.nayuki.qrcodegen)
+ * M3-də TAMAMEN SİLİNDİ — birinci tərəf kodu 100% Kotlin+Rust.
  *
- * Arxitektura: həndəsə (QrGeometry) saf Kotlin-dır — JVM testində ZXing ilə
- * dekodlaşdırılıb SÜBUT olunur (QrScannabilityTest); composable yalnız həndəsəni
- * Canvas-a çəkir. Beləliklə "skan edilə bilər" iddiası testlə doğrulanır.
+ * Arxitektura: həndəsə (QrGeometry) Rust-da yaranır (qrEncodeUi); JVM-də
+ * host .so (`-Dqoshul.jni.path`), Android-də jniLibs (CI cargo-ndk). .so
+ * yoxdursa DEQRADE fallback — sabit "QOSHUL" v1-L matrisi (Rust-dan
+ * generasiya olunmuş konstant; skan oluna bilən real QR-dur, yalnız
+ * payload dəyişmir) + bir dəfə xəbərdarlıq.
  *
- * Stil: data modulları standart kvadrat (maksimum skan etibarlılığı), finder
- * "gözləri" yumşaq künc radiusu ilə (brend görünüş). Sükut ECC = MEDIUM.
+ * Stil: data modulları standart kvadrat (maksimum skan etibarlılığı),
+ * finder "gözləri" yumşaq künc radiusu ilə (brend görünüş). ECC = MEDIUM.
  */
 
 /** QR həndəsəsi — modul matrisası (finder/timing/format daxil, quiet zone xaric). */
@@ -44,56 +46,64 @@ class QrGeometry(
 
     companion object {
         /**
-         * Payload-dan QR həndəsəsi yaradır. Versiya avtomatik seçilir
-         * (min..max aralığında sığan ən kiçiyi). Sığmırsa aralıq genişlənir;
-         * hər halda proqram çökmür (son fallback versiya-1 qırılmış payload).
+         * Payload-dan QR həndəsəsi. Versiya Rust-da avtomatik seçilir
+         * (1..40, MEDIUM; sığmırsa genişlənir — QrCode.kt M2 pariteti).
          */
-        fun of(payload: String, maxVersion: Int = 12): QrGeometry {
+        fun of(payload: String, @Suppress("UNUSED_PARAMETER") maxVersion: Int = 12): QrGeometry {
             val text = payload.ifBlank { "QOSHUL" }
-            var vMax = maxVersion.coerceIn(1, 40)
-            while (true) {
-                try {
-                    val segs = QrSegment.makeSegments(text)
-                    val qr = NayukiQrCode.encodeSegments(segs, Ecc.MEDIUM, 1, vMax, -1, true)
-                    return QrGeometry(qr.size, flatten(qr))
-                } catch (_: IllegalArgumentException) {
-                    if (vMax >= 40) return fallbackGeometry(text)
-                    vMax = (vMax + 1).coerceAtMost(40)
-                } catch (_: Exception) {
-                    return fallbackGeometry(text)
+            if (QoshulNative.available) {
+                val arr = Safety.of("qr", null as QrGeometry?) {
+                    val data = QoshulNative.qrEncodeUi(text)
+                    val n = data[0]
+                    QrGeometry(n, BooleanArray(n * n) { data[1 + it] != 0 })
                 }
+                if (arr != null) return arr
             }
+            return degraded()
         }
 
-        private fun flatten(qr: NayukiQrCode): BooleanArray {
-            val n = qr.size
-            val out = BooleanArray(n * n)
-            for (y in 0 until n) for (x in 0 until n) out[y * n + x] = qr.getModule(x, y)
-            return out
+        /**
+         * DEQRADE rejimi (.so yoxdur — yalnız Rust-sız lokal dava):
+         * sabit "QOSHUL" v1-L matrisi (Rust qrcodegen-dən generasiya olunub).
+         * Hələ də SKAN OLUNA BİLƏN real QR-dur.
+         */
+        private fun degraded(): QrGeometry {
+            val d = FALLBACK_QOSHUL_V1
+            val n = d[0]
+            return QrGeometry(n, BooleanArray(n * n) { d[1 + it] != 0 })
         }
 
-        /** Ağır xəta halında: kiçildilmiş payload versiya 1-də (proqram çökmür). */
-        private fun fallbackGeometry(text: String): QrGeometry {
-            var t = text.take(17)
-            while (t.isNotEmpty()) {
-                try {
-                    val segs = QrSegment.makeSegments(t)
-                    val qr = NayukiQrCode.encodeSegments(segs, Ecc.LOW, 1, 1, 0, false)
-                    return QrGeometry(qr.size, flatten(qr))
-                } catch (_: Exception) {
-                    t = t.dropLast(1)
-                }
-            }
-            // "QOSHUL" versiya 1-də mütləq sığır
-            val segs = QrSegment.makeSegments("QOSHUL")
-            val qr = NayukiQrCode.encodeSegments(segs, Ecc.LOW, 1, 1, 0, false)
-            return QrGeometry(qr.size, flatten(qr))
-        }
+        // "QOSHUL", versiya 1, ECC L, boost=false — Rust qrcodegen çıxışı
+        // (tests/qr_decode.rs qrameriya ilə eyni mənbədən).
+        private val FALLBACK_QOSHUL_V1 = intArrayOf(
+            21, // size
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1,
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1,
+            1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1,
+            1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1,
+            1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1,
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+            1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0,
+            1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+            0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0,
+            1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+            0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0,
+            1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1,
+            1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0,
+            1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1,
+            1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0,
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0,
+        )
     }
 }
 
 /**
- * Real skan edilə bilən QR kod — QrPlaceholder-ın varisi (D-041).
+ * Real skan edilə bilən QR kod — D-041-dən (D-081-də Rust-a keçdi).
  * Kart konteyneri (ağ fon + haşiyə + padding) keçmiş vizual dillə qorunur.
  */
 @Composable
@@ -127,8 +137,7 @@ internal fun inFinderZone(x: Int, y: Int, n: Int): Boolean =
     (x < 8 && y < 8) || (x >= n - 8 && y < 8) || (x < 8 && y >= n - 8)
 
 /**
- * DrawScope — həndəsəni brend stili ilə çəkir. Test eyni modul riyaziyyatını
- * AWT-də rəngləyib ZXing ilə dekodlaşdırır (render pariteti yoxlanılır).
+ * DrawScope — həndəsəni brend stili ilə çəkir.
  */
 internal fun DrawScope.drawQr(g: QrGeometry, dark: Color, light: Color) {
     val quiet = 2f // daxili quiet zone (modul) — Box padding-i əlavə edir

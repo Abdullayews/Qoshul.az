@@ -192,6 +192,32 @@ class RustParityTest {
         assertTrue(native.spendCapOk(5.0, 40.0, 25))       // cap 10 → 5 ≤ 10
         assertTrue(!native.spendCapOk(25.0, 40.0, 25))     // 25 > 10.001
     }
+
+    // ── M3 (D-081): QR — qrcodegen Rust ───────────────────────────────────
+
+    @Test
+    fun `qrEncodeUi struktur olcu ve finder gozleri`() {
+        assumeTrue(native.available)
+        for (p in listOf("QOSHUL", "QSH-r-ABC123DEF456", "QSHUL-XP-123456-9")) {
+            val data = native.qrEncodeUi(p)
+            val n = data[0]
+            assertTrue("olcu (payload=$p)", n in 21..177 && (n - 17) % 4 == 0)
+            assertEquals("massiv uzunlugu (payload=$p)", 1 + n * n, data.size)
+            fun m(x: Int, y: Int) = data[1 + y * n + x] != 0
+            for ((ex, ey) in listOf(0 to 0, n - 7 to 0, 0 to n - 7)) {
+                assertTrue(m(ex, ey)); assertTrue(m(ex + 6, ey + 6))
+                assertTrue(m(ex + 3, ey + 3))
+                assertTrue(!m(ex + 1, ey + 1))
+            }
+        }
+    }
+
+    @Test
+    fun `qrEncodeUi bos payload QOSHUL v1`() {
+        assumeTrue(native.available)
+        val data = native.qrEncodeUi("   ")
+        assertEquals(21, data[0])
+    }
 }
 
 /** isQuietHours-in saat-only variantı (Domain: t.hour >= 23 || t.hour < 8). */

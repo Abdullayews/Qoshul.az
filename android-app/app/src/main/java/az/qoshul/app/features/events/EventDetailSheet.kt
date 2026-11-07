@@ -263,7 +263,7 @@ fun EventDetailSheet(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        if (reminded) "Xatırladıcı qoyuldu ✓" else "24 saat əvvəl xatırlat",
+                        if (reminded) "Xatırladıcı qoyuldu (bəli)" else "24 saat əvvəl xatırlat",
                         style = T.button,
                     )
                 }

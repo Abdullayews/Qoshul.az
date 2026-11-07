@@ -14,9 +14,11 @@
 pub mod clock;
 pub mod economy;
 pub mod geo;
+pub mod qr;
 pub mod rules;
 pub mod types;
 
 pub use clock::{Clock, FrozenClock, SystemClock};
 pub use economy::{AwardLedger, Discount, PreviewOutcome, SpendError, VenueAccount, VenueConfig};
+pub use qr::QrMatrix;
 pub use types::{EventId, OfferId, ProfileId, ReservationId, VenueId};

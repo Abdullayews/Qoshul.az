@@ -59,6 +59,11 @@ object QoshulNative {
     external fun checkInWithinRange(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Boolean
     external fun checkInMaxDistanceM(): Double
 
+    // — M3 (D-081): QR — qrcodegen 1.8.0 (Rust) —
+    // data[0] = size; data[1..1+size²] = 0/1 modullar. Xəta RuntimeException.
+
+    external fun qrEncodeUi(payload: String): IntArray
+
     // — L.4: XP 2 (B6 atomik; C1 REDD) —
 
     external fun previewDiscount(xpAmount: Int, xpPerAzn: Int): Double

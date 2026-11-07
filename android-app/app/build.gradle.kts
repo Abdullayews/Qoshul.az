@@ -20,8 +20,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.18.0"
+        versionCode = 17
+        versionName = "0.19.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(
@@ -131,8 +131,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    // QR sübut testi: generasiya olunan kodu ZXing ilə dekodlaşdırırıq (D-041)
-    testImplementation(libs.zxing.core)
+    // (D-041→D-081: ZXing silindi — dekod sübutu Rust-da quircs ilə, tests/qr_decode.rs)
     // Compose UI testləri JVM-də (Robolectric) — Flutter widget-test pariteti (D-042)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.compose.ui.test.junit4)

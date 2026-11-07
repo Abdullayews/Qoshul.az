@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["qoshul-core", "qoshul-jni"]
+members = ["qoshul-core", "qoshul-jni", "qoshul-fonts"]
 
 # D-067 pin-ləri (2026-11-07, crates.io) — hər mərhələ qapısında yenidən yoxlanılır.
 [workspace.package]
@@ -10,6 +10,7 @@ rust-version = "1.85"
 
 [workspace.dependencies]
 qoshul-core = { path = "qoshul-core" }
+skrifa = "=0.49.0"
 geo = "=0.33.1"
 jni = "=0.22.4"
 proptest = "=1.12.0"

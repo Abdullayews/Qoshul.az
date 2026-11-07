@@ -115,7 +115,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     DividerLine()
                     NavRow(
                         Icons.Filled.VerifiedUser, "Hesabı təsdiqlə (telefon)",
-                        if (st.phoneVerified) "Təsdiqlənmiş ✓ (+${XpRules.PHONE_VERIFY_XP} XP)"
+                        if (st.phoneVerified) "Təsdiqlənmiş (+${XpRules.PHONE_VERIFY_XP} XP)"
                         else "Təsdiq edilməyib",
                         valueColor = if (st.phoneVerified) Q.primary else androidx.compose.ui.graphics.Color.Unspecified,
                     ) { if (!st.phoneVerified) showPhone = true }
@@ -338,7 +338,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             text = {
                 Text(
                     if (invited)
-                        "Dəvət göndərildi ✓ +${XpRules.INVITE_XP} XP hesabına düşdü. " +
+                        "Dəvət göndərildi (+${XpRules.INVITE_XP} XP hesabına düşdü. " +
                             "Dostun qoşulanda tədbirləri birlikdə planlayın!"
                     else
                         "Qoshul.az-ı dostlarınla bölüş — hər dəvət sənə +${XpRules.INVITE_XP} XP " +
