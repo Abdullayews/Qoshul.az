@@ -50,9 +50,10 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | UI | **Jetpack Compose** (BOM 2026.09, Material 3) |
 | Arxitektura | Tək `:app` modulu, package-by-feature; saf-Kotlin `AppEngine` + `StateFlow` (manual DI) |
 | Backend (M1) | **Supabase sxem + RLS + SECURITY DEFINER qaydalar** (`supabase/`) — supabase-kt 3.9.0 pin (D-078); MOCK/SUPABASE ikili rejim, PLACEHOLDER konfiq |
+| Nüvə (M2) | **Rust** (`rust-core/`: qoshul-core + qoshul-jni) — geo 0.33.1, proptest 1.12, jni 0.22.4 (D-080); JNI APK-da, JVM-də host .so pariteti |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR | **Nayuki QR-Code-generator v1.8.0** (vendored, MIT) + ZXing sübut testləri (D-041) |
-| Test | **165 JVM testi** — məntiq + QR sübutu + Robolectric UI + sync güzgü (D-042; M0: D-075, M1: D-078) |
+| Test | **176 JVM + 27 Rust** — məntiq + QR + Robolectric UI + sync güzgü + Rust pariteti (D-080) |
 | APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · font subsetting |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
@@ -68,9 +69,10 @@ Qoshul.az/
 │   │                       reservations · safety · settings · shell · venues · xp)
 │   └── app/src/test/       165 JVM testi (Robolectric daxil)
 ├── supabase/               M1: sxem + RLS + server qaydaları (D-076/D-077)
-├── scripts/                lint_sql.py (SQL struktur lint-i)
+├── rust-core/              M2: qoshul-core (qaydalar) + qoshul-jni (JNI cdylib)
+├── scripts/                lint_sql.py · make_release.py (CI artifact → Release)
 ├── docs/                   decisions.md · product-spec.md · design-spec.md · migration-research.md
-└── .github/workflows/      native.yml (SQL lint + test + APK)
+└── .github/workflows/      native.yml (Rust fmt/clippy/test + jniLibs + SQL lint + test + APK)
 ```
 
 ## 🌿 İkili versiya (D-050)

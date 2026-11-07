@@ -3,7 +3,7 @@
 > **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb ✅ · **M0 (bug fixlər) icra olundu**
 > (istifadəçi təsdiqi: 2026-11-07 „bəli düzəlişlərə başla" — QAYDA 0 qapısı açıldı;
 > qərarlar D-072…D-075, 140 test). **M1 (Supabase backend) icra olundu**
-> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim). Növbəti qapı: **M2** (Rust nüvə — JNI).
+> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim; CI yaşıl + v0.17.0-beta release). **M2 (Rust nüvə + JNI) icra olundu** (D-080, 176+27 test; paritet host .so ilə sübut). Növbəti qapı: **M3** (Nayuki Java → Rust qrcodegen; Python → Rust fonts; ZXing → quircs).
 > **Tarix:** 2026-11-07 · **Executor icra promptu:** v1.0 (2026-11-07)
 > **Yoxlanan baza:** `main` @ `9c553d6` (D-065, v0.15.0) · `server-only` @ `9f1fb01`
 > **Metod:** yalnız read-only əməliyyatlar (QAYDA 0); hər iddia fayl:sətir dəlili ilə;
@@ -419,6 +419,13 @@ D-072/B1/B3/B4/N6/N8/N9 paritetləri), seed (0003), tətbiq inteqrasiyası
 (`core/backend/` — ikili rejim, PLACEHOLDER konfiq → avtomatik MOCK),
 SQL struktur lint-i (CI-da). Testlər: 140 → **165** (lokal JVM: 100/100).
 **Növbəti qapı: M2 (Rust nüvə — JNI, Clock trait, proptest paritetləri).**
+
+**M2 İCRA OLUNDU (2026-11-07, D-080):** `rust-core/` (qoshul-core: types/clock/rules/
+economy/geo; qoshul-jni: cdylib, numerik səth) — A4 proptest 0..3100 TAM, D-073 matris,
+B6 double-spend, haversine simmetriyası; `RustParityTest` 11/11 host .so ilə; CI-də
+cargo-ndk jniLibs (APK-da real Rust) + JVM testləri host .so məcburiyyəti (risk 2,
+variant (a) təsdiqləndi). Engine Kotlin fallback-də qalır — paritet sübut olundu,
+keçid M3-də qiymətləndirilir.
 
 ---
 

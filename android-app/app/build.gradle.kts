@@ -20,8 +20,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 15
-        versionName = "0.17.0"
+        versionCode = 16
+        versionName = "0.18.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(
@@ -81,6 +81,9 @@ android {
             "--add-opens=java.base/java.text=ALL-UNNAMED",
             "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
             "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+            // M2 (D-080): host Rust .so — RustParityTest üçün; yoxdursa testlər
+            // assumeTrue ilə skip edir (Kotlin fallback 165 test ilə örtülüdür)
+            "-Dqoshul.jni.path=../rust-core/target/release",
         )
     }
     packaging {

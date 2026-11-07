@@ -1,0 +1,13 @@
+[package]
+name = "qoshul-core"
+description = "Qoshul.az qaydalar nüvəsi — Kotlin XpRules/AppEngine pariteti (M2, D-080)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT"
+
+[dependencies]
+geo.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

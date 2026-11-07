@@ -1,6 +1,7 @@
-# Qoshul.az native (Kotlin + Compose) CI — D-036/D-040.
-# Yeganə pipeline: testlər + APK (köhnə Flutter apk.yml D-065 ilə silindi).
-# M1 (D-078): supabase/ sxemi də izlənilir + SQL struktur lint-i.
+# Qoshul.az native (Kotlin + Compose + Rust) CI — D-036/D-040/D-080.
+# M1: supabase/ sxem + SQL struktur lint-i.
+# M2: rust-core (qoshul-core + qoshul-jni) — fmt/clippy/test + host .so
+#     (paritet testləri üçün) + cargo-ndk ilə Android jniLibs.
 name: Native
 
 on:
@@ -10,6 +11,7 @@ on:
       - ".github/workflows/native.yml"
       - "android-app/**"
       - "supabase/**"
+      - "rust-core/**"
       - "scripts/lint_sql.py"
   workflow_dispatch:
 
@@ -30,6 +32,47 @@ jobs:
     steps:
       - name: Kodu çıxar
         uses: actions/checkout@v4
+
+      - name: Rust toolchain (stable, D-080)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust keşi
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            rust-core/target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust-core/Cargo.lock') }}
+          restore-keys: rust-${{ runner.os }}-
+
+      - name: Rust fmt + clippy (D-080)
+        working-directory: rust-core
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Rust testləri (27 — unit + proptest)
+        working-directory: rust-core
+        run: cargo test --release
+
+      - name: Host .so (RustParityTest üçün)
+        working-directory: rust-core
+        run: cargo build --release -p qoshul-jni
+
+      - name: Android NDK (jniLibs üçün)
+        uses: android-actions/setup-android@v3
+
+      - name: cargo-ndk + Android .so (arm64-v8a + armeabi-v7a)
+        working-directory: rust-core
+        run: |
+          sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1 || sdkmanager --install "ndk;27.2.12479018" > /dev/null 2>&1
+          cargo install --locked cargo-ndk --version 3.5.5
+          cargo ndk -t arm64-v8a -t armeabi-v7a -o ../android-app/app/src/main/jniLibs build --release -p qoshul-jni
+          ls -la ../android-app/app/src/main/jniLibs/*/
 
       - name: JDK 21
         uses: actions/setup-java@v4
