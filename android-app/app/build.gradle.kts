@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+}
+
+// M1 (D-079): local.properties → BuildConfig. PLACEHOLDER dəyərlər = MOCK.
+// local.properties .gitignore-dadır (heç vaxt repo-ya düşmür).
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -11,9 +20,22 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.16.0"
+        versionCode = 15
+        versionName = "0.17.0"
         vectorDrawables { useSupportLibrary = true }
+        // — M1: Supabase konfiqi (D-078/D-079) —
+        buildConfigField(
+            "String", "SUPABASE_URL",
+            "\"" + (localProps.getProperty("SUPABASE_URL") ?: "PLACEHOLDER_SUPABASE_URL") + "\"",
+        )
+        buildConfigField(
+            "String", "SUPABASE_ANON_KEY",
+            "\"" + (localProps.getProperty("SUPABASE_ANON_KEY") ?: "PLACEHOLDER_SUPABASE_ANON_KEY") + "\"",
+        )
+        buildConfigField(
+            "String", "BACKEND_MODE",
+            "\"" + (localProps.getProperty("BACKEND_MODE") ?: "MOCK") + "\"",
+        )
     }
 
     buildTypes {
@@ -88,6 +110,12 @@ dependencies {
     // FFI nüvə .so ~1 MB/ABI, OpenGL backend (Vulkan runtime-a ehtiyac yoxdur)
     implementation(libs.maplibre.compose.android)
     runtimeOnly(libs.maplibre.compose.runtime.opengl.android)
+
+    // — M1: Supabase backend (D-068 pin; supabase/README.md §2) —
+    implementation(libs.supabase.kt)
+    implementation(libs.supabase.gotrue)
+    implementation(libs.ktor.client.cio)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

@@ -84,7 +84,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QoshulApp() {
     val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
-    val engine = remember { AppEngine(scope = scope) }
+    // M1 (D-078): MOCK → NoopSync; SUPABASE → SupabaseSync (BuildConfig-dən).
+    val sync = remember { az.qoshul.app.core.backend.BackendSync.create(scope) }
+    val engine = remember { AppEngine(scope = scope, sync = sync) }
     val st by engine.state.collectAsState()
     val nav = rememberNavState()
     val focus = remember { MapFocusState() }

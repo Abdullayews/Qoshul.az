@@ -4,6 +4,7 @@ import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.QoshulDataSource
 import az.qoshul.app.core.data.dateLabelFor
+import az.qoshul.app.core.data.dateLabelToIso
 import az.qoshul.app.core.model.ActivityXpResult
 import az.qoshul.app.core.model.AppNotification
 import az.qoshul.app.core.model.AssistantParse
@@ -31,6 +32,8 @@ import az.qoshul.app.core.model.XpCardCode
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.badgeDefs
 import az.qoshul.app.core.model.isQuietHours
+import az.qoshul.app.core.backend.SyncEvent
+import az.qoshul.app.core.backend.SyncSink
 import az.qoshul.app.core.safety.Safety
 import az.qoshul.app.core.model.parseAssistantEvent
 import java.time.LocalDateTime
@@ -59,6 +62,12 @@ class AppEngine(
     val dataSource: QoshulDataSource = FakeQoshulDataSource,
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
+    /**
+     * M1 (D-078): backend güzgüsü — null = MOCK (testlər/determinizm dəyişmir).
+     * SUPABASE rejimində mutasiyalar [SyncEvent] kimi [sync]-ə çatdırılır;
+     * qaydaları server tərəfdə SQL funksiyaları zorlayır (supabase/0002).
+     */
+    private val sync: SyncSink? = null,
 ) {
     /**
      * A2 (M0): vahid vaxt mənbəyi — ARTIQ PUBLİK. Modellerin/UI-ın bütün
@@ -275,8 +284,18 @@ class AppEngine(
         xpEventIds.add(key)
         val beforeRank = rankIndex
         xpV += amount
+        report(SyncEvent.XpAwarded(key, amount, "award"))
         maybeLevelUp(beforeRank)
         return true
+    }
+
+    /**
+     * M1: güzgü çıxışı — heç vaxt atmır, heç vaxt bloklamır (Safety qatır).
+     * Server tərəfdə eyni qayda intent RPC-ləri içində icra olunur (qayda 8).
+     */
+    private fun report(e: SyncEvent) {
+        val s = sync ?: return
+        Safety.run("engine:report") { s.report(e) }
     }
 
     private fun maybeLevelUp(beforeIndex: Int) {
@@ -317,6 +336,7 @@ class AppEngine(
 
     /** D-056: dost dəvəti → +100 XP (bir dəfə, XpRules.INVITE_XP əvvələr ölü idi). */
     fun inviteFriend(): Boolean {
+        report(SyncEvent.InviteIntent)
         val awarded = award("invite", XpRules.INVITE_XP)
         if (awarded) {
             notify(
@@ -349,6 +369,7 @@ class AppEngine(
      * A2: default parametr clock-dan.
      */
     fun dailyLogin(today: LocalDate = now().toLocalDate()) {
+        report(SyncEvent.DailyLoginIntent)
         val day = today.toEpochDay()
         val last = lastLoginDayV
         if (last != null && day <= last) return // bu gün artıq sayılıb / saat geri
@@ -497,6 +518,7 @@ class AppEngine(
     fun checkInEvent(id: String, at: LocalDateTime = now()): Boolean {
         val e = eventById(id) ?: return false
         if (!joinedV.contains(id) || checkedInV.contains(id)) return false
+        report(SyncEvent.CheckInIntent(id, lat = null, lng = null))
         checkedInV.add(id)
         award("checkin-$id", XpRules.CHECK_IN_XP)
         // Nişanlar (ROL F)
@@ -547,6 +569,19 @@ class AppEngine(
         )
         joinedV.add(id)
         // ROL F: yaratma XP dərhal YOX — ≥3 iştirakçı check-in-də verilir.
+        report(
+            SyncEvent.CreateEventIntent(
+                localId = id, title = title, category = category, city = city,
+                location = if (format == "Onlayn") "Onlayn görüş" else location,
+                dateIso = java.time.LocalDate.ofEpochDay(epochDay.toLong()).toString(),
+                time = time, capacity = capacity, description = description,
+                priceAzn = if (price > 0) price else null,
+                ageLimit = ageLimit, language = language, level = level,
+                format = format, approval = approval, recurring = recurring,
+                lat = lat ?: c?.lat, lng = lng ?: c?.lng, venueId = null,
+                imageKey = dataSource.imageForCategory(category),
+            )
+        )
         emit()
     }
 
@@ -559,6 +594,7 @@ class AppEngine(
      */
     fun addReview(eventId: String, rating: Int, comment: String, today: LocalDate = now().toLocalDate()): Boolean {
         if (eventById(eventId) == null) return false
+        report(SyncEvent.AddReviewIntent(eventId, rating, comment))
         val key = weekKey(today)
         if (key != reviewXpWeekKey) {
             reviewXpWeekKey = key
@@ -586,11 +622,13 @@ class AppEngine(
         if (swipesV.containsKey(personId) || blockedV.contains(personId)) return false
         swipesV[personId] = interested
         if (!interested) {
+            report(SyncEvent.SwipeIntent(personId, interested = false, matched = false))
             emit()
             return false
         }
         val p = personById(personId)
         if (p == null || !p.likesBack) {
+            report(SyncEvent.SwipeIntent(personId, interested = true, matched = false))
             emit()
             return false
         }
@@ -612,6 +650,7 @@ class AppEngine(
             matchXpToday++
             award("match-$personId", XpRules.MATCH_XP)
         }
+        report(SyncEvent.SwipeIntent(personId, interested = true, matched = true))
         emit()
         return true
     }
@@ -649,6 +688,15 @@ class AppEngine(
             status = if (venue.autoAccept) ResvStatus.CONFIRMED else ResvStatus.PENDING,
         )
         reservationsV.add(0, resv)
+        // M1: QR/share token serverdə yaranır (N1/N8) — bu görüntü yalnız lokal
+        report(
+            SyncEvent.CreateReservationIntent(
+                venueId = venue.id,
+                dateIso = dateLabelToIso(date, today()) ?: today().toString(),
+                time = time, party = party, note = note,
+                couponCode = coupon?.code, localId = id,
+            )
+        )
         notify(
             NotifType.RESV_UPDATE,
             if (venue.autoAccept) "Rezerv təsdiqləndi" else "Rezerv gözləyir",
@@ -663,6 +711,7 @@ class AppEngine(
     fun checkInReservation(id: String): Boolean {
         val resv = reservationsV.firstOrNull { it.id == id } ?: return false
         if (!resv.canCheckIn) return false
+        report(SyncEvent.UseReservationIntent(resv.qrCode))
         resv.status = ResvStatus.USED
         award("resv-$id", XpRules.RESERVATION_XP)
         if (resv.couponCode != null) {
@@ -675,6 +724,7 @@ class AppEngine(
     /** ROL E-7: ləğv (mock: 2 saatdan əvvəl həmişə pulsuz). */
     fun cancelReservation(id: String) {
         reservationsV.filter { it.id == id && it.canCancel }.forEach { r ->
+            report(SyncEvent.CancelReservationIntent(id))
             r.status = ResvStatus.CANCELLED
             notify(
                 NotifType.RESV_UPDATE,
@@ -688,6 +738,7 @@ class AppEngine(
     /** ROL E-7: gəlməmə — 3 dəfə → 7 gün rezerv hüququ məhdudiyyəti. */
     fun markNoShow(id: String) {
         reservationsV.filter { it.id == id && it.canCancel }.forEach { r ->
+            report(SyncEvent.NoShowIntent(id))
             r.status = ResvStatus.NO_SHOW
             noShowCountV++
             if (noShowCountV >= XpRules.NO_SHOW_LIMIT) {
@@ -718,6 +769,7 @@ class AppEngine(
      * olmaz — kupon diskret alışdır, qismən alınmır → REDD.
      */
     fun buyCoupon(offerId: String): CouponPurchase {
+        report(SyncEvent.BuyCouponIntent(offerId))
         val offer = offersV.firstOrNull { it.id == offerId }
             ?: return CouponPurchase.Failure(SpendError.OFFER_NOT_FOUND)
         if (offer.autoByLevel) return CouponPurchase.Failure(SpendError.AUTO_ONLY)
@@ -768,6 +820,7 @@ class AppEngine(
      * oluna bilər".
      */
     fun previewSpend(venueId: String, xpAmount: Int, billAzn: Double): SpendPreview {
+        report(SyncEvent.PreviewSpendIntent(venueId, xpAmount, billAzn))
         val acct = venueXp[venueId]
             ?: return SpendPreview(false, 0.0, SpendError.NO_ACCOUNT)
         if (xpAmount <= 0 || billAzn <= 0) {
@@ -795,6 +848,7 @@ class AppEngine(
         venueId: String, xpAmount: Int, billAzn: Double,
         note: String = "Kassada XP endirimi",
     ): Double? {
+        report(SyncEvent.SpendIntent(venueId, xpAmount, billAzn, note))
         val p = previewSpend(venueId, xpAmount, billAzn)
         if (!p.ok) return null
         // D-061 "nə olar əgər" — preview ilə spend arası hesab yoxa çıxsa
@@ -817,6 +871,7 @@ class AppEngine(
     // — L.4-1: müştərinin dinamik XP kartı (60s, tək istifadəlik) —
 
     fun regenerateXpCard(venueId: String) {
+        report(SyncEvent.XpCardIssueIntent(venueId))
         xpCardV = XpCardCode.fresh(now())
         xpCardVenueIdV = venueId
         emit()
@@ -824,6 +879,7 @@ class AppEngine(
 
     /** Dinamik QR işlənib → təkrar istifadə mümkün deyil (L.4 qorunması). */
     fun markXpCardUsed() {
+        xpCardV?.let { report(SyncEvent.XpCardConsumeIntent(it.nonce)) }
         xpCardV?.used = true
         emit()
     }
@@ -849,6 +905,8 @@ class AppEngine(
         val venueId = e.venueId ?: return null
         val acct = venueXp[venueId] ?: return null
         finishedActivitiesV.add(e.id)
+
+        report(SyncEvent.GrantVenueXpIntent(acct.venueId, XpRules.ORGANIZER_XP, "Təşkilatçı — \"${e.title}\""))
 
         // Təşkilatçı mükafatı — obyekt bazasına grant (A2: at = vahid clock).
         acct.grant(
@@ -917,6 +975,7 @@ class AppEngine(
 
     /** ROL I: blok — qarşılıqlı görünməzlik, chat bağlanır. */
     fun blockUser(personId: String) {
+        report(SyncEvent.BlockIntent(personId, blocked = true))
         blockedV.add(personId)
         friendshipsV.remove(personId)
         friendMessagesV.remove(personId)
@@ -925,12 +984,14 @@ class AppEngine(
     }
 
     fun unblockUser(personId: String) {
+        report(SyncEvent.BlockIntent(personId, blocked = false))
         blockedV.remove(personId)
         emit()
     }
 
     /** ROL I: report — eyni istifadəçiyə 3+ → avtomatik məhdudlaşdırma. */
     fun reportUser(personId: String, reason: String, note: String = "") {
+        report(SyncEvent.ReportIntent("USER", personId, reason, note))
         reportsV.add(
             ReportEntry(
                 targetType = "user", targetId = personId,
@@ -948,6 +1009,7 @@ class AppEngine(
     // ═════════════════════════ Söhbətlər ═════════════════════════
 
     fun sendEventMessage(eventId: String, text: String) {
+        report(SyncEvent.MessageIntent("EVENT", eventId, null, text))
         val list = eventMessagesV.getOrPut(eventId) { mutableListOf() }
         list.add(ChatMessage("Sən", text, mine = true))
         mockReply(list, eventId)
@@ -955,6 +1017,7 @@ class AppEngine(
     }
 
     fun sendFriendMessage(personId: String, text: String) {
+        report(SyncEvent.MessageIntent("PERSONAL", null, personId, text))
         val list = friendMessagesV.getOrPut(personId) { mutableListOf() }
         list.add(ChatMessage("Sən", text, mine = true))
         mockFriendReply(list, personId) // D-056: şəxsi söhbətdə də cavab gəlir

@@ -45,3 +45,24 @@ fun dateLabelFor(epochDay: Long, today: LocalDate): String =
             else -> dayLabel(d, today)
         }
     }
+
+/**
+ * M1 (D-078): tərs çevirmə — etiket ("Bu gün"/"Sabah"/"Noy 14") → ISO tarix.
+ * Supabase güzgüsü üçün (fn_create_reservation real date istəyir).
+ * Naməlum formatda null (Safety blok-ləğvi YOXDUR — çağıran null-gözələyir).
+ */
+fun dateLabelToIso(label: String, today: LocalDate): String? {
+    val t = label.trim()
+    return when {
+        t == "Bu gün" -> today.toString()
+        t == "Sabah" -> today.plusDays(1).toString()
+        else -> {
+            val m = Regex("^([A-Za-zçğıəöşüÇĞİƏÖŞÜ]{3})\\s+(\\d{1,2})$").find(t)
+                ?: return null
+            val mi = MONTHS.indexOfFirst { it.equals(m.groupValues[1], ignoreCase = true) }
+            if (mi < 0) return null
+            val day = m.groupValues[2].toIntOrNull() ?: return null
+            runCatching { LocalDate.of(today.year, mi + 1, day).toString() }.getOrNull()
+        }
+    }
+}

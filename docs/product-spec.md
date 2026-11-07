@@ -189,13 +189,16 @@ nav-dan çıxarıldı, tam tədbir kəşfi Kəşfin daxili tabına keçdi).
 - İlk görüşlər üçün təhlükəsizlik məsləhətləri ekranı (ictimai məkanda görüş, yaxın adamı xəbərdar etmə).
 - Dəqiq ev ünvanı/koordinat heç vaxt API cavabında başqa istifadəçiyə qaytarılmır.
 
-## J. Backend-ə təsir (backend mərhələsi üçün — UI fazasında placeholder)
+## J. Backend-ə təsir (M1 icra olundu — D-076/D-077/D-078)
 
 Mövcud modullara əlavə: Interests (kateqoriyalar), Venues (məkanlar, slotlar), Reservations, Xp (hadisə jurnalı, balans, səviyyə), Coupons (təkliflər, kuponlar, istifadə), Reports/Moderation, Reviews, Partners.
 
-Əsas cədvəllər (Drizzle): `users`, `user_interests`, `categories`, `venues`, `venue_slots`, `reservations`, `events`, `event_participants`, `matches`, `swipes`, `xp_events` (immutable jurnal), `xp_balances`, `levels`, `coupons_offers`, `user_coupons`, `reviews`, `reports`, `blocks`, `notifications`.
+Əsas cədvəllər — **M1 sxemi (`supabase/migrations/0001_schema.sql`)**:
+`profiles`(+`profile_cards`), `user_interests`, `categories`, `venues`(+`venue_slots`, `venue_reviews`), `reservations`(+`share_claims`), `events`(+`event_participants`), `matches`, `swipes`, `xp_events` (immutable jurnal, idempotensiya), `venue_xp_accounts`+`venue_xp_ledger` (L.2/L.4), `levels`, `coupons_offers`, `user_coupons`, `reviews`, `reports`(+`admin_actions`), `blocks`, `notifications`(+`notification_settings`, `push_tokens`), `invites`, `rate_limit_buckets`, `xp_card_nonces`.
 
-Hər yeni endpoint üçün: DTO, validasiya, rate limit, test və OpenAPI təsviri məcburidir.
+Qaydalar (qayda 8/9): YALNIZ `0002_server_rules.sql` SECURITY DEFINER funksiyaları — XP/kupon/rezerv/streak/check-in/rate-limit; RLS hər cədvəldə; XP-həssas cədvəllərdə birbaşa DML revok edilib. Hər funksiya idempotensiya açarı ilə icra olunur (`xp_events.unique(profile_id,key)`).
+
+Hər yeni endpoint üçün: DTO, validasiya, rate limit, test və OpenAPI təsviri məcburidir. *(M4 mikroservis API üçün qüvvədədir.)*
 
 ## K. Günün əsas istifadəçi ssenarisi (nümunə)
 

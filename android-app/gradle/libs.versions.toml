@@ -17,6 +17,14 @@ profileinstaller = "1.4.1"
 robolectric = "4.17"
 zxing = "3.5.4"          # YALNIZ test: QR generasiyasının skan oluna bilməsi sübutu (D-041)
 maplibreCompose = "0.20.0" # MapLibre Compose — vektor xəritə (D-048); FFI nüvə 0.202610.0
+# — M1 (D-068): Supabase + Ktor + serialization —
+# qrup: io.github.jan-tennert.supabase (search.maven.org + gotrue-kt 2.6.1 POM
+# 200 ilə təsdiq; supabase-kt/postgrest-kt 3.9.0 bu gün D-068 metadata ilə
+# yoxlanılıb, CI-da gradle həlli son təsdiqi verir)
+supabaseKt = "3.9.0"        # umbrella (postgrest/realtime/storage/functions 3.9.0 daxil)
+gotrueKt = "2.6.1"          # auth modulu ayrıca versiya xətti (head 2.7.0-beta-1 — beta götürülür)
+ktorCio = "3.6.1"           # CIO engine — əlavə native asılılıq YOX (M1)
+serializationJson = "1.12.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -40,6 +48,11 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 maplibre-compose-android = { group = "org.maplibre.compose", name = "maplibre-compose-android", version.ref = "maplibreCompose" }
 maplibre-compose-runtime-opengl-android = { group = "org.maplibre.compose", name = "maplibre-compose-runtime-opengl-android", version.ref = "maplibreCompose" }
+# — M1: Supabase (D-068 pin) —
+supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", version.ref = "supabaseKt" }
+supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt", version.ref = "gotrueKt" }
+ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

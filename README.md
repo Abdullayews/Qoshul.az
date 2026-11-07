@@ -49,25 +49,28 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Dil | **Kotlin 2.4.21** (AGP 9.5, Gradle 9.8.2) |
 | UI | **Jetpack Compose** (BOM 2026.09, Material 3) |
 | Arxitektura | Tək `:app` modulu, package-by-feature; saf-Kotlin `AppEngine` + `StateFlow` (manual DI) |
+| Backend (M1) | **Supabase sxem + RLS + SECURITY DEFINER qaydalar** (`supabase/`) — supabase-kt 3.9.0 pin (D-078); MOCK/SUPABASE ikili rejim, PLACEHOLDER konfiq |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR | **Nayuki QR-Code-generator v1.8.0** (vendored, MIT) + ZXing sübut testləri (D-041) |
-| Test | **140 JVM testi** — məntiq + QR sübutu + Robolectric UI (D-042; M0 paketi D-075) |
+| Test | **165 JVM testi** — məntiq + QR sübutu + Robolectric UI + sync güzgü (D-042; M0: D-075, M1: D-078) |
 | APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · font subsetting |
-| CI | **GitHub Actions** — `native.yml`: testlər + release APK artifaktı |
+| CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
 ## 📁 Depo strukturu
 
 ```
 Qoshul.az/
 ├── android-app/            Native tətbiq (Kotlin + Compose)
-│   ├── app/src/main/       core/ (data · engine · glass · model · motion ·
-│   │                       safety · theme · ui) + features/ (assistant · auth ·
+│   ├── app/src/main/       core/ (backend · data · engine · glass · model ·
+│   │                       motion · safety · theme · ui) + features/ (assistant · auth ·
 │   │                       chats · coupons · events · feed · map · match ·
 │   │                       notifications · onboarding · partners · profile ·
 │   │                       reservations · safety · settings · shell · venues · xp)
-│   └── app/src/test/       140 JVM testi (Robolectric daxil)
-├── docs/                   decisions.md · product-spec.md · design-spec.md
-└── .github/workflows/      native.yml (test + APK)
+│   └── app/src/test/       165 JVM testi (Robolectric daxil)
+├── supabase/               M1: sxem + RLS + server qaydaları (D-076/D-077)
+├── scripts/                lint_sql.py (SQL struktur lint-i)
+├── docs/                   decisions.md · product-spec.md · design-spec.md · migration-research.md
+└── .github/workflows/      native.yml (SQL lint + test + APK)
 ```
 
 ## 🌿 İkili versiya (D-050)

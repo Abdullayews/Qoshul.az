@@ -1,5 +1,6 @@
 # Qoshul.az native (Kotlin + Compose) CI — D-036/D-040.
 # Yeganə pipeline: testlər + APK (köhnə Flutter apk.yml D-065 ilə silindi).
+# M1 (D-078): supabase/ sxemi də izlənilir + SQL struktur lint-i.
 name: Native
 
 on:
@@ -8,6 +9,8 @@ on:
     paths:
       - ".github/workflows/native.yml"
       - "android-app/**"
+      - "supabase/**"
+      - "scripts/lint_sql.py"
   workflow_dispatch:
 
 permissions:
@@ -36,6 +39,10 @@ jobs:
 
       - name: Gradle cache
         uses: gradle/actions/setup-gradle@v4
+
+      - name: SQL struktur lint-i (M1, D-076)
+        working-directory: .
+        run: python3 scripts/lint_sql.py
 
       - name: Robolectric android-all keşi (D-042)
         # android-all jarları (~130 MB) ~/.m2-də qlobal keşlənir — hər run-da

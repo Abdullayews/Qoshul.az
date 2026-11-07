@@ -2,7 +2,8 @@
 
 > **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb ✅ · **M0 (bug fixlər) icra olundu**
 > (istifadəçi təsdiqi: 2026-11-07 „bəli düzəlişlərə başla" — QAYDA 0 qapısı açıldı;
-> qərarlar D-072…D-075, 140 test). Növbəti qapı: **M1** (Supabase backend).
+> qərarlar D-072…D-075, 140 test). **M1 (Supabase backend) icra olundu**
+> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim). Növbəti qapı: **M2** (Rust nüvə — JNI).
 > **Tarix:** 2026-11-07 · **Executor icra promptu:** v1.0 (2026-11-07)
 > **Yoxlanan baza:** `main` @ `9c553d6` (D-065, v0.15.0) · `server-only` @ `9f1fb01`
 > **Metod:** yalnız read-only əməliyyatlar (QAYDA 0); hər iddia fayl:sətir dəlili ilə;
@@ -358,19 +359,24 @@ Mənbə: `https://crates.io/api/v1/crates/<ad>` (User-Agent ilə; 2026-11-07).
 
 ## 6. Risklər və açıq suallar (istifadəçiyə yönəldilmiş)
 
-**2026-11-07 yeniləmə — 1/3/4/5/6-CEVABLANDI (M0 ilə bağlandı):**
+**2026-11-07 yeniləmə — 1/3/4/5/6/7-CEVABLANDI:**
 1. ✅ **C1 → REDD + balans sərhədi (D-072)** — istifadəçi: „yalnız hesabda var olan
    qədəri istifadə oluna bilər"; mənfi balans qadağan (B6), səbəb typed göstərilir.
 2. ⬜ JVM testləri × JNI (arxitektura riski, M2) — dəyişməyib.
-3. ⬜ supabase-kt rəsmiləşməsi (M1) — dəyişməyib.
+3. ✅ **supabase-kt 3.9.0 pin (D-078)** — namespace transferi BAŞ verib: paket
+   `io.github.jan.supabase`; JVM artifaktları `supabase-kt-jvm`/`postgrest-kt-jvm`
+   mövcuddur (repo1 200). Qərar: pin saxlanılır, M2 qapısında yenidən yoxlanılır.
 4. ⬜ Font subsetting Rust stack-i (M3) — dəyişməyib.
 5. ✅ **Streak semantikası (B2) → dondurulma modeli (D-073)** — 1-2 gün dondurulur,
    3+ gün sıfırlanır.
 6. ✅ **„Maraqlıyam" limiti → LIMITSİZ (D-074)** — həm onboarding maraq seçimində
    maksimum-8 həddi ləğv olundu, həm match gündəlik hərəkət limiti yoxdur
    (XP mükafatı gündə max 3 qalır).
-7. ⬜ Partnyor paneli: veb yoxsa mobil-daxili — M1 sxeminə təsir edir (açıq qalır).
-8. ⬜ D-reyestri (N12) main-kanonik siyasəti (D-071) — açıq qalır.
+7. ✅ **Partnyor paneli → MOBİL-DAHİLİ (D-077 kontekstində)** — PartnersScreen
+   biznes rejimi qalır (veb panel YOX); M4-də moderator/admin panel API REST
+   şəklində gəlir (N9).
+8. ✅ **D-reyestri (N12) → D-071 siyasəti tətbiq olundu** — bu sessiyada yeni
+   qərarlar D-076+ kimi ardıcıl yazıldı; köhnə ikinci cədvəl toxunulmaz qalır.
 
 Orijinal siyahı (arxiv):
 
@@ -406,7 +412,13 @@ N3 (review slot), N7 (ölü sabit istifadə olunur) + istifadəçi qərarları D
 Testlər: 121 → **140** (103-ü lokal JVM-də icra olundu — 86 XpEngine+Rules, 17 WhatIf;
 qalan Robolectric/UI testləri CI qapısında). Lokal icra üçün kotlinc 2.1.0 +
 kotlinx-coroutines 1.10.2 istifadə olundu (sandbox-da Android SDK yoxdur).
-**Növbəti qapı: M1 (Supabase backend — sxem, FK, RLS, supabase-kt 3.9.0 pin).**
+
+**M1 İCRA OLUNDU (2026-11-07, D-076..D-079):** sxem (0001: 29 cədvəl + RLS +
+PostGIS + ULID), server qaydaları (0002: 24 SECURITY DEFINER funksiya — D-073/D-074/
+D-072/B1/B3/B4/N6/N8/N9 paritetləri), seed (0003), tətbiq inteqrasiyası
+(`core/backend/` — ikili rejim, PLACEHOLDER konfiq → avtomatik MOCK),
+SQL struktur lint-i (CI-da). Testlər: 140 → **165** (lokal JVM: 100/100).
+**Növbəti qapı: M2 (Rust nüvə — JNI, Clock trait, proptest paritetləri).**
 
 ---
 
