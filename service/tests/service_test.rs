@@ -9,6 +9,18 @@ use std::sync::{Arc, Mutex};
 use qoshul_service::supabase::{RestError, SupabaseRest};
 use qoshul_service::{build_router, AppState};
 
+/// D-092: vaxt-bombası ləğvi — 24s pəncərəsi (20-28 saat, jobs.rs)
+/// həmişə tutması üçün resv = AZ-indi + 24 saat. Əvvəlki HARDCODED
+/// "2026-11-08 10:00" yalnız AZ 06:00-14:00 aralığında işləyirdi —
+/// kənarda əbədi uğursuz (CI: 01:54 UTC 28h → keçdi, 13:44 UTC 16h → düşdü).
+fn sabah_24s() -> (String, String) {
+    let t = chrono::Utc::now() + chrono::Duration::hours(4) + chrono::Duration::hours(24);
+    (
+        t.format("%Y-%m-%d").to_string(),
+        t.format("%H:%M").to_string(),
+    )
+}
+
 /// Saxta backend — çağırışları QEYD edir (idempotensiya sübutları üçün).
 struct FakeBackend {
     reservations: Vec<Value>,
@@ -149,13 +161,14 @@ async fn reminders_idempotent_ikinci_tur_gormur() {
     // sabah 10:00 rezervi — run_reminders_now öz `now`-unu götürür;
     // plan_reminder-in SAF testləri jobs.rs-də (pəncərələr orada sübutlu)
     let fake = Arc::new(FakeBackend::new(vec![json!({
-        "id": "r1", "profile_id": "p1", "resv_date": "2026-11-08", "resv_time": "10:00",
+        "id": "r1", "profile_id": "p1",
+        "resv_date": sabah_24s().0, "resv_time": sabah_24s().1,
         "reminder_24h_sent_at": null, "reminder_2h_sent_at": null,
     })]));
     let st = test_state(fake.clone());
     let router = build_router(st);
-    // vaxtı dondurmaq üçün run_reminders_now real now istifadə edir —
-    // sabah tarixini DİNAMİK seçirik (test flake-ə davamlı):
+    // D-092: resv dinamikdir (AZ-indi+24s) — run_reminders_now real now
+    // istifadə edir, pəncərə 20-28s həmişə tutur:
     // (plan_reminder-in saf testləri jobs.rs-də; burada HTTP təbəqəsi yoxlanılır)
     let (status, v) = post_json(router.clone(), "/jobs/reminders/run", None, json!({})).await;
     assert_eq!(status, axum::http::StatusCode::OK);
@@ -175,7 +188,8 @@ async fn reminders_idempotent_ikinci_tur_gormur() {
 #[tokio::test]
 async fn reminders_patch_bos_qaytarir_sa_gondermir() {
     let fake = Arc::new(FakeBackend::new(vec![json!({
-        "id": "r9", "profile_id": "p1", "resv_date": "2026-11-08", "resv_time": "10:00",
+        "id": "r9", "profile_id": "p1",
+        "resv_date": sabah_24s().0, "resv_time": sabah_24s().1,
         "reminder_24h_sent_at": null, "reminder_2h_sent_at": null,
     })]));
     fake.make_patch_succeed(0); // «başqa tur artıq göndərib»

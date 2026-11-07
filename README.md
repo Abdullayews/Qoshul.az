@@ -24,7 +24,7 @@ rezervasiyalar (real skan edilən QR ilə), ikili XP iqtisadiyyatı, təhlükəs
 (qeydiyyat/blok) və AI köməkçi.
 
 Bütün texniki qərarlar mənbəsi ilə birlikdə
-[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-091).
+[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-092).
 
 ## ✨ Məhsul funksiyaları
 
