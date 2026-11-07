@@ -260,7 +260,7 @@ private fun Header(
  *   - qrup semantikası: TOP = Kəşf·Xəritə·Söhbətlər (addItem
  *     position=TOP), BOTTOM = Profil (Ghost-da SettingPage bu
  *     mövqedədir — ən sağda);
- *   - "Yarat" = selectable=False ACTION (Ghost "新建任务" ADD):
+ *   - "Yarat" = selectable=False ACTION (Ghost 『新建任务』 ADD):
  *     barın İÇINDƏ, daşma YOX (əvvəlki -5dp poke ləğv edildi);
  *   - pill: 18×4dp Q.primary, panelin ALT kənarına YAPIŞIQ
  *     (əvvəl -5dp üzürdü — "yerləşdirmə səhvdir" şikayəti), 250ms
@@ -347,7 +347,7 @@ private fun GlassNav(
 }
 
 /**
- * "Yarat" — D-088: qfw selectable=False ACTION item (Ghost "新建任务"
+ * "Yarat" — D-088: qfw selectable=False ACTION item (Ghost 『新建任务』
  * FluentIcon.ADD): barın İÇINDƏ, daşma YOX (əvvəlki -5dp poke və 47dp
  * üzən dairə ləğv edildi — "yerləşdirmə səhvdir" şikayəti). 36dp yumşaq
  * kafel (12dp radius, D-058 dili), primary + yumşaq kölgə, etiket altda.
