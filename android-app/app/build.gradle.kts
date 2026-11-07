@@ -20,8 +20,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.20.0"
+        versionCode = 19
+        versionName = "0.22.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(

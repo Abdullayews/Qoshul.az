@@ -199,11 +199,14 @@ fun XpBar(progress: Float, height: Dp = 6.dp) {
 
 @Composable
 fun Segmented(labels: List<String>, active: Int, onChanged: (Int) -> Unit) {
+    // D-090 (istifadəçi direktifi 2026-11-07): arxa trackin boz qalıntısı
+    // SİLİNDİ — fond 100% şəffafdır, yalnız aktiv ağ kapsul görünür.
+    // ("seçimə basdıqda arxa planda boşluqlarına görə boz kimi qalıntı qalır")
     Row(
         Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, bottom = 22.dp)
-            .background(Q.muted, RoundedCornerShape(Q.rPill))
+            .background(Color.Transparent, RoundedCornerShape(Q.rPill))
             .padding(4.dp)
     ) {
         labels.forEachIndexed { i, label ->

@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -116,6 +117,14 @@ class ScreenshotTest {
         settle()
         shot("03-events")
 
+        // D-089: kateqoriya pick overlay — açıq panel + seçim
+        compose.onNodeWithText("Hamısı").performClick()
+        settle()
+        shot("21-events-cat-overlay")
+        compose.onNodeWithText("Könüllülük").performClick()
+        settle()
+        shot("22-events-cat-picked")
+
         compose.onNodeWithText("Söhbətlər").performClick()
         settle()
         shot("04-chats")
@@ -152,6 +161,16 @@ class ScreenshotTest {
         }
         settle()
         shot("07-create")
+
+        // D-089: create-sheet dropdown — üzərinə çıxan panel.
+        // "Qəhvə" həm feed-də (arxa fon), həm sheet-də ola bilər —
+        // DİALOQ gec kompozisiya olunur → siyahının SONUNCUSU = trigger.
+        val qehve = compose.onAllNodesWithText("Qəhvə")
+        qehve[qehve.fetchSemanticsNodes().size - 1].performClick()
+        settle()
+        shot("23-create-ddl")
+        compose.onNodeWithText("Futbol").performClick()
+        settle()
     }
 
     // ═══════════════ 4. Tədbir detal sheet-i ═══════════════
@@ -211,6 +230,26 @@ class ScreenshotTest {
         screen = 2
         settle()
         shot("11-xp-card")
+    }
+
+    // ═══════════════ 5.5 Xəritə filtr overlay (D-089) ═══════════════
+
+    @Test
+    fun `xəritə filtri — overlay pick`() {
+        val engine = newEngine()
+        compose.setContent {
+            QoshulTheme { AppShell(engine = engine, nav = NavState(), onOpenCreate = {}) }
+        }
+        settle()
+        compose.onNodeWithText("Xəritə", substring = true).performClick()
+        settle()
+        shot("24-map")
+        compose.onNodeWithText("Hamısı").performClick()
+        settle()
+        shot("25-map-cat-overlay")
+        compose.onNodeWithText("Qəhvə").performClick()
+        settle()
+        shot("26-map-cat-picked")
     }
 
     // ═══════════════ 6. DPI AUDİTİ — sıx/kompakt ekran (560dpi, w360dp) ═══════════════

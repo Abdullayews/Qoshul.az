@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Groups
@@ -25,6 +23,7 @@ import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -40,6 +39,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,12 @@ import az.qoshul.app.core.ui.AiBox
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.QrCode
 import az.qoshul.app.core.ui.SheetScaffold
+import az.qoshul.app.core.ui.PickHostOverlay
+import az.qoshul.app.core.ui.PickHostState
+import az.qoshul.app.core.ui.PickOption
+import az.qoshul.app.core.ui.PickPlacement
+import az.qoshul.app.core.ui.pickAnchor
+import az.qoshul.app.core.ui.rememberPickHostState
 import az.qoshul.app.features.auth.QoshulTextField
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -108,6 +116,9 @@ fun CreateEventSheet(
     val scope = rememberCoroutineScope()
 
 
+    // D-089: forma pick-ləri üçün host — panel sheet-in kök qatında açılır
+    val pickHost = rememberPickHostState()
+
     fun aiFill() {
         scope.launch {
             aiBusy = true
@@ -146,7 +157,19 @@ fun CreateEventSheet(
         onDismiss()
     }
 
-    SheetScaffold(onDismiss = onDismiss) {
+    SheetScaffold(
+        onDismiss = onDismiss,
+        overlay = {
+            // D-089: pick panelləri formanın ÜZƏRİNƏ — sheet kök qatı
+            PickHostOverlay(
+                host = pickHost,
+                panelModifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                columns = 3,
+                maxHeight = 300.dp,
+                placement = PickPlacement.CENTERED,
+            )
+        },
+    ) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             Text("Birlikdə yeni plan quraq", style = T.h2)
             Spacer(Modifier.height(4.dp))
@@ -195,6 +218,7 @@ fun CreateEventSheet(
             }
             FormLine("Kateqoriya") {
                 DropdownLine(
+                    host = pickHost, key = "cat",
                     options = engine.dataSource.allCategories,
                     selected = category, onSelect = { category = it },
                 )
@@ -202,13 +226,14 @@ fun CreateEventSheet(
             Row {
                 Box(Modifier.weight(1f)) {
                     FormLine("Format") {
-                        DropdownLine(options = listOf("Oflayn", "Onlayn"), selected = format, onSelect = { format = it })
+                        DropdownLine(host = pickHost, key = "format", options = listOf("Oflayn", "Onlayn"), selected = format, onSelect = { format = it })
                     }
                 }
                 Spacer(Modifier.width(12.dp))
                 Box(Modifier.weight(1f)) {
                     FormLine("Şəhər") {
                         DropdownLine(
+                            host = pickHost, key = "city",
                             options = engine.dataSource.cities.map { it.name },
                             selected = city, onSelect = { city = it },
                         )
@@ -225,6 +250,7 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine("Tarix") {
                         DropdownLine(
+                            host = pickHost, key = "date",
                             options = nextDateLabels(14, engine.today()),
                             // D-053 fix: əvvəl selected = "01.11" formatında idi —
                             // options siyahısında ("Bu gün"/"Sabah"/"Noy 2") yox idi,
@@ -241,6 +267,7 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine("Saat") {
                         DropdownLine(
+                            host = pickHost, key = "time",
                             options = (6..23).map { "%02d:00".format(it) } + listOf("18:30", "19:30", "20:30"),
                             selected = time, onSelect = { time = it },
                         )
@@ -257,7 +284,7 @@ fun CreateEventSheet(
             FormLine("İştirak haqqı") {
                 Row {
                     Box(Modifier.weight(1f)) {
-                        DropdownLine(listOf("Pulsuz", "Ödənişli"), if (paid) "Ödənişli" else "Pulsuz") {
+                        DropdownLine(host = pickHost, key = "paid", options = listOf("Pulsuz", "Ödənişli"), selected = if (paid) "Ödənişli" else "Pulsuz") {
                             paid = it == "Ödənişli"
                         }
                     }
@@ -273,7 +300,8 @@ fun CreateEventSheet(
                         Box(Modifier.weight(1f)) {
                             FormLine("Yaş həddi") {
                                 DropdownLine(
-                                    listOf("Hamı üçün", "16+", "18+", "18–25", "25–35"),
+                                    host = pickHost, key = "age",
+                                    options = listOf("Hamı üçün", "16+", "18+", "18–25", "25–35"),
                                     selected = ageLimit, onSelect = { ageLimit = it },
                                 )
                             }
@@ -340,61 +368,48 @@ private fun FormLine(label: String, content: @Composable () -> Unit) {
     }
 }
 
-/** Sadə dropdown (ExposedDropdownMenu əvəzinə scrollable seçim siyahısı sətri). */
+/** D-089: dropdown — üzərinə çıxan seçim paneli (PickHostOverlay
+ * vasitəsilə, sheet-in kök Box-ında; əvvəlki 200dp scroll siyahısı
+ * ləğv — "sürüşdürmək yerinə üzərinə çıxan format" direktivi).
+ * Trigger: input sahəsi + çevrilən chevron. */
 @Composable
 fun DropdownLine(
+    host: PickHostState,
+    key: String,
     options: List<String>,
     selected: String,
     onSelect: (String) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Column {
-        Box(
-            Modifier
+    val open = host.openReq?.key == key
+    val chev by animateFloatAsState(
+        targetValue = if (open) 180f else 0f,
+        animationSpec = tween(Motion.D1, easing = Motion.ease),
+        label = "ddChev",
+    )
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .pickAnchor(host, key)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
                 .fillMaxWidth()
                 .androidxDropdownBg()
-                .androidxDropdownClick { expanded = !expanded }
-                .padding(horizontal = 12.dp, vertical = 13.dp)
-        ) {
-            Text(selected.ifEmpty { "Seç" }, style = T.input)
-        }
-        if (expanded) {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .androidxDropdownBg()
-            ) {
-                // D-062 fix: əvvəl `verticalScroll().height(200.dp)` idi —
-                // modifierlər xaricdən daxilə tətbiq olunduğundan scroll node
-                // XARİCDƏ qalırdı və sheet-in öz verticalScroll-unun verdiyi
-                // SONSUZ hündürlüklə ölçülürdü → "Vertically scrollable
-                // component was measured with an infinity maximum height
-                // constraints" IllegalStateException — dropdown AÇILANDA
-                // (hər hansı bir seçim sərinə toxunanda) app ÇÖKÜRDÜ.
-                // Doğru pattern: height XARİCDƏ (sərhədli qutu verir), scroll
-                // daxildə — CityPickerSheet-in LazyColumn(420.dp) qaydası.
-                Column(Modifier.height(200.dp).verticalScroll(rememberScrollState())) {
-                    options.forEach { opt ->
-                        val sel = opt == selected
-                        Text(
-                            opt,
-                            style = T.input.copy(
-                                color = if (sel) Q.primary else Q.foreground,
-                                fontWeight = if (sel) FontWeight.W700 else FontWeight.W400,
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .androidxDropdownClick {
-                                    onSelect(opt)
-                                    expanded = false
-                                }
-                                // D-058: seçili sətir — reference dili: tinted fon + qalın
-                                .background(if (sel) Q.secondary else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(10.dp))
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                        )
-                    }
+                .androidxDropdownClick {
+                    host.toggle(key, options.map { PickOption(it) }, selected, onSelect)
                 }
-            }
+                .padding(horizontal = 12.dp, vertical = 13.dp),
+        ) {
+            Text(
+                selected.ifEmpty { "Seç" }, style = T.input,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                Icons.Filled.ExpandMore, if (open) "bağla" else "seç",
+                tint = if (open) Q.primary else Q.mutedFg,
+                modifier = Modifier.size(18.dp).rotate(chev),
+            )
         }
     }
 }

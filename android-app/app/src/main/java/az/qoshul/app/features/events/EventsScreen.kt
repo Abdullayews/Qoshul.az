@@ -3,7 +3,6 @@ package az.qoshul.app.features.events
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,10 +81,15 @@ import az.qoshul.app.core.motion.StaggerIn
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.theme.JakartaSans
 import az.qoshul.app.core.theme.T
-import az.qoshul.app.core.ui.CategoryChip
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.MapFocusState
+import az.qoshul.app.core.ui.MiniPickTrigger
+import az.qoshul.app.core.ui.PickHostOverlay
+import az.qoshul.app.core.ui.PickOption
+import az.qoshul.app.core.ui.pickAnchor
+import az.qoshul.app.core.ui.pickHost
+import az.qoshul.app.core.ui.rememberPickHostState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.SafetyNote
@@ -118,6 +121,8 @@ fun EventsScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
+    // D-089: kateqoriya pick host-u — root Box host, trigger anchor ölçür
+    val pickHost = rememberPickHostState()
 
     val groupIcons = linkedMapOf(
         "Hamısı" to Icons.Filled.Explore, "İdman" to Icons.Filled.SportsVolleyball,
@@ -129,7 +134,7 @@ fun EventsScreen(
         "Səyahət və digər" to Icons.Filled.Flight,
     )
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().pickHost(pickHost)) {
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp)) {
                 SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir axtar...")
@@ -143,18 +148,21 @@ fun EventsScreen(
                 // — kateqoriya çipləri —
                 item {
                     StaggerIn(0) {
-                        // D-063: end 13dp — son çip ekran kənarında KƏSİLMİR
-                        // (7dp çip aralığı + 13 = 20dp content kənarı ilə düz)
-                        Row(Modifier.horizontalScroll(rememberScrollState()).padding(end = 13.dp)) {
-                            groupIcons.forEach { (name, icon) ->
-                                Box(Modifier.padding(end = 7.dp)) {
-                                    CategoryChip(
-                                        label = name, icon = icon, active = category == name,
-                                        onClick = { category = name },
-                                    )
-                                }
-                            }
-                        }
+                        // D-089: sürüşən çip zolağı əvəzinə MiniPickTrigger —
+                        // panel siyahının ÜZƏRİNƏ çıxır (PickHostOverlay)
+                        MiniPickTrigger(
+                            label = category,
+                            icon = groupIcons[category] ?: Icons.Filled.Explore,
+                            open = pickHost.openReq?.key == "cat",
+                            onClick = {
+                                pickHost.toggle(
+                                    "cat",
+                                    groupIcons.map { PickOption(it.key, it.value) },
+                                    category,
+                                ) { category = it }
+                            },
+                            modifier = Modifier.pickAnchor(pickHost, "cat"),
+                        )
                     }
                 }
                 // D-063: çiplər → seqment 20dp ayrılıq (tək kontrol zolağı kimi
@@ -267,6 +275,18 @@ fun EventsScreen(
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
+        // D-089: kateqoriya paneli — siyahının ÜZƏRİNƏ (root Box son qatı);
+        // pickAuto paneli avtomatik aşağı/yuxarı açır.
+        // columns=2: qrup adları UZUNDUR ("Biznes və karyera") — 3 sütunda
+        // ellipsis çox düşürdü (VLM QA); 2 sütunda tam oxunur.
+        PickHostOverlay(
+            host = pickHost,
+            panelModifier = Modifier.align(Alignment.TopStart)
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            columns = 2,
+            maxHeight = 340.dp,
+        )
         detailEvent?.let { ev ->
             EventDetailSheet(
                 engine, ev,

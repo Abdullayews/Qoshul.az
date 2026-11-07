@@ -73,6 +73,12 @@ import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.ui.MapFocusState
+import az.qoshul.app.core.ui.MiniPickTrigger
+import az.qoshul.app.core.ui.PickHostOverlay
+import az.qoshul.app.core.ui.PickOption
+import az.qoshul.app.core.ui.pickAnchor
+import az.qoshul.app.core.ui.pickHost
+import az.qoshul.app.core.ui.rememberPickHostState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.imagePaint
@@ -165,6 +171,8 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var reserveVenue by remember { mutableStateOf<Partner?>(null) }
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
     var pendingCamera by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    // D-089: xəritə filtr pick host-u (kateqoriya + məsafə panelləri)
+    val pickHost = rememberPickHostState()
     // D-061: stil yüklənmə uğursuzsa "Yenidən dənə" bütün xəritə qatını
     // (key dəyişdiyi üçün state də daxil) sıfırdan qurur — təkrar cəhd.
     var mapRetry by remember { mutableStateOf(0) }
@@ -189,6 +197,13 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }.map { MapPin.PersonP(it) }
     val pins = venuePins + eventPins + peoplePins
 
+    // D-089: xəritə filtr ikonları (əvvəl inline siyahı idi)
+    val mapCatIcons = linkedMapOf(
+        "Hamısı" to Icons.Filled.Public, "İdman" to Icons.Filled.SportsVolleyball,
+        "Qəhvə" to Icons.Filled.LocalCafe, "Texnologiya" to Icons.Filled.Memory,
+        "Piknik" to Icons.Filled.Park,
+    )
+
     // Robolectric (JVM test): FFI .so yüklənə bilməz → xəritə səthi yoxdur;
     // UI smoke-testləri qalan qatları (çiplər, kartlar) yoxlayır.
     val isJvmTest = remember { Build.FINGERPRINT.contains("robolectric", ignoreCase = true) }
@@ -211,7 +226,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         focus.consume()
     }
 
-    Box(Modifier.fillMaxSize().background(Q.tileFallback)) {
+    Box(Modifier.fillMaxSize().pickHost(pickHost).background(Q.tileFallback)) {
         if (!isJvmTest) {
             // D-061: key(mapRetry) — "Yenidən dənə" bütün xəritə alt-ağacını
             // (rememberMapState daxil) söküb yenidən qurur: təzə stil yükləmə cəhdi.
@@ -341,23 +356,39 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             luminance = 0.5f,
         ) {
             Column(Modifier.padding(10.dp)) {
-                Row(Modifier.horizontalScroll(rememberScrollState())) {
-                    listOf(
-                        "Hamısı" to Icons.Filled.Public, "İdman" to Icons.Filled.SportsVolleyball,
-                        "Qəhvə" to Icons.Filled.LocalCafe, "Texnologiya" to Icons.Filled.Memory,
-                        "Piknik" to Icons.Filled.Park,
-                    ).forEach { (name, icon) ->
-                        GlassFilterChip(name, icon, category == name) { category = name }
-                        Spacer(Modifier.width(7.dp))
-                    }
+                // D-089: iki sürüşən filtr zolağı → iki MiniPickTrigger
+                // (panellər PickHostOverlay-də — root Box-da, aşağıda)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    MiniPickTrigger(
+                        label = category,
+                        icon = mapCatIcons[category] ?: Icons.Filled.Public,
+                        open = pickHost.openReq?.key == "mcat",
+                        onClick = {
+                            pickHost.toggle(
+                                "mcat",
+                                mapCatIcons.map { PickOption(it.key, it.value) },
+                                category,
+                            ) { category = it }
+                        },
+                        modifier = Modifier.pickAnchor(pickHost, "mcat"),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    MiniPickTrigger(
+                        label = "$distanceKm km",
+                        icon = Icons.Filled.NearMe,
+                        open = pickHost.openReq?.key == "mdist",
+                        onClick = {
+                            pickHost.toggle(
+                                "mdist",
+                                listOf(1, 3, 5, 10).map { PickOption("$it km") },
+                                "$distanceKm km",
+                            ) { distanceKm = it.removeSuffix(" km").toInt() }
+                        },
+                        modifier = Modifier.pickAnchor(pickHost, "mdist"),
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.horizontalScroll(rememberScrollState())) {
-                    listOf(1, 3, 5, 10).forEach { km ->
-                        GlassFilterChip("$km km", Icons.Filled.NearMe, distanceKm == km) { distanceKm = km }
-                        Spacer(Modifier.width(7.dp))
-                    }
-                    Spacer(Modifier.width(6.dp))
+                Row {
                     GlassFilterChip("indi açıqdır", Icons.Filled.Schedule, openNow) { openNow = !openNow }
                     Spacer(Modifier.width(7.dp))
                     GlassFilterChip("endirimi var", Icons.Filled.Percent, withDiscount) { withDiscount = !withDiscount }
@@ -365,6 +396,14 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             }
         }
 
+        // D-089: xəritə filtr panelləri — xəritənin ÜZƏRİNƏ
+        PickHostOverlay(
+            host = pickHost,
+            panelModifier = Modifier.align(Alignment.TopStart)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            columns = 3,
+        )
         // — sayğac (şüşə həb) —
         // D-053 fix: nav pill zone-unun üstünə qaldırıldı (əvvəl arxasında gizlənirdi)
         GlassPill(

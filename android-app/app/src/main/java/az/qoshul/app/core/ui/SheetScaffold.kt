@@ -2,6 +2,7 @@ package az.qoshul.app.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -25,13 +26,18 @@ import az.qoshul.app.core.theme.Q
 
 /**
  * Vahid modal bottom sheet — Flutter showModalBottomSheet portu:
- * card fon, üst radius 8 (Q.rLg), drag handle YOX, tutamaq xətti.
+ * card fon, üst radius 8 (Q.rLg), drag handle YOX, tutmaq xətti.
+ *
+ * D-089: [overlay] — sheet-in KÖK Box-una son uşaq kimi çəkilən qat
+ * (DropdownLine pick panelləri üçün): bütün forma məzmununun ÜZƏRİNƏ
+ * düşür, heç bir sahəyə görə sıxılmır.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SheetScaffold(
     onDismiss: () -> Unit,
     scrollable: Boolean = true,
+    overlay: (@Composable BoxScope.() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
@@ -43,30 +49,35 @@ fun SheetScaffold(
         dragHandle = null,
         scrimColor = Q.foreground.copy(alpha = 0.45f),
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                // D-053 fix: imePadding — mətn sahəli sheet-lərdə (Yarat, Rezerv,
-                // rəy) klaviatura məzmunu örtürdü. Inset istehlakı qaydasına görə
-                // navigationBarsPadding + imePadding = max(nav, ime) — klaviatura
-                // açıqda yalnız ime, qapalıyken yalnız nav tətbiq olunur.
-                .navigationBarsPadding()
-                .imePadding()
-                // D-063: 12→24dp — son düymə/sahə sheet-in alt kənarından
-                // uzaq dursun (gesture nav təhlükəsi, VLM audit tapıntısı)
-                .padding(bottom = 24.dp)
-        ) {
-            // tutamaq xətti (Flutter-dəki 36x4 qapaq)
-            Box(
+        Box(Modifier.fillMaxWidth()) {
+            Column(
                 Modifier
-                    .padding(top = 10.dp, bottom = 14.dp)
-                    .width(36.dp)
-                    .height(4.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .background(Q.border, RoundedCornerShape(2.dp))
-            )
-            content()
+                    .fillMaxWidth()
+                    .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
+                    // D-053 fix: imePadding — mətn sahəli sheet-lərdə (Yarat, Rezerv,
+                    // rəy) klaviatura məzmunu örtürdü. Inset istehlakı qaydasına görə
+                    // navigationBarsPadding + imePadding = max(nav, ime) — klaviatura
+                    // açıqda yalnız ime, qapalıyken yalnız nav tətbiq olunur.
+                    .navigationBarsPadding()
+                    .imePadding()
+                    // D-063: 12→24dp — son düymə/sahə sheet-in alt kənarından
+                    // uzaq dursun (gesture nav təhlükəsi, VLM audit tapıntısı)
+                    .padding(bottom = 24.dp)
+            ) {
+                // tutamaq xətti (Flutter-dəki 36x4 qapaq)
+                Box(
+                    Modifier
+                        .padding(top = 10.dp, bottom = 14.dp)
+                        .width(36.dp)
+                        .height(4.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .background(Q.border, RoundedCornerShape(2.dp))
+                )
+                content()
+            }
+            // D-089: pick overlay qatı — formanın ÜZƏRİNƏ (D-062 dərsi: bu qat
+            // scroll Column-un İÇINDƏ deyil, yanında — sıxılma mümkün deyil).
+            overlay?.invoke(this)
         }
     }
 }

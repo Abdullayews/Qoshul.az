@@ -6,7 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -142,12 +142,14 @@ fun AppShell(
             unread = engine.unreadCount,
         )
         Box(Modifier.weight(1f)) {
-            // Fade-through tab keçidi (D-025)
+            // D-088: GD3/qfw səhifə keçidi — istiqamətli slide + fade
+            // (Ghost-Downloader-3 qfw_patch PopUpAniStackedWidget dili, 250ms)
             AnimatedContent(
                 targetState = index,
                 transitionSpec = {
-                    (fadeIn(tween(Motion.D2, easing = Motion.ease)) +
-                        scaleIn(initialScale = 0.94f, animationSpec = tween(Motion.D2, easing = Motion.ease)))
+                    val dir = if (targetState > initialState) 1 else -1
+                    (slideInHorizontally(tween(Motion.D2, easing = Motion.ease)) { it / 5 * dir } +
+                        fadeIn(tween(Motion.D2, easing = Motion.ease)))
                         .togetherWith(fadeOut(tween(Motion.D2)))
                 },
                 label = "tabs",
@@ -249,13 +251,23 @@ private fun Header(
  * şüşə aksentləri (spekulyar kənar + işıq qradiyenti + yumşaq kölgə)
  * yalnız 10% gücdə. Ölçülər dəyişməz (68dp hündürlük, 24dp radius).
  *
- * D-064: Ghost-Downloader-3 (qfluentwidgets NavigationBar) hərəkət dili —
- * sadələşdirilmiş variant, düymə məntiqi DƏYİŞMƏZ (istifadəçi direktivi):
- * 1) VAHİD aksent indikator (20×4dp pill) tab-lar ARASINDA sürüşür —
- * onların NavigationIndicator.startAnimation prinsipi (slot mərkəzləri
- * layout-dan özüllənir, ölçü/text-scale-dən asılı deyil);
- * 2) aktiv ikon ~3dp aşağı enir (iconAni.slideDown — bounce LƏĞV);
- * 3) aktiv item yumşaq kapsul (10% tint) qalır — "tint background".
+ * D-088 (M6, 2026-11-07): Ghost-Downloader-3 nav SİSTEMİNİN tam
+ * inteqrasiyası (istifadəçi direktivi; D-064 "sadələşdirilmiş variant"
+ * əvəz olunur). Mənbə: XiaoYouChR/Ghost-Downloader-3 (GPL-3)
+ * app/view/windows/main_window.py — MSFluentWindow + qfluentwidgets
+ * NavigationInterface. Yalnız DİZAYN/HƏRƏKƏT DİLİ götürülüb, kod
+ * köçürülməyib (lisenziya qeydi — decisions.md D-088):
+ *   - qrup semantikası: TOP = Kəşf·Xəritə·Söhbətlər (addItem
+ *     position=TOP), BOTTOM = Profil (Ghost-da SettingPage bu
+ *     mövqedədir — ən sağda);
+ *   - "Yarat" = selectable=False ACTION (Ghost "新建任务" ADD):
+ *     barın İÇINDƏ, daşma YOX (əvvəlki -5dp poke ləğv edildi);
+ *   - pill: 18×4dp Q.primary, panelin ALT kənarına YAPIŞIQ
+ *     (əvvəl -5dp üzürdü — "yerləşdirmə səhvdir" şikayəti), 250ms
+ *     easeOutCubic, slot mərkəzləri layout-dan ölçülür;
+ *   - aktiv item tint: NEYTRAL 6% (WinUI NavView seçim dili;
+ *     əvvəl primary 10% idi) — aksent ikon/mətn + pill-də qalır;
+ *   - aktiv ikon ~3dp aşağı enir (qfw iconAni, D-064-dən qalır).
  */
 @Composable
 private fun GlassNav(
@@ -265,6 +277,8 @@ private fun GlassNav(
     modifier: Modifier = Modifier,
 ) {
     data class Item(val icon: ImageVector, val activeIcon: ImageVector, val label: String)
+    // qfw NavigationItemPosition: TOP qrupu (0..2) + BOTTOM (Profil —
+    // Ghost SettingPage analogu, ən sağda)
     val items = listOf(
         Item(Icons.Outlined.Home, Icons.Rounded.Home, "Kəşf"),
         Item(Icons.Outlined.Map, Icons.Rounded.Map, "Xəritə"),
@@ -291,7 +305,7 @@ private fun GlassNav(
                     .padding(horizontal = 6.dp),
             ) {
                 items.forEachIndexed { i, item ->
-                    if (i == 2) CreateButton(onCreate)
+                    if (i == 2) CreateButton(onCreate)  // action: TOP/BOTTOM arasında (mərkəz)
                     NavItem(
                         icon = item.icon,
                         activeIcon = item.activeIcon,
@@ -307,8 +321,8 @@ private fun GlassNav(
                     )
                 }
             }
-            // Ghost-vari sürüşən indikator — ilk ölçmədən sonra görünür
-            // (ilkin dəyər birbaşa hədəfdə doğulur, soldan sürüşmə YOX).
+            // GD3/qfw pill — ALT kənara yapışıq (qfw panelində pill kənar
+            // xəttində durur). İlk ölçmədən sonra görünür.
             if (measured) {
                 val x by animateFloatAsState(
                     targetValue = slotCenters[index],
@@ -320,11 +334,11 @@ private fun GlassNav(
                         .align(Alignment.BottomStart)
                         .offset {
                             IntOffset(
-                                (x - 10.dp.toPx()).roundToInt(),
-                                -5.dp.roundToPx(),
+                                (x - 9.dp.toPx()).roundToInt(),
+                                -1.dp.roundToPx(),
                             )
                         }
-                        .size(width = 20.dp, height = 4.dp)
+                        .size(width = 18.dp, height = 4.dp)
                         .background(Q.primary, RoundedCornerShape(2.dp))
                 )
             }
@@ -332,7 +346,12 @@ private fun GlassNav(
     }
 }
 
-/** Mərkəzi "Yarat" düyməsi (D-034) — üstə qalxan yaşıl dairə. */
+/**
+ * "Yarat" — D-088: qfw selectable=False ACTION item (Ghost "新建任务"
+ * FluentIcon.ADD): barın İÇINDƏ, daşma YOX (əvvəlki -5dp poke və 47dp
+ * üzən dairə ləğv edildi — "yerləşdirmə səhvdir" şikayəti). 36dp yumşaq
+ * kafel (12dp radius, D-058 dili), primary + yumşaq kölgə, etiket altda.
+ */
 @Composable
 private fun CreateButton(onCreate: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
@@ -345,20 +364,20 @@ private fun CreateButton(onCreate: () -> Unit) {
     ) {
         Box(
             Modifier
-                .graphicsLayer { translationY = -5.dp.toPx() }
-                .size(47.dp)
+                .size(36.dp)
                 .shadowNav()
-                .background(Q.primary, CircleShape),
+                .background(Q.primary, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Add, "Yarat", tint = Q.primaryFg, modifier = Modifier.size(24.dp))
+            Icon(Icons.Filled.Add, "Yarat", tint = Q.primaryFg, modifier = Modifier.size(22.dp))
         }
+        Spacer(Modifier.height(5.dp))
         Text(
             "Yarat",
             style = androidx.compose.ui.text.TextStyle(
-                fontFamily = JakartaSans, fontSize = 10.5.sp, color = Q.mutedFg
+                fontFamily = JakartaSans, fontSize = 10.5.sp, color = Q.mutedFg,
+                fontWeight = FontWeight.W600,
             ),
-            modifier = Modifier.graphicsLayer { translationY = -1.dp.toPx() },
         )
     }
 }
@@ -369,17 +388,17 @@ private fun Modifier.androidxNavBg(color: Color, shape: androidx.compose.ui.grap
 private fun Modifier.shadowNav(): Modifier = this.then(
     Modifier.shadow(
         elevation = 6.dp,
-        shape = CircleShape,
+        shape = RoundedCornerShape(12.dp),
         ambientColor = Q.primary.copy(alpha = 0.28f),
         spotColor = Q.primary.copy(alpha = 0.28f),
     )
 )
 
 /**
- * Alt nav item — D-064 Ghost hərəkət dili: aktiv ikon ~3dp AŞAĞI enir
- * (iconAni.slideDown; bounce LƏĞV), rəng + filled ikon keçidi qalır;
- * kapsul (10% tint) = Ghost "tint background" qatı. Item-altı nöqtə LƏĞV —
- * onu nav səviyyəsində SÜRÜŞƏN indikator əvəz edir.
+ * Alt nav item — D-088: qfw NavigationInterface seçim dili: NEYTRAL 6%
+ * tint kapsul (WinUI NavView; əvvəl primary 10% idi) + aksent ikon/mətn;
+ * aktiv ikon ~3dp AŞAĞI enir (iconAni, D-064-dən); pill nav səviyyəsində
+ * SÜRÜŞƏN indikator kimi qalır (item-altı nöqtə YOX).
  */
 @Composable
 private fun NavItem(
@@ -406,7 +425,7 @@ private fun NavItem(
             .scaleTap(interaction)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
             .androidxNavBg(
-                if (active) Q.primary.copy(alpha = 0.10f) else Color.Transparent,
+                if (active) Q.foreground.copy(alpha = 0.06f) else Color.Transparent,
                 RoundedCornerShape(16.dp),
             )
             .padding(horizontal = 14.dp, vertical = 7.dp),

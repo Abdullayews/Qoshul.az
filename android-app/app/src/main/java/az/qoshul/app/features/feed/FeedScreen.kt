@@ -4,7 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -121,8 +121,11 @@ fun FeedScreen(
         AnimatedContent(
             targetState = view,
             transitionSpec = {
-                (fadeIn(tween(Motion.D2, easing = Motion.ease)) +
-                    scaleIn(initialScale = 0.94f, animationSpec = tween(Motion.D2, easing = Motion.ease)))
+                // D-088: GD3/qfw səhifə keçidi — slide (istiqamətli) + fade
+                // (Ghost-Downloader-3 qfw_patch PopUpAniStackedWidget dili)
+                val dir = if (targetState > initialState) 1 else -1
+                (slideInHorizontally(tween(Motion.D2, easing = Motion.ease)) { it / 5 * dir } +
+                    fadeIn(tween(Motion.D2, easing = Motion.ease)))
                     .togetherWith(fadeOut(tween(Motion.D2)))
             },
             label = "feedTabs",
@@ -137,7 +140,9 @@ fun FeedScreen(
     }
 }
 
-/** Daxili tab zolağı — "Sənin üçün | Tədbirlər" (Instagram-vari üst tablar). */
+/** Daxili tab zolağı — "Sənin üçün | Tədbirlər" (Instagram-vari üst tablar).
+ *  D-090: arxa boz track SİLİNDİ (100% şəffaf) — aktiv ağ kapsul qalır,
+ *  pill-lərin arasındakı "boz qalıntı" artıq görünmür. */
 @Composable
 private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
     val tabs = listOf(
@@ -148,7 +153,7 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
         Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 6.dp)
-            .background(Q.muted, RoundedCornerShape(Q.rPill))
+            .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(Q.rPill))
             .padding(4.dp)
     ) {
         tabs.forEachIndexed { i, (icon, activeIcon, label) ->

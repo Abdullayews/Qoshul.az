@@ -94,7 +94,11 @@ class CreateEventFlowTest {
         compose.onNodeWithText("Tədbirlər").performClick()
         compose.waitForIdle()
 
-        // az tədbirli kateqoriya seç (siyahıda 1-2 element qalır)
+        // az tədbirli kateqoriya seç (siyahıda 1-2 element qalır).
+        // D-089: kateqoriya artıq overlay paneldən seçilir — əvvəlcə
+        // trigger ("Hamısı") açır, sonra paneldən seçir
+        compose.onNodeWithText("Hamısı").performClick()
+        compose.waitForIdle()
         compose.onNodeWithText("Könüllülük").performClick()
         compose.waitForIdle()
 
