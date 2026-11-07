@@ -75,13 +75,16 @@
 | `fn_send_message` | N6: saatlıq 20; 60 s dublikat spam filtri; blok cütləri |
 | `fn_match_candidates` | D-070: `ST_DWithin` + GiST; görünüş/blok/restricted filtri (B7) |
 
-## 5. Realtime (M1)
+## 5. Realtime (M1 → M4-də klient kodu)
 
-Tətbiq `SUPABASE` rejimində `messages` + `notifications` + `reservations`
-cədvəllərinə `realtime-kt` ilə abunə olur (Channels API). Supabase Dashboard →
-Database → Replication → bütün 3 cədvəl üçün "Send to realtime" aktivləşdirilir.
+Cədvəllər hazırdır (`notifications`, `messages`, `reservations` + `push_tokens`).
+Klient tərəfdə abunə kodu (`realtime-kt`) **istifadə kodu gələndə** əlavə
+olunacaq (M4 push fazası); Supabase Dashboard → Database → Replication →
+həmin 3 cədvəl üçün "Send to realtime" aktivləşdirilir.
 
 ## 6. Storage (M1 — şəkil moderasiyası infra)
 
 Bucket: `event-photos` (public read, write yalnız auth). Dashboard → Storage →
-New bucket. Moderasiya işi (şəkli gizlətmə) M4 mikroservisində gəlir.
+New bucket. Moderasiya işi (şəkli gizlətmə) M4 mikroservisində gəlir;
+`storage-kt` 3.9.0-da JVM artifaktı YOXDUR (repo1 404) — app tərəfli yükləmə
+inteqrasiyası M4-də qiymətləndiriləcək.

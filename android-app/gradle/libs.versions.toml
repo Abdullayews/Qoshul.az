@@ -48,9 +48,13 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 maplibre-compose-android = { group = "org.maplibre.compose", name = "maplibre-compose-android", version.ref = "maplibreCompose" }
 maplibre-compose-runtime-opengl-android = { group = "org.maplibre.compose", name = "maplibre-compose-runtime-opengl-android", version.ref = "maplibreCompose" }
-# — M1: Supabase (D-068 pin) —
+# — M1: Supabase (D-068 pin) — QEYD (CI fəslindən, D-078 düzəlişi):
+# supabase-kt "umbrella" əslində CORE-dur (SupabaseClient); modullar
+# ayrıca deklarasiya olunur: gotrue-kt (auth), postgrest-kt (RPC).
+# realtime-kt/storage-kt — istifadə kodu gələndə əlavə olunacaq (M4).
 supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", version.ref = "supabaseKt" }
 supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt", version.ref = "gotrueKt" }
+supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKt" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 

@@ -112,8 +112,10 @@ dependencies {
     runtimeOnly(libs.maplibre.compose.runtime.opengl.android)
 
     // — M1: Supabase backend (D-068 pin; supabase/README.md §2) —
+    // supabase-kt = core (SupabaseClient); modullar ayrıca (CI fəslindən):
     implementation(libs.supabase.kt)
     implementation(libs.supabase.gotrue)
+    implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.cio)
     implementation(libs.kotlinx.serialization.json)
 
