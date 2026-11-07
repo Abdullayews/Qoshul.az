@@ -1,0 +1,28 @@
+# Qoshul.az — Caddy TLS kənarı (M5, D-085)
+# Let's Encrypt avtomatik; domen {$PROXY_DOMAIN} env-dən gəlir (.env: PROXY_DOMAIN).
+# Şərtlər: 80+443 xaricə açıq (Oracle Security List + instance iptables),
+# DNS A qeydi bu serverin publik IP-sinə yönəlib.
+
+{$PROXY_DOMAIN} {
+	# Bütün Supabase API yolları (rest/v1, auth/v1, realtime/v1, storage/v1,
+	# dashboard) Envoy-ə ötürülür — Envoy öz daxili routing edir.
+	reverse_proxy api-gw:8000
+
+	# WebSocket (realtime profili) — Caddy avtomatik işlədir; açıq şəkildə
+	# qeyd edilmir (reverse_proxy hərəkəti HTTP/1.1 Upgrade başlıqlarını keçirir).
+
+	header {
+		# Təhlükəsizlik başlıqları
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 50MiB
+			roll_keep 3
+		}
+	}
+}
