@@ -17,5 +17,6 @@ Thumbs.db
 
 # --- M2 (D-080): Rust ---
 rust-core/target/
+service/target/
 rust-core/Cargo.lock.orig
 android-app/app/src/main/jniLibs/

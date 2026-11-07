@@ -88,3 +88,23 @@ Bucket: `event-photos` (public read, write yalnız auth). Dashboard → Storage 
 New bucket. Moderasiya işi (şəkli gizlətmə) M4 mikroservisində gəlir;
 `storage-kt` 3.9.0-da JVM artifaktı YOXDUR (repo1 404) — app tərəfli yükləmə
 inteqrasiyası M4-də qiymətləndiriləcək.
+
+## 7. M4 mikroservisi (`service/`)
+
+| Env | Default (PLACEHOLDER) | Nə vaxt lazımdır |
+|---|---|---|
+| `SUPABASE_URL` | `PLACEHOLDER` | deployda |
+| `SUPABASE_SERVICE_ROLE_KEY` | `PLACEHOLDER` | deployda — 🔶 YALNIZ burada; tətbiqə YAZILMIR |
+| `FCM_SERVICE_ACCOUNT_JSON` | `PLACEHOLDER` | push aktivləşəndə (service-account JSON bütöv) |
+| `ADMIN_TOKEN` | `PLACEHOLDER` | admin API istifadəsi üçün (X-Admin-Token başlığı) |
+| `PORT` | `8080` | — |
+| `JOBS_INTERVAL_SECS` | `60` | — |
+
+```bash
+cd service && cargo run --release
+curl http://localhost:8080/health
+```
+
+Joblar: `POST /jobs/reminders/run` (24s/2s — DB sütunları ilə idempotent),
+`POST /jobs/moderation/run` (stale report-lar DISMISSED; 7+ günlük PENDING
+review-lər avtomatik APPROVE → XP SQL-də). Admin API: `/admin/*` (D-082).

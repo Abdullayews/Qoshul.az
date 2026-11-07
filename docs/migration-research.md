@@ -3,7 +3,7 @@
 > **Status:** Mərhələ 1 (ARAŞDIRMA) tamamlanıb ✅ · **M0 (bug fixlər) icra olundu**
 > (istifadəçi təsdiqi: 2026-11-07 „bəli düzəlişlərə başla" — QAYDA 0 qapısı açıldı;
 > qərarlar D-072…D-075, 140 test). **M1 (Supabase backend) icra olundu**
-> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim; CI yaşıl + v0.17.0-beta release). **M2 (Rust nüvə + JNI) icra olundu** (D-080, 176+27 test; paritet host .so ilə sübut; CI yaşıl + v0.18.0-beta release). **M3 (dil miqrasiyası) icra olundu** (D-081, 178+35 test; io.nayuki silindi, .py silindi, ZXing silindi → quircs). Növbəti qapı: **M4** (axum mikroservis: FCM HTTP v1, idempotent joblar, admin API).
+> (D-076…D-079, 165 test; sxem+RLS+qaydalar+ikili rejim; CI yaşıl + v0.17.0-beta release). **M2 (Rust nüvə + JNI) icra olundu** (D-080, 176+27 test; paritet host .so ilə sübut; CI yaşıl + v0.18.0-beta release). **M3 (dil miqrasiyası) icra olundu** (D-081, 178+35 test; io.nayuki silindi, .py silindi, ZXing silindi → quircs). **M4 (axum mikroservis) icra olundu** (D-082, service/ 14 test; FCM HTTP v1, idempotent joblar, admin API). **MİQRASİYA PLANI (M0–M4) TAMAMLANDI.**
 > **Tarix:** 2026-11-07 · **Executor icra promptu:** v1.0 (2026-11-07)
 > **Yoxlanan baza:** `main` @ `9c553d6` (D-065, v0.15.0) · `server-only` @ `9f1fb01`
 > **Metod:** yalnız read-only əməliyyatlar (QAYDA 0); hər iddia fayl:sətir dəlili ilə;
@@ -433,6 +433,12 @@ U+2713 ✓ tofu — stringlərdən çıxarıldı); write-fonts 0.55 subsetter YO
 regenerasiya gələcək mərhələdə. `git grep io.nayuki` boş, `.py` yoxdur — §4 hədəfi
 TAMAM. CI fəsli: android-actions/setup-android atıldı (runner-də sdkmanager tools
 iflas edir) — birbaşa sdkmanager ndk quraşdırması.
+
+**M4 İCRA OLUNDU (2026-11-07, D-082):** `service/` (axum 0.8.9 + reqwest — Supabase
+REST service_role; FCM HTTP v1 OAuth2 RS256 — jsonwebtoken encode OpenSSL-sübutlu,
+decode roundtrip anomaliyası sənədlənib; idempotent joblar: 24s/2s reminder pəncərələri
++ moderation; admin API X-Admin-Token dəyər yoxlaması — sabit-vaxt müqayisə). 14 test
+(FakeBackend şəbəkəsiz). Miqrasiya planı M0–M4 TAMAMLANDI.
 
 ---
 
