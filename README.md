@@ -24,7 +24,7 @@ rezervasiyalar (real skan edilən QR ilə), ikili XP iqtisadiyyatı, təhlükəs
 (qeydiyyat/blok) və AI köməkçi.
 
 Bütün texniki qərarlar mənbəsi ilə birlikdə
-[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-075).
+[`docs/decisions.md`](docs/decisions.md)-də sənədlənib (D-001…D-087).
 
 ## ✨ Məhsul funksiyaları
 
@@ -52,6 +52,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Backend (M1) | **Supabase sxem + RLS + SECURITY DEFINER qaydalar** (`supabase/`) — supabase-kt 3.9.0 pin (D-078); MOCK/SUPABASE ikili rejim, PLACEHOLDER konfiq |
 | Nüvə (M2) | **Rust** (`rust-core/`: qoshul-core + qoshul-jni) — geo 0.33.1, proptest 1.12, jni 0.22.4 (D-080); JNI APK-da, JVM-də host .so pariteti |
 | Mikroservis (M4) | **axum 0.8.9** (`service/`): FCM HTTP v1, idempotent joblar (24s/2s), admin API — D-082; PLACEHOLDER konfiq → degrade |
+| Deploy (M5) | **Self-host Supabase — Oracle Always Free** (Ampere A1 ARM64, 2 OCPU/12 GB — yeni limitlər D-083): slim compose core+6 profil, Caddy TLS, 12/12 imaj arm64 (D-084..D-087) |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
 | Test | **178 JVM + 35 Rust** — məntiq + Robolectric UI + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) |
@@ -72,7 +73,8 @@ Qoshul.az/
 ├── supabase/               M1: sxem + RLS + server qaydaları (D-076/D-077)
 ├── rust-core/              M2-M3: qoshul-core (qaydalar+QR) + qoshul-jni (JNI) + qoshul-fonts (audit)
 ├── service/                M4: axum mikroservis — FCM, joblar, admin API (D-082)
-├── scripts/                lint_sql.py · make_release.py (CI artifact → Release)
+├── infra/selfhost/         M5: self-host Supabase (Oracle Always Free) — slim compose + envoy + caddy
+├── scripts/                lint_sql.py · make_release.py · migrate_selfhost.sh · validate_selfhost.sh
 ├── docs/                   decisions.md · product-spec.md · design-spec.md · migration-research.md
 └── .github/workflows/      native.yml (Rust fmt/clippy/test + jniLibs + SQL lint + test + APK)
 ```
@@ -92,7 +94,8 @@ GitHub-dan gəlir). Beta imzası ilə imzalanıb (D-016).
 
 ## 📚 Sənədlər
 
-- [`docs/decisions.md`](docs/decisions.md) — hər texniki qərar + mənbəsi (D-001…D-075)
+- [`docs/decisions.md`](docs/decisions.md) — hər texniki qərar + mənbəsi (D-001…D-087)
+- [`infra/selfhost/README.md`](infra/selfhost/README.md) — **deploy: self-host Supabase Oracle Always Free VM-də** (M5)
 - [`docs/product-spec.md`](docs/product-spec.md) — məhsul spektri: rollar, axınlar, XP/kupon/rezerv qaydaları
 - [`docs/design-spec.md`](docs/design-spec.md) — Liquid Glass minimal dizayn dili + hərəkət dili
 

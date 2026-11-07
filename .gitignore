@@ -1,12 +1,22 @@
 # --- Mühit / sirlər (qayda 3) ---
 .env
 .env.*
+# M5 (D-086): nümunə konfiq repo-da qalır (sirlər YOXDUR — PLACEHOLDER)
+!infra/selfhost/.env.example
 keys/
 *.p8
 *-service-account.json
 fcm-*.json
 *.jks
 *.keystore
+
+# --- M5 (D-085): self-host runtime vəziyyəti (volumes) ---
+infra/selfhost/volumes/db/data/
+infra/selfhost/volumes/storage/
+infra/selfhost/volumes/snippets/
+infra/selfhost/volumes/functions/
+infra/selfhost/volumes/api/caddy/data/
+infra/selfhost/volumes/api/caddy/config/
 
 # --- IDE / OS ---
 .idea/

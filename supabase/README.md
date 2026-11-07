@@ -1,13 +1,17 @@
 # Qoshul.az — Supabase backend (M1)
 
 > **Status:** M1 sxem + server qaydaları hazırdır (D-076/D-077).
-> Tətbiq hələ **MOCK rejimində** işləyir (D-050 ikili rejim) — Supabase
-> layihəsi qurulanda `BACKEND_MODE=SUPABASE` ilə keçilir.
+> Tətbiq hələ **MOCK rejimində** işləyir (D-050 ikili rejim) — server
+> qoşulanda `BACKEND_MODE=SUPABASE` ilə keçilir.
 >
-> **İstifadəçidən gözlənilən dəyərlər (PLACEHOLDER):** aşağıda 🔶 ilə
-> işarələnib — tətbiq tərəfində hələ `PLACEHOLDER_…` makrosları durur
-> (D-079). Real dəyərlər gələndə yalnız `android-app/local.properties`
-> dəyişdirilir, kod YENİDƏN YAZILMIR.
+> **Deploy (M5):** cloud Supabase LƏĞV EDİLİB — **self-host Supabase**
+> Oracle Always Free serverdə işləyir (istifadəçi direktivi, 2026-11-07).
+> Bax: [`infra/selfhost/README.md`](../infra/selfhost/README.md) (D-083..D-087).
+>
+> **İstifadəçidən gözlənilən dəyərlər (PLACEHOLDER):** 🔶 ilə işarələnib —
+> tətbiq tərəfində hələ `PLACEHOLDER_…` makrosları durur (D-079). Real
+> dəyərlər gələndə yalnız `android-app/local.properties` dəyişdirilir,
+> kod YENİDƏN YAZILMIR.
 
 ## 1. Fayllar
 
@@ -17,23 +21,33 @@
 | `migrations/0002_server_rules.sql` | SECURITY DEFINER funksiyalar — XP/kupon/rezerv qaydaları (qayda 8/9) |
 | `migrations/0003_seed.sql` | Səviyyələr, 12 kateqoriya qrupu, 6 obyekt (v1..v6), 5 təklif (o1..o5) |
 
-## 2. Quraşdırma (Supabase layihəsi yoxdursa)
+## 2. Quraşdırma — ƏSAS YOL: self-host (Oracle Always Free)
 
-1. 🔶 **[İSTİFADƏÇİ]** https://supabase.com → New project (region: Frankfurt eu-central-1)
-2. SQL Editor → `migrations/0001_schema.sql` → Run *(PostGIS avtomatik aktivləşir)*
-3. SQL Editor → `migrations/0002_server_rules.sql` → Run
-4. SQL Editor → `migrations/0003_seed.sql` → Run
-5. Project Settings → API:
-   - 🔶 `Project URL` → `SUPABASE_URL`
-   - 🔶 `anon public` açarı → `SUPABASE_ANON_KEY`
-   - 🔶 `service_role` açarı → **yalnız M4 mikroservisində** istifadə olunacaq (tətbiqə YAZILMIR)
-6. `android-app/local.properties`:
-   ```properties
-   SUPABASE_URL=https://xxxx.supabase.co
-   SUPABASE_ANON_KEY=eyJ...
-   BACKEND_MODE=SUPABASE
-   ```
-   *(boş/olmayan dəyərlər = tətbiq avtomatik MOCK rejimində qalır — crash YOX)*
+Tam guide: [`infra/selfhost/README.md`](../infra/selfhost/README.md) — Oracle VM
+(2 OCPU/12 GB ARM), docker compose core stack + Caddy TLS, `generate-keys.sh`
+ilə sirlər. Qısa variant:
+
+```bash
+cd infra/selfhost
+cp .env.example .env && sh generate-keys.sh --update-env
+# 🔶 .env: domeni doldur (SUPABASE_PUBLIC_URL, API_EXTERNAL_URL, PROXY_DOMAIN)
+docker compose --profile edge up -d
+cd ../.. && scripts/migrate_selfhost.sh   # 0001 → 0002 → 0003 (idempotent)
+```
+
+Sonra `android-app/local.properties`:
+
+```properties
+SUPABASE_URL=https://supabase.<domain>
+SUPABASE_ANON_KEY=<generate-keys.sh ANON_KEY çıxışı>
+BACKEND_MODE=SUPABASE
+```
+
+### Alternativ: cloud Supabase layihəsi
+
+İstəsən eyni sxem cloud-da da işləyir (SQL Editor ilə 0001→0002→0003 Run;
+Project URL + anon açar local.properties-ə) — amma M5-dən etibarən
+**ilkin yol self-host-dur** (D-084).
 
 ## 3. Cədvəl xəritəsi (spec J ↔ M1)
 

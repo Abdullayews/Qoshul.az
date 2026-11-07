@@ -14,6 +14,7 @@ on:
       - "rust-core/**"
       - "service/**"
       - "scripts/**"
+      - "infra/selfhost/**"
   workflow_dispatch:
 
 permissions:
@@ -184,3 +185,18 @@ jobs:
           sleep 2
           curl -sf http://127.0.0.1:9911/health | grep -q '"ok":true'
           kill $SRV 2>/dev/null || true
+
+  selfhost:
+    name: Self-host Supabase (Oracle A1) — M5, D-083..D-086
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      # D-084: bütün imajlar arm64-də yoxlanılıb; CI amd64 runner-da yalnız
+      # KONFİQ validasiyası aparılır (imajlar çəkilmir — sürətlidir).
+      - name: Compose config — core + 6 profil + JWT self-test
+        run: scripts/validate_selfhost.sh
+
+      - name: Migrations struktur lint-i (D-076 ilə eyni qalaq)
+        run: python3 scripts/lint_sql.py
