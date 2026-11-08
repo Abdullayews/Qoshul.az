@@ -39,7 +39,7 @@ import az.qoshul.app.core.theme.Q
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxHeight
 import az.qoshul.app.core.motion.Motion
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 
 /**

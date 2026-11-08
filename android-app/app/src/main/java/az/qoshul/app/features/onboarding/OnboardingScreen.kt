@@ -80,7 +80,7 @@ import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.FormFieldX

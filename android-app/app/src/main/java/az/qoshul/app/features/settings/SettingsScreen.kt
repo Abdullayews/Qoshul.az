@@ -59,7 +59,7 @@ import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.XpRules
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.PushScreenScaffold

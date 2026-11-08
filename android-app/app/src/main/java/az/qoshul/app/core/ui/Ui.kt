@@ -75,7 +75,7 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.countUpAsState
 import az.qoshul.app.core.motion.scaleTap
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 
 // ═══════════════════ Şəkil açarları → res ═══════════════════
 

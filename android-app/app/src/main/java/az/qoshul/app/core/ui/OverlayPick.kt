@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.rememberAnimationsOn
 import az.qoshul.app.core.motion.scaleTap
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.T
 import kotlin.math.ceil

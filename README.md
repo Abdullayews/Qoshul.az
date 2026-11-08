@@ -57,8 +57,8 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | UI/UX (M6) | **Overlay pick sistemi** (mini-kateqoriya trigger → üzərinə çıxan panel, D-089) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088) + boz track ləğvi (D-090); vizual QA: Robolectric render + vizual audit + piksel (D-091) |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
-| Test | **174 JVM (0 fail, 13 PNG-optional skip — M6 lokal ölçmə) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) |
-| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · font subsetting |
+| Test | **191 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) |
+| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
 ## 📁 Depo strukturu

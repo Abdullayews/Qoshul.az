@@ -32,11 +32,11 @@ const EXTRA: &[u32] = &[
 ];
 
 const FONTS: &[&str] = &[
-    "plusjakartasans_regular.ttf",
-    "plusjakartasans_medium.ttf",
-    "plusjakartasans_semibold.ttf",
-    "plusjakartasans_bold.ttf",
-    "plusjakartasans_extrabold.ttf",
+    "opensans_regular.ttf",
+    "opensans_medium.ttf",
+    "opensans_semibold.ttf",
+    "opensans_bold.ttf",
+    "opensans_extrabold.ttf",
 ];
 
 /// AZ/manat kritik qlifləri (python: label, cp cütləri).

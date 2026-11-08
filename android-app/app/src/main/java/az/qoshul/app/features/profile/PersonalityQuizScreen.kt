@@ -44,7 +44,7 @@ import az.qoshul.app.core.model.PersonalityResult
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.StaggerIn
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.T
 import androidx.compose.material3.ButtonColors

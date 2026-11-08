@@ -70,7 +70,7 @@ import az.qoshul.app.core.glass.GlassSurface
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.model.Person
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T

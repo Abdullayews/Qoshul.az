@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.FormFieldX
 import az.qoshul.app.core.ui.LogoMark

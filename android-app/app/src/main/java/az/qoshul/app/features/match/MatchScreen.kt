@@ -68,7 +68,7 @@ import az.qoshul.app.core.theme.Q
 import kotlinx.coroutines.launch
 import az.qoshul.app.core.model.reportReasons
 import az.qoshul.app.core.model.safetyTips
-import az.qoshul.app.core.theme.JakartaSans
+import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.NavState
