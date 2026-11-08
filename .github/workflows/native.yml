@@ -1,0 +1,256 @@
+# Qoshul.az native (Kotlin + Compose + Rust) CI — D-036/D-040/D-080.
+# M1: supabase/ sxem + SQL struktur lint-i.
+# M2: rust-core (qoshul-core + qoshul-jni) — fmt/clippy/test + host .so
+#     (paritet testləri üçün) + cargo-ndk ilə Android jniLibs.
+# D-099: v* tag push → tam validasiya + APK avtomatik GitHub Release-ə.
+#        QEYD: release qeydləri ANNOTATED tag mesajından götürülür
+#        (--notes-from-tag) — tag həmişə `git tag -a` ilə kəsilməlidir.
+name: Native
+
+on:
+  push:
+    branches: [main]
+    # v* tag-ləri də build+release tetikləyir (paths onlar üçün də tətbiq
+    # olunur — versiya bumpu həmişə android-app/**-a toxunur, uyğundur).
+    tags:
+      - "v*"
+    paths:
+      - ".github/workflows/native.yml"
+      - "android-app/**"
+      - "supabase/**"
+      - "rust-core/**"
+      - "service/**"
+      - "scripts/**"
+      - "infra/selfhost/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Native (Kotlin + Compose) — test + APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain (stable, D-080)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust keşi
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            rust-core/target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust-core/Cargo.lock') }}
+          restore-keys: rust-${{ runner.os }}-
+
+      - name: Rust fmt + clippy (D-080)
+        working-directory: rust-core
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Rust testləri (35 — unit + proptest + quircs QR dekod sübutu)
+        working-directory: rust-core
+        run: cargo test --release
+
+      - name: Host .so (RustParityTest üçün)
+        working-directory: rust-core
+        run: cargo build --release -p qoshul-jni
+
+      - name: Font AUDİT (M3, D-081 — subset_fonts.py əvəzi)
+        working-directory: rust-core
+        run: cargo run -p qoshul-fonts -- --root ../android-app
+
+      - name: Android .so (arm64-v8a + armeabi-v7a) — birbaşa NDK toolchain
+        working-directory: rust-core
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          # QEYD (D-082): cargo-ndk 3.5.5 crates.io-dan YANK edilib — birbaşa
+          # NDK linkerdən istifadə (runner-da NDK 28.2/29/30 artıq PREINSTALLED)
+          NDK_VER=$(ls "$ANDROID_HOME/ndk/" | sort -V | tail -1)
+          echo "NDK: $NDK_VER"
+          TC="$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          rustup target add aarch64-linux-android armv7-linux-androideabi
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TC/aarch64-linux-android24-clang"
+          export CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_LINKER="$TC/armv7a-linux-androideabi24-clang"
+          cargo build --release --target aarch64-linux-android -p qoshul-jni
+          cargo build --release --target armv7-linux-androideabi -p qoshul-jni
+          mkdir -p ../android-app/app/src/main/jniLibs/arm64-v8a ../android-app/app/src/main/jniLibs/armeabi-v7a
+          cp target/aarch64-linux-android/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/arm64-v8a/
+          cp target/armv7-linux-androideabi/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/armeabi-v7a/
+          ls -la ../android-app/app/src/main/jniLibs/*/
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: SQL struktur lint-i (M1, D-076)
+        working-directory: .
+        run: python3 scripts/lint_sql.py
+
+      - name: Robolectric android-all keşi (D-042)
+        # android-all jarları (~130 MB) ~/.m2-də qlobal keşlənir — hər run-da
+        # yenidən yüklənməsin; açar = Robolectric versiyası (libs.versions.toml)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-androidall-${{ hashFiles('android-app/gradle/libs.versions.toml') }}
+          restore-keys: robolectric-androidall-
+
+      - name: Vahid testlər (JVM — məntiq + QR sübutu + Robolectric UI, D-041/D-042)
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Test nəticələri (artifact)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-test-results
+          path: android-app/app/build/test-results/
+          if-no-files-found: error
+
+      # D-054: Robolectric NATIVE renderlər — "proqramın üzü" JVM-də
+      - name: Ekran görüntüləri (Robolectric, D-054)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qoshul-screenshots
+          path: |
+            android-app/build/shots/
+            android-app/app/build/shots/
+          if-no-files-found: ignore
+          overwrite: true
+
+      - name: Release APK (R8 + resource shrink)
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK artifaktı
+        uses: actions/upload-artifact@v4
+        with:
+          name: qoshul-native-apk
+          path: android-app/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+  service:
+    name: Service (axum) — M4, D-082
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust keşi
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            service/target
+          key: svc-rust-${{ runner.os }}-${{ hashFiles('service/Cargo.lock') }}
+          restore-keys: svc-rust-${{ runner.os }}-
+
+      - name: fmt + clippy
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Testlər (14 — 6 lib + 8 inteqrasiya; JWT openssl sübutu)
+        run: cargo test
+
+      - name: Health yoxlaması (bin 3 saniyə işə düşür)
+        run: |
+          cargo build --release
+          PORT=9911 ./target/release/qoshul-service &
+          SRV=$!
+          sleep 2
+          curl -sf http://127.0.0.1:9911/health | grep -q '"ok":true'
+          kill $SRV 2>/dev/null || true
+
+  selfhost:
+    name: Self-host Supabase (Oracle A1) — M5, D-083..D-086
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu çıxar
+        uses: actions/checkout@v4
+
+      # D-084: bütün imajlar arm64-də yoxlanılıb; CI amd64 runner-da yalnız
+      # KONFİQ validasiyası aparılır (imajlar çəkilmir — sürətlidir).
+      - name: Compose config — core + 6 profil + JWT self-test
+        run: scripts/validate_selfhost.sh
+
+      - name: Migrations struktur lint-i (D-076 ilə eyni qalaq)
+        run: python3 scripts/lint_sql.py
+
+  # D-099: APK-nı GitHub Release-ə avtomatik yüklə. Yalnız v* tag push-da
+  # (və ya tag refindən workflow_dispatch-də) işə düşür; əvvəlki üç jobun
+  # hamısı yaşıl olmalıdır — xətalı build release-ə düşmür.
+  release:
+    name: Release — APK → GitHub Releases (D-099)
+    needs: [native, service, selfhost]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # release + asset yükləmək üçün (workflow səviyyəsində read)
+    steps:
+      - name: APK artifaktını endir
+        uses: actions/download-artifact@v4
+        with:
+          name: qoshul-native-apk
+          path: apk
+
+      - name: Tag-dən versiya + release yarat
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # QEYD (gh CLI): --notes-from-tag -R/--repo ilə birlikdə işləmir —
+          # repo GH_REPO env-i ilə verilir (D-099 CI dərsi, run 42503437941).
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # v0.24.1-beta → 0.24.1 (ilk "-"-dən sonrakı şəkilçilər soyulur)
+          BASE="${TAG#v}"; BASE="${BASE%%-*}"
+          APK="Qoshul.az-v${BASE}.apk"
+          mv apk/app-release.apk "${APK}"
+          ls -la "${APK}"
+          echo "TAG=${TAG} → APK=${APK}"
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            echo "Release artıq mövcuddur — APK yenilənir (--clobber)"
+            gh release upload "${TAG}" "${APK}" --clobber
+          else
+            gh release create "${TAG}" "${APK}" \
+              --title "Qoshul.az v${BASE} (Beta)" \
+              --latest \
+              --notes-from-tag || \
+            gh release create "${TAG}" "${APK}" \
+              --title "Qoshul.az v${BASE} (Beta)" \
+              --latest \
+              --generate-notes
+          fi
+          echo "✔ Release hazır: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
