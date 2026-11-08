@@ -231,6 +231,7 @@ Mövcud vəziyyət (D-023/D-024): **UI fazası birinci** — backend m2+ UI tam 
 | UI-2 (v0.3.0) | ROL strukturu: 5 tab, onboarding, match, rezerv, kupon, XP, bildiriş, moderasiya | ✅ çatdırılıb (APK) |
 | UI-3 (v0.4.0) | Dizayn qatı: Liquid Glass minimal (5 səth) + hərəkət dili bütün bölmələrə (D-025, docs/design-spec.md) | ✅ çatdırılıb (APK + beta release) |
 | UI-4 (v0.5.0) | İkitərəfli XP iqtisadiyyatı: XP Kartı, Biznes rejimi, təşkilatçı bitirmə axını, Kəşf peşəkar sıralaması, xəritə 3-seçimli görünüş (D-026/D-027, bölmə L) | ✅ çatdırılıb (APK + beta release) |
+| UI-8 (v0.35.0) | Adaptiv təməl: WindowWidthClass (canonical M3 600/840dp) + LiquidRail (≥600dp sol naviqasiya; telefon axını dəyişməz) + spring hərəkət dili başlanğıcı (tab keçidləri, navIconDip) (D-102) | ✅ çatdırılıb (APK + beta release) |
 | UI-test | 4 tester tam yoxlama → düzəlişlər | — |
 | **"UI hazır" təsdiqi** | — | **qapı: bundan sonra backend** |
 | m2 | NestJS nüvə | gözləyir |

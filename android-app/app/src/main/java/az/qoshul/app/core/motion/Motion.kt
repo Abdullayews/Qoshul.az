@@ -59,6 +59,20 @@ object Motion {
         dampingRatio = Spring.DampingRatioMediumBouncy,
         stiffness = Spring.StiffnessMediumLow,
     )
+
+    // D-102 (v0.35.0): spring hərəkət dili — SPATIAL keçidlər (tab slaydı,
+    // ikon dip-i) tween əvəzinə spring fizikasına keçir (hesabat §7.4
+    // "Motion keçidlərinin tween-dən spring fizikasına keçirilməsinin
+    // başlanğıcı" + cədvəl 5 "M3E / spring hərəkət dili: yüksək prioritet").
+    // Qayda: spatial (mövqe/ölçü) = spring, ALPHA (fade) = tween qalır —
+    // spring alfa overshoot edib vizual artefakt verir.
+    // spatialStiffness — keçid sürəti (MediumLow ~ eyni müddət hissi D2 ilə);
+    // spatialDamping — bounce YOX (səhifə keçidində overshoot gurultulu
+    // görünür; bounce yalnız mikro-elementlərdə — navIconDip).
+    val spatialStiffness = Spring.StiffnessMediumLow
+    val spatialDamping = Spring.DampingRatioNoBouncy
+    val dipStiffness = Spring.StiffnessMedium
+    val dipDamping = Spring.DampingRatioMediumBouncy
 }
 
 /** Sistem animasiyaları bağlıdırmı (Flutter disableAnimationsOf ekvivalenti). */

@@ -3,11 +3,13 @@ package az.qoshul.app.features.feed
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -129,8 +131,15 @@ fun FeedScreen(
             transitionSpec = {
                 // D-088: GD3/qfw səhifə keçidi — slide (istiqamətli) + fade
                 // (Ghost-Downloader-3 qfw_patch PopUpAniStackedWidget dili)
+                // D-102: slide tween → SPRİNG (spatial=spring, alpha=tween)
                 val dir = if (targetState > initialState) 1 else -1
-                (slideInHorizontally(tween(Motion.D2, easing = Motion.ease)) { it / 5 * dir } +
+                (slideInHorizontally(
+                    spring(
+                        dampingRatio = Motion.spatialDamping,
+                        stiffness = Motion.spatialStiffness,
+                        visibilityThreshold = IntOffset(8, 8),
+                    )
+                ) { it / 5 * dir } +
                     fadeIn(tween(Motion.D2, easing = Motion.ease)))
                     .togetherWith(fadeOut(tween(Motion.D2)))
             },

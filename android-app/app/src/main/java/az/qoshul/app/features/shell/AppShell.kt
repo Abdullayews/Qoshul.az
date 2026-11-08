@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -73,6 +74,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -91,7 +94,9 @@ import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.Route
+import az.qoshul.app.core.ui.WindowWidthClass
 import az.qoshul.app.core.ui.Wordmark
+import az.qoshul.app.core.ui.rememberWindowWidthClass
 import az.qoshul.app.core.model.QoshulEvent
 import kotlin.math.roundToInt
 
@@ -112,6 +117,12 @@ import kotlin.math.roundToInt
  *    BackHandler-i ChatsScreen-də prioritetli qalır);
  *  - mexanizm: NestedScrollConnection qabıq səviyyəsində — HEÇ bir
  *    ekrana toxunmur, bütün scrollable nəvələrin deltasını görür.
+ *
+ * D-102 (v0.35.0): ADAPTİV NAVİQASİYA — pəncərə eni ≥600dp (Medium/
+ * Expanded — planşet, qatlanan açıq) alt LiquidNav əvəzinə solda
+ * şaquli LiquidRail; Compact (telefon) davranışı BİT-BİT eyni qalır.
+ * Rail rejimində auto-hide bağlanır (rail məzmunu örtmür, gizlənmə
+ * mənasızdır); tab keçidləri tween əvəzinə spring fizikasına keçir.
  */
 @Composable
 fun AppShell(
@@ -174,51 +185,83 @@ fun AppShell(
         }
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Q.background)
-            .statusBarsPadding()
-    ) {
-        // U2.4 (UI-11): badge state-dən törəmədir (st.unreadCount)
-        val st by engine.state.collectAsStateWithLifecycle()
-        Header(
-            onPartners = { nav.push(Route.Partners) },
-            onAssistant = { nav.push(Route.Assistant) },
-            onBell = { nav.push(Route.Notifications) },
-            unread = st.unreadCount,
-        )
-        Box(Modifier.weight(1f).nestedScroll(scrollConnection)) {
-            // D-088: GD3/qfw səhifə keçidi — istiqamətli slide + fade
-            AnimatedContent(
-                targetState = index,
-                transitionSpec = {
-                    val dir = if (targetState > initialState) 1 else -1
-                    (slideInHorizontally(tween(Motion.D2, easing = Motion.ease)) { it / 5 * dir } +
-                        fadeIn(tween(Motion.D2, easing = Motion.ease)))
-                        .togetherWith(fadeOut(tween(Motion.D2)))
-                },
-                label = "tabs",
-            ) { i ->
-                when (i) {
-                    0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat)
-                    1 -> MapScreen(engine, nav, focus)
-                    2 -> ChatsScreen(engine, chatFocus)
-                    else -> ProfileScreen(engine, nav, onFinishActivity, onOpenChat)
+    // D-102: adaptiv rejim — Compact = alt panel (əvvəlki axın),
+    // Medium/Expanded = sol rail. navHidden yalnız alt panel üçün doğrudur.
+    val widthClass = rememberWindowWidthClass()
+    val rail = widthClass != WindowWidthClass.Compact
+
+    Row(Modifier.fillMaxSize().background(Q.background)) {
+        // — D-102: LiquidRail (yalnız geniş pəncərələrdə) —
+        if (rail) {
+            LiquidRail(
+                index = index,
+                onChanged = { index = it },
+                onCreate = onOpenCreate,
+            )
+        }
+        Column(
+            Modifier
+                .weight(1f)
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            // U2.4 (UI-11): badge state-dən törəmədir (st.unreadCount)
+            val st by engine.state.collectAsStateWithLifecycle()
+            Header(
+                onPartners = { nav.push(Route.Partners) },
+                onAssistant = { nav.push(Route.Assistant) },
+                onBell = { nav.push(Route.Notifications) },
+                unread = st.unreadCount,
+            )
+            // D-102: auto-hide yalnız alt panel rejimində qurulur (rail
+            // məzmunu örtmür — gizlətmə mənasızdır); Compact davranışı
+            // dəyişmir: eyni connection, eyni hədd.
+            Box(
+                if (rail) Modifier.weight(1f)
+                else Modifier.weight(1f).nestedScroll(scrollConnection)
+            ) {
+                // D-088 keçid dili + D-102: slide artıq SPRİNG fizikasıdır
+                // (spatial = spring, alpha = tween qaydası)
+                AnimatedContent(
+                    targetState = index,
+                    transitionSpec = {
+                        val dir = if (targetState > initialState) 1 else -1
+                        (slideInHorizontally(
+                            spring(
+                                dampingRatio = Motion.spatialDamping,
+                                stiffness = Motion.spatialStiffness,
+                                visibilityThreshold = IntOffset(8, 8),
+                            )
+                        ) { it / 5 * dir } +
+                            fadeIn(tween(Motion.D2, easing = Motion.ease)))
+                            .togetherWith(fadeOut(tween(Motion.D2)))
+                    },
+                    label = "tabs",
+                ) { i ->
+                    when (i) {
+                        0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat)
+                        1 -> MapScreen(engine, nav, focus)
+                        2 -> ChatsScreen(engine, chatFocus)
+                        else -> ProfileScreen(engine, nav, onFinishActivity, onOpenChat)
+                    }
                 }
             }
         }
     }
 
     // — Liquid glass alt panel (UI-7 D-098: sıfırdan yenidən yazılıb) —
-    Box(Modifier.fillMaxSize()) {
-        LiquidNav(
-            index = index,
-            hidden = navHidden,
-            onChanged = { index = it },
-            onCreate = onOpenCreate,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
+    // D-102: yalnız Compact pəncərələrdə (rail rejimində ikinci naviqasiya
+    // ola bilməz)
+    if (!rail) {
+        Box(Modifier.fillMaxSize()) {
+            LiquidNav(
+                index = index,
+                hidden = navHidden,
+                onChanged = { index = it },
+                onCreate = onOpenCreate,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
     }
 }
 
@@ -338,7 +381,9 @@ private fun LiquidNav(
             modifier = Modifier
                 .padding(horizontal = 14.dp)
                 .padding(bottom = 10.dp)
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                // D-102: adaptiv test qarmağı + a11y — alt panel identiklik
+                .semantics { contentDescription = "Alt naviqasiya paneli" },
             shape = RoundedCornerShape(30.dp),
             intensity = 0.35f,
         ) {
@@ -401,6 +446,104 @@ private fun LiquidNav(
 }
 
 /**
+ * LIQUID RAIL — D-102 (v0.35.0): geniş pəncərələrdə (≥600dp) sol şaquli
+ * naviqasiya dəmiryolu. Alt LiquidNav-in dili DAŞINIR (eyni şüşə səthi
+ * 0.35, eyni lentz kapsulu — şaquli, eyni "Yarat" qradiyenti, eyni
+ * slot sırası: Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil) — yalnız
+ * istiqamət dəyişir. Planşet/qatlanan istifadəsində baş barmaq zonada
+ * qalır, məzmun tam eni qazanır (alt panelin 82dp-i qaytarılır).
+ *
+ * Hündürlük: tam ekran (statusBar daxil — edge-to-edge D-031 dili);
+ * en: 84dp (4 slot + FAB şaquli düzümdə rahat toxunma hədəfi 48dp+).
+ */
+@Composable
+private fun LiquidRail(
+    index: Int,
+    onChanged: (Int) -> Unit,
+    onCreate: () -> Unit,
+) {
+    data class Item(val icon: ImageVector, val activeIcon: ImageVector, val label: String)
+    val items = listOf(
+        Item(Icons.Outlined.Home, Icons.Rounded.Home, "Kəşf"),
+        Item(Icons.Outlined.Map, Icons.Rounded.Map, "Xəritə"),
+        Item(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, "Söhbətlər"),
+        Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
+    )
+
+    // Slot sərhədləri rail koordinatlarında (px) — şaquli lentz üçün.
+    val slots = remember { mutableStateListOf(Rect.Zero, Rect.Zero, Rect.Zero, Rect.Zero) }
+
+    LiquidGlassSurface(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(84.dp)
+            // D-102: adaptiv test qarmağı + a11y — rail identikliyi
+            .semantics { contentDescription = "Yan naviqasiya paneli" },
+        shape = RoundedCornerShape(topEnd = 30.dp, bottomEnd = 30.dp),
+        intensity = 0.35f,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxHeight()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(vertical = 14.dp),
+        ) {
+            // — şaquli lentz: aktiv slotun arxasında üzən kapsul —
+            val active = slots.getOrNull(index)
+            if (active != null && active.top > 0f) {
+                val density = LocalDensity.current
+                val lensSpec = spring<Float>(
+                    stiffness = Spring.StiffnessMediumLow,
+                    dampingRatio = 0.82f,
+                )
+                val top by animateFloatAsState(active.top, lensSpec, label = "railLensT")
+                val bottom by animateFloatAsState(active.bottom, lensSpec, label = "railLensB")
+                val left = with(density) { (84.dp.toPx() - 60.dp.toPx()) / 2f }
+                Box(
+                    Modifier
+                        .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
+                        .height(with(density) { (bottom - top).toDp() })
+                        .width(60.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Q.secondary.copy(alpha = 0.95f),
+                                    Q.secondary.copy(alpha = 0.55f),
+                                )
+                            ),
+                            RoundedCornerShape(22.dp),
+                        )
+                        .border(1.dp, Q.primary.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
+                )
+            }
+            // — slotlar: Kəşf, Xəritə, [Yarat], Söhbətlər, Profil —
+            items.forEachIndexed { i, item ->
+                if (i == 2) {
+                    Spacer(Modifier.height(14.dp))
+                    CreateFab(onCreate)
+                    Spacer(Modifier.height(14.dp))
+                }
+                LiquidNavItem(
+                    icon = item.icon,
+                    activeIcon = item.activeIcon,
+                    label = item.label,
+                    active = index == i,
+                    onClick = { onChanged(i) },
+                    modifier = Modifier
+                        .width(64.dp)
+                        .onGloballyPositioned { coords ->
+                            val b = coords.boundsInParent()
+                            if (slots[i] != b) slots[i] = b
+                        },
+                )
+            }
+        }
+    }
+}
+
+/**
  * "Yarat" — UI-7 (D-098): marka qradiyentli (primary→primaryDeep)
  * 42dp dairə, parlaq yaşıl kölgə, etiket altda. D-088 qərarı:
  * barın İÇİNDƏ, daşma YOX.
@@ -451,9 +594,14 @@ private fun LiquidNavItem(
     modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    // D-102: dip artıq spring (mikro bounce — spatial=spring qaydası;
+    // tween 150ms qopuq gəlirdi, spring toxunuşa "cavab" hissi verir)
     val dip by animateDpAsState(
         targetValue = if (active) 2.dp else 0.dp,
-        animationSpec = tween(Motion.D1, easing = Motion.ease),
+        animationSpec = spring(
+            dampingRatio = Motion.dipDamping,
+            stiffness = Motion.dipStiffness,
+        ),
         label = "navIconDip",
     )
     val tint by androidx.compose.animation.animateColorAsState(

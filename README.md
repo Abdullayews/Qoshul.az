@@ -54,11 +54,11 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Nüvə (M2) | **Rust** (`rust-core/`: qoshul-core + qoshul-jni) — geo 0.33.1, proptest 1.12, jni 0.22.4 (D-080); JNI APK-da, JVM-də host .so pariteti |
 | Mikroservis (M4) | **axum 0.8.9** (`service/`): FCM HTTP v1, idempotent joblar (24s/2s), admin API — D-082; PLACEHOLDER konfiq → degrade |
 | Deploy (M5) | **Self-host Supabase — Oracle Always Free** (Ampere A1 ARM64, 2 OCPU/12 GB — yeni limitlər D-083): slim compose core+6 profil, Caddy TLS, 12/12 imaj arm64 (D-084..D-087) |
-| UI/UX (M6) | **Overlay pick sistemi** (mini-kateqoriya trigger → üzərinə çıxan panel, D-089) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088) + boz track ləğvi (D-090); vizual QA: Robolectric render + vizual audit + piksel (D-091) |
+| UI/UX (M6) | **Overlay pick sistemi** (mini-kateqoriya trigger → üzərinə çıxan panel, D-089) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088) + boz track ləğvi (D-090); vizual QA: Robolectric render + vizual audit + piksel (D-091); **adaptiv naviqasiya** — ≥600dp-də LiquidRail, telefon axını dəyişməz (D-102) + spring hərəkət dili başlanğıcı (spatial=spring, alpha=tween) |
 | Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** — açarsız, pulsuz (D-048) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
-| Test | **191 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) |
-| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) |
+| Test | **199 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) |
+| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
 ## 📁 Depo strukturu
