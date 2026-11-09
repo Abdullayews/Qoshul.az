@@ -9,6 +9,8 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
 import az.qoshul.app.core.ui.NavState
@@ -16,6 +18,7 @@ import az.qoshul.app.features.shell.AppShell
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -96,9 +99,9 @@ class AdaptiveShellTest {
 
     /**
      * D-105: dar telefon (360dp — Android bazasında ən yaygın en).
-     * FloatingTabBar həbi weight(1f) ilə çəkilir — hər slot bərabər;
-     * ən son etiket ("Profil") GÖRÜNÜR = həddindən artıq genişlənmə
-     * (mətn kəsilməsi/daşması) YOXDUR.
+     * D-106: vahid pill — 4 slot weight(1f) ilə bərabər bölüşür (dairə
+     * həbin İÇİNDƏ sağdadır); ən son etiket ("Profil") GÖRÜNÜR =
+     * həddindən artıq genişlənmə (mətn kəsilməsi/daşması) YOXDUR.
      */
     @Test
     @Config(sdk = [36], qualifiers = "w360dp-h800dp-420dpi")
@@ -131,5 +134,49 @@ class AdaptiveShellTest {
         compose.onNodeWithContentDescription("Yan naviqasiya paneli").assertExists()
         assertEquals(0, compose.onAllNodesWithContentDescription("Alt naviqasiya paneli").fetchSemanticsNodes().size)
         shot("d102-expanded-rail-900dp")
+    }
+
+    // ═══════════════ 4. D-106 — yığılmış hal: kənarlarda ═══════════════
+
+    /**
+     * D-106 (v0.38.0, istifadəçi direktivi: „bağlandıqda isə home və
+     * mesajlar öz yerlərində, ortada yox"): aşağı sürüşmə barı YIĞIR
+     * (14dp hədd — D-098) — Kəşf həbi SOL KƏNARDA, Söhbətlər dairəsi
+     * SAĞ KƏNARDA; mərkəzdə klaster YOX. Bar həmişə əlçatandır
+     * („Alt naviqasiya paneli" mövcuddur — gizlənmə D-098/7-də yalnız
+     * Söhbətlər immersiv rejimindədir).
+     *
+     * SÜBUT (D-091 cütlük qaydası): (a) LAYOUT — semantika mərkəzləri:
+     * Kəşf ikonu cx < 25% en, Söhbətlər ikonu cx > 75% en (v0.37
+     * mərkəz-klasteri ~35%/~65% ilə bu şərti POZARDI); (b) PİKSEL —
+     * scripts/pixel_proof_d106.py (sol ağ+yaşıl / mərkəz 100% background
+     * / sağ ağ+boz zonaları).
+     */
+    @Test
+    @Config(sdk = [36], qualifiers = "w412dp-h915dp-420dpi")
+    fun `d106 yigilmis — home sol, sohbetler sag kenar`() {
+        shell()
+        // feed-i aşağı sürüşdür → NestedScrollConnection barı YIĞIR (inline)
+        compose.onRoot().performTouchInput { swipeUp() }
+        settle()
+        compose.onNodeWithContentDescription("Alt naviqasiya paneli").assertExists()
+
+        // (a) LAYOUT — semantika mərkəzləri (D-091/2 dili):
+        val w = compose.onRoot().fetchSemanticsNode().size.width.toFloat()
+        fun centerX(cd: String): Float {
+            val n = compose.onNodeWithContentDescription(cd).fetchSemanticsNode()
+            return n.positionInRoot.x + n.size.width / 2f
+        }
+        val homeCx = centerX("Kəşf")
+        val chatCx = centerX("Söhbətlər")
+        assertTrue(
+            "Kəşf həbi SOL kənarda olmalıdır (cx=$homeCx, hədd=${w * 0.25f})",
+            homeCx < w * 0.25f,
+        )
+        assertTrue(
+            "Söhbətlər dairəsi SAĞ kənarda olmalıdır (cx=$chatCx, hədd=${w * 0.75f})",
+            chatCx > w * 0.75f,
+        )
+        shot("d106-inline-412dp")
     }
 }

@@ -122,9 +122,14 @@ import az.qoshul.app.core.model.QoshulEvent
  * D-105 (v0.37.0, direktiv 2026-11-09: "göndərdiyim navigation bar
  * stilini implementasiya et; yığılmış haldakı sağ və solda olan
  * düymələr home və chat düyməsi olsun"): Compact alt panel artıq
- * FloatingTabBar-dır (iOS 26 dili — vendored core/ui/floatingtabbar):
- *  - AÇIQ: [Kəşf · Xəritə · Yarat · Profil həbi] [Söhbətlər dairəsi];
- *  - YIĞILMIŞ: [Kəşf həbi] [Söhbətlər dairəsi] — sol=home, sağ=chat;
+ * FloatingTabBar-dır (iOS 26 dili — vendored core/ui/floatingtabbar).
+ * D-106 (v0.38.0, direktiv 2026-11-09: „açıq halda hamsı eyni pill
+ * içində olmalıdır, bağlandıqda isə home və mesajlar öz yerlərində,
+ * ortada yox“):
+ *  - AÇIQ: VAHİD PILL [Kəşf · Xəritə · Yarat · Profil · Söhbətlər
+ *    dairəsi] — hamsı eyni həbin içində;
+ *  - YIĞILMIŞ: [Kəşf həbi SOL KƏNARDA] [Söhbətlər dairəsi SAĞ
+ *    KƏNARDA] — mərkəzdə klaster YOX;
  *  - aşağı sürüşmə = yığılma, yuxarı = açılma (14dp — D-098 həddi,
  *    gizlətmə YERİNƏ yığılma — bar həmişə əlçatandır);
  *  - Söhbətlər tabında nav gizli qalır (D-098/7 immersive), çıxışda
@@ -339,15 +344,19 @@ private fun Header(
  * implementasiya et; yığılmış haldakı sağ və solda olan düymələr home
  * və chat düyməsi olsun“): D-098 LiquidNav TAM əvəz olunur —
  * elyesmansour/compose-floating-tab-bar v1.0.1 (Apache-2.0, vendored:
- * core/ui/floatingtabbar) iOS 26 dili ilə:
+ * core/ui/floatingtabbar) iOS 26 dili ilə. D-106 (v0.38.0, istifadəçi
+ * direktivi 2026-11-09: „açıq halda hamsı eyni pill içində olmalıdır,
+ * bağlandıqda isə home və mesajlar öz yerlərində, ortada yox“):
  *
- *  - AÇIQ (expanded): [Kəşf · Xəritə · Yarat · Profil həbi] +
- *    [Söhbətlər dairəsi] — həb weight(1f) ilə eni çəkir, hər slot
- *    bərabər (dar telefonlarda da mətn kəsilmir); seçili slotun
- *    arxasında Q.secondary kapsul sürüşür (spring 380/0.72).
- *  - YIĞILMIŞ (inline): [Kəşf həbi] [Söhbətlər dairəsi] — sol həb
- *    HƏMİŞƏ Kəşf (direktiv), sağ dairə HƏMİŞƏ Söhbətlər; keçid
- *    sharedElement morfudur (həb açılır, ikonlar yerini dəyişir).
+ *  - AÇIQ (expanded): VAHİD PILL — [Kəşf · Xəritə · Yarat · Profil ·
+ *    Söhbətlər dairəsi] hamısı EYNİ həbin içində; 4 slot weight(1f)
+ *    ilə bərabər, dairə həbin sağ ucunda (içində — ayrı üzgü
+ *    element YOX); seçili slotun arxasında Q.secondary kapsul
+ *    sürüşür (spring 380/0.72).
+ *  - YIĞILMIŞ (inline): [Kəşf həbi SOL KƏNARDA] [Söhbətlər dairəsi
+ *    SAĞ KƏNARDA] — mərkəzdə klaster YOX (D-106 direktivi); sol həb
+ *    HƏMİŞƏ Kəşf, sağ dairə HƏMİŞƏ Söhbətlər; keçid sharedElement
+ *    morfudur (həb açılır, ikonlar yerini dəyişir).
  *  - Söhbətlər dairəsi: aktiv primary / qeyri-aktiv mutedFg ikon +
  *    oxunmamış sayı üçün Q.accent nöqtə (Header zəng badge-i ilə eyni
  *    mənbə — st.unreadCount; dairə clip-i daxilində, daşma yoxdur).
@@ -437,7 +446,8 @@ private fun FloatingNav(
                 icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil") },
                 onClick = { onChanged(3) },
             )
-            // — standalone dairə: Söhbətlər (yığılmış halın sağ düyməsi) —
+            // — standalone dairə: Söhbətlər — AÇIQ: həbin içində sağda
+            // (D-106 vahid pill); YIĞILMIŞ: sağ kənar düyməsi —
             standaloneTab(
                 key = 2,
                 icon = {

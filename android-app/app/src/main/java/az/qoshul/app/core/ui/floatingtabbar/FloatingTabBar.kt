@@ -28,6 +28,16 @@
  *   mətn kəsilmir; standalone dairə sağda qalır.
  * - animateEnterExitTab: renderEffect yalnız keçid zamanı (blur > 0) qurulur,
  *   istirahət halında null — Robolectric RNG təhlükəsizliyi + perf.
+ *
+ * Qoshul.az modifications (D-106, 2026-11-09 — istifadəçi direktivi: „açıq
+ * halda hamsı eyni pill içində olmalıdır, bağlandıqda isə home və mesajlar
+ * öz yerlərində, ortada yox“):
+ * - InlineBar (aksesuarsız): klaster mərkəzdə DEYİL — home həbi SOL kənara,
+ *   standalone dairə SAĞ kənara sabitlənir (Arrangement.SpaceBetween —
+ *   upstream „pinned to opposite edges“ davranışına qayıdış).
+ * - ExpandedBar: standalone dairə ayrıca üzgü element DEYİL — HƏBİN
+ *   DAXİLİNDƏ, slotların sağında (vahid pill; ExpandedTabs Row-unun
+ *   sonuncu uşağı kimi).
  */
 
 package az.qoshul.app.core.ui.floatingtabbar
@@ -71,7 +81,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -426,14 +435,15 @@ private fun SharedTransitionScope.InlineBar(
   val hasInlineTab = inlineTab != null
 
   // With an accessory the row spans the full width ([tab][accessory][standalone],
-  // iOS 26 Apple Music style); without one, the cluster is packed and centered.
+  // iOS 26 Apple Music style); without one, the home pill pins to the LEFT edge
+  // and the standalone tab to the RIGHT edge (D-106: "own places, not in the
+  // middle" — upstream pinned-edges behavior restored).
   Row(
-    horizontalArrangement = Arrangement.spacedBy(sizes.componentSpacing),
+    horizontalArrangement =
+      if (accessory == null) Arrangement.SpaceBetween
+      else Arrangement.spacedBy(sizes.componentSpacing),
     verticalAlignment = Alignment.CenterVertically,
-    modifier =
-      Modifier.fillMaxWidth()
-        .then(if (accessory == null) Modifier.wrapContentWidth() else Modifier)
-        .height(56.dp)
+    modifier = Modifier.fillMaxWidth().height(56.dp)
   ) {
     if (hasInlineTab) {
       InlineTab(
@@ -624,10 +634,13 @@ private fun SharedTransitionScope.ExpandedBar(
   val standaloneTab = scope.standaloneTab
   val hasTabGroup = scope.tabs.isNotEmpty()
 
-  // The accessory spans the full width above the tab row; the tab pill and the
-  // standalone tab are packed together and centered (iOS 26 style).
-  // Qoshul (D-105): aksesuar olmadığı halda da sütun eni doldurur — tab həbi
-  // weight ilə genişlənir, dar ekranda mətn kəsilmir.
+  // The accessory spans the full width above the tab row. Qoshul (D-105):
+  // aksesuar olmadığı halda da sütun eni doldurur — tab həbi weight ilə
+  // genişlənir, dar ekranda mətn kəsilmir. Qoshul (D-106, istifadəçi
+  // direktivi: „açıq halda hamsı eyni pill içində olmalıdır“): standalone
+  // dairə artıq ayrı üzgü element DEYİL — ExpandedTabs həbinin DAXİLİNDƏ
+  // render olunur (vahid pill). Yalnız tablar ümumiyyətlə yoxdursa upstream
+  // fallback: standalone öz dairəsində qalır.
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.spacedBy(sizes.componentSpacing),
@@ -662,12 +675,11 @@ private fun SharedTransitionScope.ExpandedBar(
           elevations = elevations,
           animatedVisibilityScope = animatedVisibilityScope,
           tabBarContentModifier = tabBarContentModifier,
-          // Qoshul (D-105): həb qalan eni alır — dairə sağda sabit
+          // Qoshul (D-105): həb qalan eni alır (D-106: dairə artıq daxildə)
           modifier = Modifier.weight(1f).fillMaxHeight()
         )
-      }
-
-      if (standaloneTab != null) {
+      } else if (standaloneTab != null) {
+        // upstream fallback — tab qrupu yoxdursa dairə tək üzgü elementdir
         ExpandedStandaloneTab(
           standaloneTab = standaloneTab,
           shapes = shapes,
@@ -845,6 +857,23 @@ private fun SharedTransitionScope.ExpandedTabs(
               )
               .padding(sizes.tabExpandedContentPadding)
               .pressScale(pressSource, pressedScale = 0.9f)
+        )
+      }
+
+      // Qoshul (D-106, istifadəçi direktivi 2026-11-09: „açıq halda hamsı
+      // eyni pill içində olmalıdır“): standalone dairə slotların sağında,
+      // HƏBİN DAXİLİNDƏ — ExpandedStandaloneTab olduğu KİMİ (dairə + öz fonu,
+      // „standaloneTab“ sharedElement-i dəyişməz — yığılmış sağ kənar dairəsi
+      // ilə morf qorunur), yalnız yerləşmə dəyişir: ayrı element → pill içi.
+      scope.standaloneTab?.let { standaloneTab ->
+        ExpandedStandaloneTab(
+          standaloneTab = standaloneTab,
+          shapes = shapes,
+          colors = colors,
+          elevations = elevations,
+          animatedVisibilityScope = animatedVisibilityScope,
+          tabBarContentModifier = tabBarContentModifier,
+          modifier = Modifier.fillMaxHeight().aspectRatio(1f)
         )
       }
     }
