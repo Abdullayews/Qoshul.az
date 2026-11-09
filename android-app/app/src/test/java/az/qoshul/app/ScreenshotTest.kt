@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -146,7 +147,8 @@ class ScreenshotTest {
             QoshulTheme { AppShell(engine = engine, nav = NavState(), onOpenCreate = {}) }
         }
         settle()
-        compose.onNodeWithText("Söhbətlər").performClick()
+        // D-105: Söhbətlər = standalone dairə (contentDescription)
+        compose.onNodeWithContentDescription("Söhbətlər").performClick()
         settle()
         shot("04-chats")
         // nav çıxış animasiyası bitdi — tab düymələri kompozisiyadan silinib

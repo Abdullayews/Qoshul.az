@@ -3,6 +3,7 @@ package az.qoshul.app
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -74,7 +75,9 @@ class UiSmokeTest {
         }
         compose.onNodeWithText("Kəşf", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Xəritə", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Söhbətlər", substring = true).assertIsDisplayed()
+        // D-105: Söhbətlər artıq standalone dairədir (mətn yoxdur —
+        // yığılmış halın sağ düyməsi) — contentDescription ilə tapılır
+        compose.onNodeWithContentDescription("Söhbətlər").assertIsDisplayed()
         compose.onNodeWithText("Profil", substring = true).assertIsDisplayed()
         // tab keçidi
         compose.onNodeWithText("Profil", substring = true).performClick()
@@ -98,8 +101,8 @@ class UiSmokeTest {
         // əvvəl nav görünür
         compose.onNodeWithText("Kəşf", substring = true).assertIsDisplayed()
 
-        // Söhbətlər tabına keç → nav gizlənir
-        compose.onNodeWithText("Söhbətlər", substring = true).performClick()
+        // Söhbətlər tabına keç (D-105: dairə — contentDescription) → nav gizlənir
+        compose.onNodeWithContentDescription("Söhbətlər").performClick()
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(600)
         compose.waitForIdle()

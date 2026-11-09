@@ -54,7 +54,7 @@ import kotlinx.coroutines.Dispatchers
  * barların altından axır; insetlər statusBarsPadding/navigationBarsPadding ilə.
  *
  * D-104 (2026-11-09, istifadəçi direktivi: „saat, internet, şarj ilə iç içə
- * girir"): arqumentsiz enableEdgeToEdge() SystemBarStyle.auto — SİSTEMİN
+ * girir“): arqumentsiz enableEdgeToEdge() SystemBarStyle.auto — SİSTEMİN
  * qaranlıq rejiminə baxır; tətbiq isə yalnız İŞIQ temadır (D-023, Q.background
  * #F8FAFC). Sistem tünd olanda status/nav ikonları AĞ düşürdü və açıq fonda
  * oxunmurdu. Həll: hər iki barın görünüşü İŞİQ kimi SABİTLƏNİR (tünd ikonlar,

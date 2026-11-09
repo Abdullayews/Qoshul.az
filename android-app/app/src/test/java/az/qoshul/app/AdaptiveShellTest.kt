@@ -3,9 +3,11 @@ package az.qoshul.app
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
@@ -29,8 +31,9 @@ import java.io.File
  * SIMULASİYA edir (Robolectric Configuration → LocalConfiguration.
  * screenWidthDp → widthClassOf):
  *
- *  - Compact  (w412dp): alt LiquidNav — "Alt naviqasiya paneli" VAR,
- *    "Yan naviqasiya paneli" YOX (telefon axını əvvəlki kimi qalır);
+ *  - Compact  (w412dp): alt FloatingNav (D-105) — "Alt naviqasiya
+ *    paneli" VAR, "Yan naviqasiya paneli" YOX (telefon axını: yalnız
+ *    alt bar, heç vaxt rail);
  *  - Medium   (w720dp): sol LiquidRail — "Yan..." VAR, "Alt..." YOX;
  *  - Expanded (w900dp): eynilə Medium.
  *
@@ -84,11 +87,28 @@ class AdaptiveShellTest {
 
     @Test
     @Config(sdk = [36], qualifiers = "w412dp-h915dp-420dpi")
-    fun `compact — alt LiquidNav qalır, rail yoxdur`() {
+    fun `compact — alt FloatingNav qalır, rail yoxdur`() {
         shell()
         compose.onNodeWithContentDescription("Alt naviqasiya paneli").assertExists()
         assertEquals(0, compose.onAllNodesWithContentDescription("Yan naviqasiya paneli").fetchSemanticsNodes().size)
         shot("d102-compact-412dp")
+    }
+
+    /**
+     * D-105: dar telefon (360dp — Android bazasında ən yaygın en).
+     * FloatingTabBar həbi weight(1f) ilə çəkilir — hər slot bərabər;
+     * ən son etiket ("Profil") GÖRÜNÜR = həddindən artıq genişlənmə
+     * (mətn kəsilməsi/daşması) YOXDUR.
+     */
+    @Test
+    @Config(sdk = [36], qualifiers = "w360dp-h800dp-420dpi")
+    fun `compact en — 360dp-də həb sığır, etiketlər görünür`() {
+        shell()
+        compose.onNodeWithContentDescription("Alt naviqasiya paneli").assertExists()
+        // dəqiq match — feed-də "Profilini tamamla…" elementi var (substring üst-üstə düşməsin)
+        compose.onNodeWithText("Profil").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Söhbətlər").assertIsDisplayed()
+        shot("d105-compact-narrow-360dp")
     }
 
     // ═══════════════ 2. Medium — planşet dar / qatlanan açıq ═══════════════

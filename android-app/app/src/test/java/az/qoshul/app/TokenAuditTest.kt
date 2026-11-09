@@ -75,16 +75,14 @@ class TokenAuditTest {
         val uses = ktLines(features)
             .filter { (_, ln) -> Regex("(GlassPill|GlassSurface|LiquidGlassSurface)\\(").containsMatchIn(ln) }
             .map { it.first to it.second.trim().take(50) }
-        // gözlənti: AppShell nav pill (1) + D-102 LiquidRail (1 — alt panelin
-        // adaptiv variantı: ≥600dp-də BİRİ ekranda, qarşılıqlı-ixtisaslı) +
-        // MapScreen filtr paneli (1) + MapScreen alt kart (1) + MapScreen
-        // sayğac (1) + MatchScreen Keç/Maraqlıyam (2) = 7 çağırış.
+        // gözlənti (D-105): LiquidRail (1 — alt panel artıq FloatingTabBar-dır,
+        // şüşə deyil) + MapScreen filtr paneli (1) + MapScreen alt kart (1) +
+        // MapScreen sayğac (1) + MatchScreen Keç/Maraqlıyam (2) = 6 çağırış.
         // Səth TİPİ sayı dəyişməz (rail = naviqasiya səthinin şaquli forması,
-        // D-096 "5 icazəli səth" dili pozulmur — heç bir ekranda 6-dan çox
-        // şüşə səthi görünmür).
+        // D-096 "5 icazəli səth" dili pozulmur).
         assertEquals(
             "glass səthləri: ${uses.joinToString("; ")}",
-            7,
+            6,
             uses.size,
         )
     }

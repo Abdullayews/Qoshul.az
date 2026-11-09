@@ -3,6 +3,7 @@ package az.qoshul.app.features.shell
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -55,19 +57,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -91,6 +88,11 @@ import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.WindowWidthClass
 import az.qoshul.app.core.ui.Wordmark
 import az.qoshul.app.core.ui.rememberWindowWidthClass
+import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBar
+import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBarDefaults
+import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBarInlineBehavior
+import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBarScrollConnection
+import az.qoshul.app.core.ui.floatingtabbar.rememberFloatingTabBarScrollConnection
 import az.qoshul.app.core.model.QoshulEvent
 
 /**
@@ -111,11 +113,22 @@ import az.qoshul.app.core.model.QoshulEvent
  *  - mexanizm: NestedScrollConnection qabıq səviyyəsində — HEÇ bir
  *    ekrana toxunmur, bütün scrollable nəvələrin deltasını görür.
  *
- * D-102 (v0.35.0): ADAPTİV NAVİQASİYA — pəncərə eni ≥600dp (Medium/
- * Expanded — planşet, qatlanan açıq) alt LiquidNav əvəzinə solda
+ * D-102 (v0.35.0): ADAPTİV NAVİGASİYA — pəncərə eni ≥600dp (Medium/
+ * Expanded — planşet, qatlanan açıq) alt panel əvəzinə solda
  * şaquli LiquidRail; Compact (telefon) davranışı BİT-BİT eyni qalır.
  * Rail rejimində auto-hide bağlanır (rail məzmunu örtmür, gizlənmə
  * mənasızdır); tab keçidləri tween əvəzinə spring fizikasına keçir.
+ *
+ * D-105 (v0.37.0, direktiv 2026-11-09: "göndərdiyim navigation bar
+ * stilini implementasiya et; yığılmış haldakı sağ və solda olan
+ * düymələr home və chat düyməsi olsun"): Compact alt panel artıq
+ * FloatingTabBar-dır (iOS 26 dili — vendored core/ui/floatingtabbar):
+ *  - AÇIQ: [Kəşf · Xəritə · Yarat · Profil həbi] [Söhbətlər dairəsi];
+ *  - YIĞILMIŞ: [Kəşf həbi] [Söhbətlər dairəsi] — sol=home, sağ=chat;
+ *  - aşağı sürüşmə = yığılma, yuxarı = açılma (14dp — D-098 həddi,
+ *    gizlətmə YERİNƏ yığılma — bar həmişə əlçatandır);
+ *  - Söhbətlər tabında nav gizli qalır (D-098/7 immersive), çıxışda
+ *    AÇIQ vəziyyətdə qayıdır.
  */
 @Composable
 fun AppShell(
@@ -130,6 +143,7 @@ fun AppShell(
     // U2.2 (UI-02): aktiv tab + nav gizlilik proses ölümündən bərpa olunur
     var index by rememberSaveable { mutableStateOf(0) }
     var navHidden by rememberSaveable { mutableStateOf(false) }
+    var wasChats by rememberSaveable { mutableStateOf(false) }
 
     // "Yol göstər / Yol tap" → xəritə tabına keç (D-050)
     LaunchedEffect(focus.request) {
@@ -141,47 +155,44 @@ fun AppShell(
         if (chatFocus?.request != null) index = 2
     }
 
-    // UI-7 (D-098): tab dəyişəndə nav vəziyyəti — Söhbətlər = həmişə
-    // gizli (daxili keçidlər də daxil), digər tablara qayıdışda görünür.
-    LaunchedEffect(index) { navHidden = index == 2 }
+    // D-105: collapse/expand scroll keçidi — komponentin öz
+    // NestedScrollConnection-ı. 14dp hədd — D-098/7 tuningi miras alınır;
+    // istiqamət dəyişəndə akkumulyator sıfırlanır (komponent daxilində).
+    // Aşağı delta = YIĞ (inline), yuxarı delta = AÇ (expanded) — köhnə
+    // "gizlət/göstər" ƏVƏZİNƏ: bar həmişə görünür, yalnız forma dəyişir.
+    val navScroll = rememberFloatingTabBarScrollConnection(
+        initialIsInline = false,
+        scrollThreshold = 14.dp,
+        inlineBehavior = FloatingTabBarInlineBehavior.OnScrollDown,
+    )
+
+    // UI-7 (D-098) + D-105: Söhbətlər = immersiv (nav gizli, həmişə);
+    // çıxışda nav AÇIQ vəziyyətdə qayıdır (yığılmış yox — tam tab dili
+    // ilə qarşılama; wasChats keçidi proses ölümündən bərpa olunur).
+    LaunchedEffect(index) {
+        if (index == 2) {
+            navHidden = true; wasChats = true
+        } else {
+            navHidden = false
+            if (wasChats) {
+                navScroll.expand()
+                wasChats = false
+            }
+        }
+    }
 
     // UI-7 (D-098): Söhbətlər tabında nav yoxdur — GERİ ilə Kəşf-ə qayıdış.
     // (açıq çatda ChatsScreen-in BackHandler-i bunu kölgədə qoyur)
     BackHandler(enabled = index == 2) { index = 0 }
 
-    // UI-7 (D-098): scroll əsaslı auto-hide — qabıq səviyyəli NestedScroll
-    // connection: aşağı delta (dy<0) ~14dp toplananda gizlət, yuxarı delta
-    // (dy>0) toplananda göstər. İstiqamət dəyişəndə akkumulyator sıfırlanır
-    // (cavabvericilik). Söhbətlər tabında siqnal iqnor edilir.
-    val density = LocalDensity.current
-    val scrollAcc = remember { mutableFloatStateOf(0f) }
-    val scrollConnection = remember(density) {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                val dy = available.y
-                if (index == 2 || dy == 0f) return Offset.Zero
-                if (scrollAcc.floatValue != 0f && (scrollAcc.floatValue > 0f) != (dy > 0f)) {
-                    scrollAcc.floatValue = 0f
-                }
-                scrollAcc.floatValue += dy
-                val threshold = with(density) { 14.dp.toPx() }
-                when {
-                    scrollAcc.floatValue <= -threshold -> {
-                        navHidden = true; scrollAcc.floatValue = 0f
-                    }
-                    scrollAcc.floatValue >= threshold -> {
-                        navHidden = false; scrollAcc.floatValue = 0f
-                    }
-                }
-                return Offset.Zero
-            }
-        }
-    }
-
     // D-102: adaptiv rejim — Compact = alt panel (əvvəlki axın),
     // Medium/Expanded = sol rail. navHidden yalnız alt panel üçün doğrudur.
     val widthClass = rememberWindowWidthClass()
     val rail = widthClass != WindowWidthClass.Compact
+
+    // U2.4 (UI-11): badge state-dən törəmədir (st.unreadCount) — Header
+    // zəngi + D-105 Söhbətlər dairəsi nöqtəsi eyni mənbəyi paylaşır
+    val st by engine.state.collectAsStateWithLifecycle()
 
     Row(Modifier.fillMaxSize().background(Q.background)) {
         // — D-102: LiquidRail (yalnız geniş pəncərələrdə) —
@@ -198,20 +209,17 @@ fun AppShell(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            // U2.4 (UI-11): badge state-dən törəmədir (st.unreadCount)
-            val st by engine.state.collectAsStateWithLifecycle()
             Header(
                 onPartners = { nav.push(Route.Partners) },
                 onAssistant = { nav.push(Route.Assistant) },
                 onBell = { nav.push(Route.Notifications) },
                 unread = st.unreadCount,
             )
-            // D-102: auto-hide yalnız alt panel rejimində qurulur (rail
-            // məzmunu örtmür — gizlətmə mənasızdır); Compact davranışı
-            // dəyişmir: eyni connection, eyni hədd.
+            // D-102 + D-105: collapse/expand keçidi yalnız alt panel
+            // rejimində qurulur (rail məzmunu örtmür — yığılma mənasızdır).
             Box(
                 if (rail) Modifier.weight(1f)
-                else Modifier.weight(1f).nestedScroll(scrollConnection)
+                else Modifier.weight(1f).nestedScroll(navScroll)
             ) {
                 // D-088 keçid dili + D-102: slide artıq SPRİNG fizikasıdır
                 // (spatial = spring, alpha = tween qaydası)
@@ -242,14 +250,15 @@ fun AppShell(
         }
     }
 
-    // — Liquid glass alt panel (UI-7 D-098: sıfırdan yenidən yazılıb) —
-    // D-102: yalnız Compact pəncərələrdə (rail rejimində ikinci naviqasiya
-    // ola bilməz)
+    // — D-105: iOS 26 üslublu üzən alt panel (FloatingTabBar) — yalnız
+    // Compact pəncərələrdə (rail rejimində ikinci naviqasiya ola bilməz)
     if (!rail) {
         Box(Modifier.fillMaxSize()) {
-            LiquidNav(
+            FloatingNav(
                 index = index,
                 hidden = navHidden,
+                connection = navScroll,
+                unread = st.unreadCount,
                 onChanged = { index = it },
                 onCreate = onOpenCreate,
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -325,43 +334,41 @@ private fun Header(
 }
 
 /**
- * LIQUID NAV — UI-7 (D-098, direktiv 2026-11-08: "Navigation bar tam
- * sıfırdan yaz, liquid glass stilində"). D-088-in qfw pill dili TAM
- * əvəz olunur; ölçü dili (72dp panel, 5 slot, "Yarat" mərkəzdə) qalır.
+ * FLOATING NAV — D-105 (v0.37.0, istifadəçi direktivi 2026-11-09: „bu
+ * commitdən sonrakı commitdə göndərdiyim navigation bar stilini
+ * implementasiya et; yığılmış haldakı sağ və solda olan düymələr home
+ * və chat düyməsi olsun“): D-098 LiquidNav TAM əvəz olunur —
+ * elyesmansour/compose-floating-tab-bar v1.0.1 (Apache-2.0, vendored:
+ * core/ui/floatingtabbar) iOS 26 dili ilə:
  *
- * D-103 (2026-11-09, istifadəçi direktivi: "navigation tab düymələrinin
- * ətrafındakı dairəni sil"): aktiv slotun arxasındakı lentz kapsulu
- * SİLİNDİ — seçim artıq YALNIZ rəng dili ilə ifadə olunur (aktiv ikon/
- * mətn primary + 2dp dip; qeyri-aktiv mutedFg). Glass.kt-in phase-
- * lensing qatına (həqiqi linza effekti) toxunulmur — bu, bəzək kapsulu
- * idi, riyazi lens deyil.
- *
- * Dizayn — Glass.kt-in liquid-glass prinsipləri üzərində:
- *  1) SƏTH: gerçek şüşə intensivliyi (intensity 0.35 — D-060-ın
- *     "0.1x" rejimindən güclü, amma məzmun barın içindən oxunmur);
- *     30dp radius (D-098 dairəviləşdirmə), yumşaq kölgə.
- *  2) YARAT: marka qradiyenti (primary→primaryDeep) + parlaq kölgəli
- *     dairə — barın İÇİNDƏ, daşma yox (D-088 qərarı qorunur).
- *  3) HƏRƏKƏT: gizlənmə/göstərmə — "hover" (spring slide + fade,
- *     aşağıdan yarı-hündürlüklə qayıdış); ikon 2dp dip.
+ *  - AÇIQ (expanded): [Kəşf · Xəritə · Yarat · Profil həbi] +
+ *    [Söhbətlər dairəsi] — həb weight(1f) ilə eni çəkir, hər slot
+ *    bərabər (dar telefonlarda da mətn kəsilmir); seçili slotun
+ *    arxasında Q.secondary kapsul sürüşür (spring 380/0.72).
+ *  - YIĞILMIŞ (inline): [Kəşf həbi] [Söhbətlər dairəsi] — sol həb
+ *    HƏMİŞƏ Kəşf (direktiv), sağ dairə HƏMİŞƏ Söhbətlər; keçid
+ *    sharedElement morfudur (həb açılır, ikonlar yerini dəyişir).
+ *  - Söhbətlər dairəsi: aktiv primary / qeyri-aktiv mutedFg ikon +
+ *    oxunmamış sayı üçün Q.accent nöqtə (Header zəng badge-i ilə eyni
+ *    mənbə — st.unreadCount; dairə clip-i daxilində, daşma yoxdur).
+ *  - Yarat: həb içində action-slot (seçim dəyişməz — D-088 dili),
+ *    create sheet-i açır.
+ *  - D-103 rəng dili qorunur: aktiv ikon/mətn primary + W700,
+ *    qeyri-aktiv mutedFg + W500 (rəng keçidi tween D2).
+ *  - Gizlənmə (Söhbətlər immersive — D-098/7): „hover“ dili dəyişməz
+ *    — spring slide + fade; 14dp scroll həddi D-098-dən miras (amma
+ *    artıq gizlətmir — YIĞIR; bar həmişə əlçatandır).
  */
 @Composable
-private fun LiquidNav(
+private fun FloatingNav(
     index: Int,
     hidden: Boolean,
+    connection: FloatingTabBarScrollConnection,
+    unread: Int,
     onChanged: (Int) -> Unit,
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    data class Item(val icon: ImageVector, val activeIcon: ImageVector, val label: String)
-    val items = listOf(
-        Item(Icons.Outlined.Home, Icons.Rounded.Home, "Kəşf"),
-        Item(Icons.Outlined.Map, Icons.Rounded.Map, "Xəritə"),
-        Item(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, "Söhbətlər"),
-        Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
-    )
-
-    // — hover hərəkəti: spring ilə aşağı süüşmə + fade —
     AnimatedVisibility(
         visible = !hidden,
         modifier = modifier,
@@ -372,49 +379,141 @@ private fun LiquidNav(
         exit = fadeOut(tween(160)) +
             slideOutVertically(tween(220, easing = Motion.ease)) { it },
     ) {
-        LiquidGlassSurface(
+        FloatingTabBar(
+            selectedTabKey = index,
+            scrollConnection = connection,
+            colors = FloatingTabBarDefaults.colors(
+                backgroundColor = Q.card,
+                accessoryBackgroundColor = Q.card,
+                selectedIndicatorColor = Q.secondary,
+            ),
+            shapes = FloatingTabBarDefaults.shapes(
+                tabBarShape = RoundedCornerShape(100),
+                tabShape = RoundedCornerShape(100),
+                standaloneTabShape = CircleShape,
+                accessoryShape = RoundedCornerShape(100),
+            ),
+            sizes = FloatingTabBarDefaults.sizes(
+                tabBarContentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp),
+                tabInlineContentPadding = PaddingValues(12.dp),
+                tabExpandedContentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp),
+                componentSpacing = 8.dp,
+                tabSpacing = 0.dp,
+            ),
+            elevations = FloatingTabBarDefaults.elevations(
+                inlineElevation = 6.dp,
+                expandedElevation = 10.dp,
+            ),
             modifier = Modifier
-                .padding(horizontal = 14.dp)
+                .padding(horizontal = 8.dp)
                 .padding(bottom = 10.dp)
                 .navigationBarsPadding()
-                // D-102: adaptiv test qarmağı + a11y — alt panel identiklik
+                // D-102: adaptiv test qarmağı + a11y — alt panel identikliyi
                 .semantics { contentDescription = "Alt naviqasiya paneli" },
-            shape = RoundedCornerShape(30.dp),
-            intensity = 0.35f,
         ) {
-            Box(Modifier.height(72.dp)) {
-                // — slotlar — (D-103: fon kapsulu yoxdur — yalnız rəng dili) —
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 6.dp),
-                ) {
-                    items.forEachIndexed { i, item ->
-                        if (i == 2) CreateFab(onCreate)  // action: mərkəz
-                        LiquidNavItem(
-                            icon = item.icon,
-                            activeIcon = item.activeIcon,
-                            label = item.label,
-                            active = index == i,
-                            onClick = { onChanged(i) },
-                            modifier = Modifier.weight(1f),
+            // — həb: Kəşf · Xəritə · Yarat (action) · Profil —
+            tab(
+                key = 0,
+                title = { NavLabel("Kəşf", index == 0) },
+                icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Kəşf") },
+                onClick = { onChanged(0) },
+            )
+            tab(
+                key = 1,
+                title = { NavLabel("Xəritə", index == 1) },
+                icon = { NavIcon(Icons.Outlined.Map, Icons.Rounded.Map, index == 1, "Xəritə") },
+                onClick = { onChanged(1) },
+            )
+            tab(
+                // action-slot: seçim DƏYİŞMİR (D-088 „selectable=false“ dili)
+                key = "create",
+                title = { NavLabel("Yarat", false) },
+                icon = { NavIcon(Icons.Filled.Add, Icons.Filled.Add, false, "Yarat") },
+                onClick = onCreate,
+            )
+            tab(
+                key = 3,
+                title = { NavLabel("Profil", index == 3) },
+                icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil") },
+                onClick = { onChanged(3) },
+            )
+            // — standalone dairə: Söhbətlər (yığılmış halın sağ düyməsi) —
+            standaloneTab(
+                key = 2,
+                icon = {
+                    val tint by animateColorAsState(
+                        targetValue = if (index == 2) Q.primary else Q.mutedFg,
+                        animationSpec = tween(Motion.D2), label = "chatTint",
+                    )
+                    Box {
+                        Icon(
+                            if (index == 2) Icons.Rounded.ChatBubble else Icons.Outlined.ChatBubble,
+                            "Söhbətlər", tint = tint,
+                            modifier = Modifier.size(22.dp),
                         )
+                        if (unread > 0) {
+                            // nöqtə dili: dairə clip-i daxilində qalır
+                            // (say rəqəmi artıq Header zəngində görünür)
+                            PopIn {
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopEnd)
+                                        .size(9.dp)
+                                        .background(Q.accent, CircleShape)
+                                        .border(1.dp, Q.card, CircleShape)
+                                )
+                            }
+                        }
                     }
-                }
-            }
+                },
+                onClick = { onChanged(2) },
+            )
         }
     }
 }
 
+/** D-105: həb etiketi — D-103 rəng dili (aktiv primary/W700, qeyri-aktiv mutedFg/W500). */
+@Composable
+private fun NavLabel(label: String, active: Boolean) {
+    Text(
+        label,
+        style = T.metaSm.copy(
+            fontWeight = if (active) FontWeight.W700 else FontWeight.W500,
+            color = if (active) Q.primary else Q.mutedFg,
+        ),
+        maxLines = 1,
+    )
+}
+
+/** D-105: həb ikonu — aktiv/qeyri-aktiv variant + rəng keçidi (tween D2). */
+@Composable
+private fun NavIcon(
+    inactive: ImageVector,
+    active: ImageVector,
+    isActive: Boolean,
+    desc: String,
+) {
+    val tint by animateColorAsState(
+        targetValue = if (isActive) Q.primary else Q.mutedFg,
+        animationSpec = tween(Motion.D2), label = "navTint",
+    )
+    Icon(
+        if (isActive) active else inactive,
+        desc,
+        tint = tint,
+        modifier = Modifier.size(20.dp),
+    )
+}
+
+
 /**
  * LIQUID RAIL — D-102 (v0.35.0): geniş pəncərələrdə (≥600dp) sol şaquli
- * naviqasiya dəmiryolu. Alt LiquidNav-in dili DAŞINIR (eyni şüşə səthi
- * 0.35, eyni rəng-seçim dili — D-103: lentz kapsulu burada da silinib,
- * eyni "Yarat" qradiyenti, eyni slot sırası: Kəşf · Xəritə · [Yarat] ·
- * Söhbətlər · Profil) — yalnız istiqamət dəyişir. Planşet/qatlanan
- * istifadəsində baş barmaq zonada qalır, məzmun tam eni qazanır (alt
- * panelin 82dp-i qaytarılır).
+ * naviqasiya dəmiryolu. D-105-dən sonra alt panel FloatingTabBar-dır —
+ * rail şüşə nav dilinin (D-098/D-103: 0.35 intensity səth, rəng-seçim
+ * dili — lentz kapsulu yoxdur, "Yarat" qradiyenti) yeganə daşıyıcısıdır;
+ * slot sırası əvvəlki kimidir: Kəşf · Xəritə · [Yarat] · Söhbətlər ·
+ * Profil. Planşet/qatlanan istifadəsində baş barmaq zonada qalır,
+ * məzmun tam eni qazanır (alt panelin 82dp-i qaytarılır).
  *
  * Hündürlük: tam ekran (statusBar daxil — edge-to-edge D-031 dili);
  * en: 84dp (4 slot + FAB şaquli düzümdə rahat toxunma hədəfi 48dp+).
