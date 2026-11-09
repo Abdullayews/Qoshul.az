@@ -55,11 +55,11 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Mikroservis (M4) | **axum 0.8.9** (`service/`): FCM HTTP v1, idempotent joblar (24s/2s), admin API — D-082; PLACEHOLDER konfiq → degrade |
 | Deploy (M5) | **Self-host Supabase — Oracle Always Free** (Ampere A1 ARM64, 2 OCPU/12 GB — yeni limitlər D-083): slim compose core+6 profil, Caddy TLS, 12/12 imaj arm64 (D-084..D-087) |
 | UI/UX (M6) | **Overlay pick sistemi** (mini-kateqoriya trigger → üzərinə çıxan panel, D-089) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088) + boz track ləğvi (D-090); vizual QA: Robolectric render + vizual audit + piksel (D-091); **adaptiv naviqasiya** — ≥600dp-də LiquidRail, telefon axını dəyişməz (D-102) + spring hərəkət dili başlanğıcı (spatial=spring, alpha=tween); nav lentz kapsulu ləğv — seçim yalnız rəng dili ilə (D-103); status/nav bar görünüşü işıq kimi sabit — sistem tünd rejimində ikonlar ərimir (D-104); **iOS 26 üslublu üzən nav — FloatingTabBar** (vendored Apache-2.0): yığılmış halda sol=Kəşf, sağ=Söhbətlər dairəsi (D-105); açıq halda vahid pill — hamısı eyni həbdə, yığılmışda home sol / söhbətlər sağ kənarlarda (D-106); **əsl liquid glass** — backdrop kitabxanası, Echo-Music „Apple-matched“ recipesi (D-107) |
-| Xəritə | **MapLibre Compose 0.20 + OpenFreeMap** (default; D-048) — **Google Maps SDK hazır** (D-108: `MAP_BACKEND=google` + açar) |
+| Xəritə | **Google Maps SDK** (maps-compose 9.0.1 — ƏSAS backend, D-109; `MAPS_API_KEY` ilə) — açarsızda **MapLibre + OpenFreeMap** avtomatik fallback (D-048) |
 | Naviqasiya barı | **FloatingTabBar** (iOS 26, D-105/106) + **əsl liquid glass** — Kyant0/backdrop, Echo-Music recipesi (D-107; API 31+) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
-| Test | **207 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) + glass recipe/backend seam (D-107/D-108) |
-| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) · təmiz nav + sabit işıq status bar (D-103/D-104) · iOS 26 FloatingNav — vahid pill + kənar yığılma (D-105/D-106) + əsl liquid glass (D-107) · Google Maps hazır (D-108) |
+| Test | **210 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) + glass recipe/backend seam + keçid (D-107/D-108/D-109) |
+| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) · təmiz nav + sabit işıq status bar (D-103/D-104) · iOS 26 FloatingNav — vahid pill + kənar yığılma (D-105/D-106) + əsl liquid glass (D-107) · Google Maps əsas backend (D-109) |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
 ## 📁 Depo strukturu
@@ -72,7 +72,7 @@ Qoshul.az/
 │   │                       chats · coupons · events · feed · map · match ·
 │   │                       notifications · onboarding · partners · profile ·
 │   │                       reservations · safety · settings · shell · venues · xp)
-│   └── app/src/test/       174 JVM testi (Robolectric daxil)
+│   └── app/src/test/       210 JVM testi (Robolectric daxil)
 ├── supabase/               M1: sxem + RLS + server qaydaları (D-076/D-077)
 ├── rust-core/              M2-M3: qoshul-core (qaydalar+QR) + qoshul-jni (JNI) + qoshul-fonts (audit)
 ├── service/                M4: axum mikroservis — FCM, joblar, admin API (D-082)
@@ -91,17 +91,23 @@ Qoshul.az/
 | `MOCK` *(default)* | Bütün funksiyalar demo məlumatla dolu; vahid demo hesabı ilə bir toxunuşla giriş |
 | `SUPABASE` | Real Supabase auth + sync (`SUPABASE_URL` / `SUPABASE_ANON_KEY` da local.properties-də) |
 
-## 🗺️ Xəritə backend-i (D-108)
+## 🗺️ Xəritə backend-i (D-108/D-109)
 
-Eyni local.properties-də xəritə backend-i də seçilir (hazırlıq — Google-a keçid üçün):
+**Google Maps ƏSAS backenddir** (direktiv: „google ilə dəyişdirib“). Açar
+(`MAPS_API_KEY=AIza…` — Google Cloud Console → Maps SDK for Android)
+təqdim olunan kimi Google xəritəsi işə düşür; açar yoxdursa xəritə boş
+qalmasın deyə MapLibre avtomatik fallback seçilir:
 
 | `MAP_BACKEND` | Nə deməkdir |
 |---|---|
-| `maplibre` *(default)* | MapLibre + OpenFreeMap — açarsız, pulsuz (D-048; CI bu rejimdə qurulur) |
-| `google` | Google Maps SDK (maps-compose 9.0.1) — `MAPS_API_KEY=AIza…` da tələb olunur (Google Cloud Console → Maps SDK for Android) |
+| `google` *(default)* | Google Maps SDK (maps-compose 9.0.1) — `MAPS_API_KEY` **tələb olunur**; açar yoxdursa maplibre fallback (resolveMapBackend) |
+| `maplibre` | MapLibre + OpenFreeMap — açarsız, pulsuz (D-048); açıq seçim və ya açarsız fallback |
 
-Keçid üçün kod dəyişikliyi lazım DEYİL — pinlər, filtrlər, alt kart, zoom həbləri eynidir;
-yalnız tile səthi dəyişir (features/map/GoogleMapCanvas.kt hazır gözləyir).
+Açarı iki yerdən vermək olar: `android-app/local.properties` (lokal build)
+və ya **repo secret `MAPS_API_KEY`** (CI — native.yml ötürür; secret qoyulanda
+release APK-ları Google xəritə ilə qurulur). Keçid üçün kod dəyişikliyi
+lazım DEYİL — pinlər, filtrlər, alt kart, zoom həbləri eynidir; yalnız tile
+səthi dəyişir.
 
 ## 📲 Quraşdırma (APK)
 

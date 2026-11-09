@@ -73,15 +73,19 @@ import az.qoshul.app.features.venues.ReserveSheet
 /**
  * Xəritə tabı (ROL TAB 2, D-027/D-030/D-048): pinlər + filtr + alt kart.
  *
- * D-108 (v0.39.0, direktiv 2026-11-09: „map da google sdk keçmək üçün
+ * D-108 (v0.39.0, direktif 2026-11-09: „map da google sdk keçmək üçün
  * hazırlaş“): kanvas BACKEND-SEÇİLƏNDir — MapScreen özü yalnız məlumat
  * (pinlər, filtrlər, seçim) və xromu (filtr paneli, sayğac, alt kart)
- * saxlayır; tile səthini çəkən kanvas BuildConfig.MAP_BACKEND ilə seçilir
- * (local.properties: MAP_BACKEND=maplibre|google; default maplibre —
- * açarsız OpenFreeMap, D-048). Google rejimi GoogleMapCanvas (maps-compose
- * 9.0.1, MarkerComposable pin dili) + MAPS_API_KEY tələb edir.
+ * saxlayır; tile səthini çəkən kanvas BuildConfig.MAP_BACKEND ilə seçilir.
  * Pin modeli (MapPins.kt) backend-agnostikdir — hər iki kanvas eyni
  * siyahını render edir.
+ *
+ * D-109 (v0.40.0, direktif 2026-11-09: „google ilə dəyişdirib“): GOOGLE
+ * ƏSAS backenddir — default MAP_BACKEND=google (local.properties/env);
+ * açar (MAPS_API_KEY → BuildConfig.MAPS_KEY_PRESENT) olanda
+ * GoogleMapCanvas (maps-compose 9.0.1, MarkerComposable pin dili),
+ * açarsızda maplibre fallback (D-048 açarsız OpenFreeMap). Seçim məntiqi
+ * resolveMapBackend (MapPins.kt) saf funksiyasındadır.
  *
  * Pinlər (D-027 görünüş rejimi): məkan = yaşal dot + storefront qlifi,
  * tədbir = narıncı dot + təqvim qlifi, insan = adın baş hərfi. Seçim
@@ -155,9 +159,13 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     }
 
     Box(Modifier.fillMaxSize().pickHost(pickHost).background(Q.tileFallback)) {
-        // — XƏRİTƏ KANVASI (D-108 backend seçimi) —
+        // — XƏRİTƏ KANVASI (D-108 seam + D-109 keçidi: google əsas,
+        // açarsız maplibre fallback — resolveMapBackend) —
+        val backend = remember {
+            resolveMapBackend(BuildConfig.MAP_BACKEND, BuildConfig.MAPS_KEY_PRESENT)
+        }
         if (!isJvmTest) {
-            if (BuildConfig.MAP_BACKEND == "google") {
+            if (backend == "google") {
                 GoogleMapCanvas(
                     pins = pins,
                     myLat = myLat,

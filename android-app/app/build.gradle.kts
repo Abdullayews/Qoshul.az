@@ -20,8 +20,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 39
-        versionName = "0.39.0"
+        versionCode = 40
+        versionName = "0.40.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(
@@ -36,16 +36,25 @@ android {
             "String", "BACKEND_MODE",
             "\"" + (localProps.getProperty("BACKEND_MODE") ?: "MOCK") + "\"",
         )
-        // — D-108: xəritə backend seçimi (hazırlıq — Google SDK keçidi) —
-        // local.properties: MAP_BACKEND=maplibre (default) | google;
-        // MAPS_API_KEY=AIza… yalnız google rejimində lazımdır.
-        // Manifest placeholder boş olanda meta-data boş dəyərlə birləşir —
-        // maplibre rejimində Google xəritə heç kompozisiya olunmur (zərərsiz).
+        // — D-108/D-109: xəritə backend seçimi — GOOGLE ƏSAS (direktiv
+        // 2026-11-09: „google ilə dəyişdirib“). MAP_BACKEND mənbəyi:
+        // local.properties → env (CI) → default „google“.
+        // MAPS_API_KEY (AIza…) local.properties VƏ YA env-dən (CI secret
+        // MAPS_API_KEY — native.yml ötürür); açar olanda BuildConfig.
+        // MAPS_KEY_PRESENT=true → GoogleMapCanvas, açarsızda maplibre
+        // FALLBACK (resolveMapBackend, D-048 açarsız axın qalır — xəritə
+        // heç vaxt boş qalmır). Manifest placeholder boş olanda meta-data
+        // boş dəyərlə birləşir — maplibre rejimində Google xəritə heç
+        // kompozisiya olunmur (zərərsiz).
         buildConfigField(
             "String", "MAP_BACKEND",
-            "\"" + (localProps.getProperty("MAP_BACKEND") ?: "maplibre") + "\"",
+            "\"" + (localProps.getProperty("MAP_BACKEND")
+                ?: System.getenv("MAP_BACKEND") ?: "google") + "\"",
         )
-        manifestPlaceholders["MAPS_API_KEY"] = localProps.getProperty("MAPS_API_KEY") ?: ""
+        val mapsApiKey = localProps.getProperty("MAPS_API_KEY")
+            ?: System.getenv("MAPS_API_KEY") ?: ""
+        buildConfigField("boolean", "MAPS_KEY_PRESENT", mapsApiKey.isNotBlank().toString())
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -131,11 +140,10 @@ dependencies {
     // fallback solid görünüş — LiquidGlassNav.kt gate)
     implementation(libs.kyant0.backdrop)
 
-    // D-108: Google Maps SDK hazırlığı — həmişə kompayl olunur (bitrot
-    // olmasın), çalışma vaxtı BuildConfig.MAP_BACKEND ilə seçilir;
-    // google rejimi local.properties-də MAPS_API_KEY tələb edir.
-    // play-services-maps açıq deklarasiya: android-maps-utils-core onu
-    // yalnız RUNTIME verir — compile classpath üçün məcburidir.
+    // D-108/D-109: Google Maps SDK — həmişə kompayl olunur (bitrot
+    // olmasın), çalışma vaxtı resolveMapBackend (BuildConfig.MAP_BACKEND +
+    // MAPS_KEY_PRESENT) ilə seçilir; google rejimi MAPS_API_KEY tələb edir
+    // (local.properties və ya CI secret).
     implementation(libs.google.maps.compose)
     implementation(libs.google.play.services.maps)
 

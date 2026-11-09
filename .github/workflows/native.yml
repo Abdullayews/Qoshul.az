@@ -119,6 +119,10 @@ jobs:
           restore-keys: robolectric-androidall-
 
       - name: Vahid testlər (JVM — məntiq + QR sübutu + Robolectric UI, D-041/D-042)
+        env:
+          # D-109: repo secret-i qoyulanda CI build-ləri də Google xəritə
+          # ilə qurulur; secret yoxdursa boşdur → maplibre fallback.
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Test nəticələri (artifact)
@@ -142,6 +146,10 @@ jobs:
           overwrite: true
 
       - name: Release APK (R8 + resource shrink)
+        env:
+          # D-109: Google xəritə açarı CI-dən (repo secret MAPS_API_KEY);
+          # yoxdursa APK maplibre fallback ilə qurulur — build yaşıl qalır.
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: APK artifaktı

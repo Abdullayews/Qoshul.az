@@ -9,6 +9,7 @@ import az.qoshul.app.core.theme.QoshulTheme
 import az.qoshul.app.core.ui.NavState
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.features.map.MapScreen
+import az.qoshul.app.features.map.resolveMapBackend
 import az.qoshul.app.features.shell.AppShell
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,16 +23,19 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * D-108 (v0.39.0): XƏRİTƏ BACKEND SEAM SERTİFİKATI (direktiv 2026-11-09:
- * „map da google sdk keçmək üçün hazırlaş“) — keçid tektonikası:
+ * D-108/D-109 (v0.39.0/v0.40.0): XƏRİTƏ BACKEND SEAM SERTİFİKATI
+ * (direktivlər 2026-11-09: „map da google sdk keçmək üçün hazırlaş“ +
+ * „google ilə dəyişdirib“) — keçid tektonikası:
  *
- *  (1) MAPLIBRE DEFAULT — BuildConfig.MAP_BACKEND local.properties
- *      göstərişi olmadan „maplibre“dir (CI-da OpenFreeMap axını dəyişməz);
+ *  (1) GOOGLE ƏSAS — MAP_BACKEND mənbəyi local.properties → env (CI)
+ *      → default „google“; amma açar (MAPS_API_KEY) yoxdursa Google
+ *      SDK tile yükləyə bilməz → resolveMapBackend maplibre FALLBACK
+ *      seçir (D-048 açarsız OpenFreeMap — xəritə heç vaxt boş qalmır);
  *  (2) JİRA YOX — hər iki kanvas (MapLibre FFI / Google Play Services)
  *      JVM testdə kompozisiya olunmur (MapScreen isJvmTest gate) — xəritə
  *      xromu (filtr, sayğac) backenddən asılı deyil, test görünəndir;
- *  (3) KEÇİD = 2 sətir local.properties: MAP_BACKEND=google +
- *      MAPS_API_KEY=AIza… (manifest placeholder) — kod dəyişikliyi YOX.
+ *  (3) KEÇİD = 1 sətir: MAPS_API_KEY=AIza… (local.properties və ya CI
+ *      secret MAPS_API_KEY — native.yml ötürür) — kod dəyişikliyi YOX.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w412dp-h915dp-420dpi")
@@ -44,11 +48,45 @@ class MapBackendTest {
     private fun newEngine() = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
 
     @Test
-    fun `backend default maplibredir ci axtarissiz isleyir`() {
+    fun `google acar olanda esas backend secilir`() {
         assertEquals(
-            "local.properties-də MAP_BACKEND yoxdursa default maplibre",
+            "MAP_BACKEND=google + açar → GoogleMapCanvas",
+            "google",
+            resolveMapBackend(configured = "google", keyPresent = true),
+        )
+    }
+
+    @Test
+    fun `acarsiz google maplibre fallbackdur`() {
+        // Açar yoxdursa Google SDK tile yükləyə bilməz — xəritə boş
+        // qalmasın deyə D-048 açarsız axını devralır (D-109)
+        assertEquals(
+            "MAP_BACKEND=google, açar YOX → maplibre fallback",
             "maplibre",
-            BuildConfig.MAP_BACKEND,
+            resolveMapBackend(configured = "google", keyPresent = false),
+        )
+    }
+
+    @Test
+    fun `maplibre aciq secimde acardan asili deyil`() {
+        assertEquals(
+            "MAP_BACKEND=maplibre həmişə maplibre (açar məcburi deyil)",
+            "maplibre",
+            resolveMapBackend(configured = "maplibre", keyPresent = true),
+        )
+        assertEquals(
+            resolveMapBackend("maplibre", false),
+            resolveMapBackend("maplibre", true),
+        )
+    }
+
+    @Test
+    fun `buildconfig backend deyeri duzgun formadir`() {
+        // D-109: default google (local.properties/env göstərişi YOXDURSA);
+        // build konfiqi hər machine-də bu ikisindən biri olmalıdır
+        assertTrue(
+            "MAP_BACKEND ya google, ya maplibre olmalıdır: ${BuildConfig.MAP_BACKEND}",
+            BuildConfig.MAP_BACKEND == "google" || BuildConfig.MAP_BACKEND == "maplibre",
         )
     }
 
