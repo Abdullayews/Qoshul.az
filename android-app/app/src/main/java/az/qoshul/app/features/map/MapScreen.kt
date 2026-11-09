@@ -5,8 +5,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,10 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.Memory
@@ -35,42 +29,30 @@ import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsVolleyball
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import az.qoshul.app.BuildConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.glass.GlassPill
 import az.qoshul.app.core.glass.GlassSurface
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.model.Partner
-import az.qoshul.app.core.model.Person
-import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
@@ -87,82 +69,24 @@ import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.imagePaint
 import az.qoshul.app.features.events.EventDetailSheet
 import az.qoshul.app.features.venues.ReserveSheet
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import org.maplibre.compose.camera.CameraAnimation
-import org.maplibre.compose.camera.CameraPosition
-import org.maplibre.compose.camera.CameraUpdate
-import org.maplibre.compose.expressions.dsl.asString
-import org.maplibre.compose.expressions.dsl.const
-import org.maplibre.compose.expressions.dsl.eq
-import org.maplibre.compose.expressions.dsl.feature
-import org.maplibre.compose.expressions.dsl.image
-import org.maplibre.compose.expressions.value.SymbolAnchor
-import org.maplibre.compose.interaction.ClickResult
-import org.maplibre.compose.interaction.MapInteractions
-import org.maplibre.compose.layers.CircleLayer
-import org.maplibre.compose.layers.FeaturesClickHandler
-import org.maplibre.compose.layers.SymbolLayer
-import org.maplibre.compose.map.MapUiOptions
-import org.maplibre.compose.map.MaplibreMap
-import org.maplibre.compose.map.StyleLoadState
-import org.maplibre.compose.map.rememberMapState
-import org.maplibre.compose.sources.GeoJsonData
-import org.maplibre.compose.sources.rememberGeoJsonSource
-import org.maplibre.compose.style.BaseStyle
-import org.maplibre.spatialk.geojson.Feature
-import org.maplibre.spatialk.geojson.FeatureCollection
-import org.maplibre.spatialk.geojson.Point
-import org.maplibre.spatialk.geojson.Position
 
 /**
- * Xəritə tabı (ROL TAB 2, D-027/D-030/D-048): MapLibre Compose 0.20 +
- * OpenFreeMap "liberty" vektor stili — pulsuz, API açarı və hesablaşma YOX
- * (D-038-in "ağır SDK" rəddi 2026 FFI nəsli ilə köhnəldi: nüvə .so cəmi
- * ~1 MB/ABI). GPU vektor render, hamar pinch/pan/fırlanma, kamera animasiyası.
+ * Xəritə tabı (ROL TAB 2, D-027/D-030/D-048): pinlər + filtr + alt kart.
  *
- * Pinlər stil qatlarındadır (Circle + Symbol): məkan = yaşal dot + storefront
- * qlifi, tədbir = narıncı dot + təqvim qlifi, insan = adın baş hərfi.
- * Seçim halosu, boş toxunma = seçimi buraxır. OSM atribusiyası saxlanılıb.
+ * D-108 (v0.39.0, direktiv 2026-11-09: „map da google sdk keçmək üçün
+ * hazırlaş“): kanvas BACKEND-SEÇİLƏNDir — MapScreen özü yalnız məlumat
+ * (pinlər, filtrlər, seçim) və xromu (filtr paneli, sayğac, alt kart)
+ * saxlayır; tile səthini çəkən kanvas BuildConfig.MAP_BACKEND ilə seçilir
+ * (local.properties: MAP_BACKEND=maplibre|google; default maplibre —
+ * açarsız OpenFreeMap, D-048). Google rejimi GoogleMapCanvas (maps-compose
+ * 9.0.1, MarkerComposable pin dili) + MAPS_API_KEY tələb edir.
+ * Pin modeli (MapPins.kt) backend-agnostikdir — hər iki kanvas eyni
+ * siyahını render edir.
+ *
+ * Pinlər (D-027 görünüş rejimi): məkan = yaşal dot + storefront qlifi,
+ * tədbir = narıncı dot + təqvim qlifi, insan = adın baş hərfi. Seçim
+ * halosu, boş toxunma = seçimi buraxır.
  */
-private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
-
-/** Liberty stilinin qlif şrifti (initial hərflər üçün). */
-private const val STYLE_TEXT_FONT = "Noto Sans Regular"
-
-/** Xəritə pin modeli. */
-sealed interface MapPin {
-    val lat: Double
-    val lng: Double
-    data class Venue(val v: Partner) : MapPin { override val lat = v.lat; override val lng = v.lng }
-    data class Event(val e: QoshulEvent) : MapPin { override val lat = e.lat; override val lng = e.lng }
-    data class PersonP(val p: Person) : MapPin { override val lat = p.mapLat; override val lng = p.mapLng }
-}
-
-/** Qat kliklərində pini tapmaq üçün stabil açar. */
-private fun MapPin.key(): String = when (this) {
-    is MapPin.Venue -> "v${v.id}"
-    is MapPin.Event -> "e${e.id}"
-    is MapPin.PersonP -> "p${p.id}"
-}
-
-/** Pin siyahısından GeoJSON feature kolleksiyası. */
-private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject> = FeatureCollection(
-    pins.map { pin ->
-        Feature(
-            geometry = Point(Position(longitude = pin.lng, latitude = pin.lat)),
-            properties = buildJsonObject {
-                put("key", pin.key())
-                if (pin is MapPin.PersonP) put("initial", pin.p.firstName.take(1))
-            },
-        )
-    },
-)
-
 @Composable
 fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     val st by engine.state.collectAsStateWithLifecycle()
@@ -176,9 +100,6 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var pendingCamera by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     // D-089: xəritə filtr pick host-u (kateqoriya + məsafə panelləri)
     val pickHost = rememberPickHostState()
-    // D-061: stil yüklənmə uğursuzsa "Yenidən dənə" bütün xəritə qatını
-    // (key dəyişdiyi üçün state də daxil) sıfırdan qurur — təkrar cəhd.
-    var mapRetry by remember { mutableStateOf(0) }
     val hour = remember { engine.now().hour } // A2: vahid clock
 
     // U1.1 (UI-03 pattern): seçilmiş pinin alt kartı açıqdırsa GERİ kartı
@@ -212,11 +133,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         "Piknik" to Icons.Filled.Park,
     )
 
-    // Robolectric (JVM test): FFI .so yüklənə bilməz → xəritə səthi yoxdur;
-    // UI smoke-testləri qalan qatları (çiplər, kartlar) yoxlayır.
+    // Robolectric (JVM test): MapLibre FFI .so yüklənə bilməz, Google SDK
+    // isə Play Services gözləyir → hər iki kanvas JVM testdə YOXDUR; UI
+    // smoke-testləri qalan qatları (çiplər, kartlar) yoxlayır.
     val isJvmTest = remember { Build.FINGERPRINT.contains("robolectric", ignoreCase = true) }
-
-    val scope = rememberCoroutineScope()
 
     // — D-050: xəritə fokus istəyi ("Yol göstər"/"Yol tap") — pin seç + kameraya al
     LaunchedEffect(focus.request) {
@@ -235,136 +155,31 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     }
 
     Box(Modifier.fillMaxSize().pickHost(pickHost).background(Q.tileFallback)) {
+        // — XƏRİTƏ KANVASI (D-108 backend seçimi) —
         if (!isJvmTest) {
-            // D-061: key(mapRetry) — "Yenidən dənə" bütün xəritə alt-ağacını
-            // (rememberMapState daxil) söküb yenidən qurur: təzə stil yükləmə cəhdi.
-            key(mapRetry) {
-            val mapState = rememberMapState(
-                baseStyle = BaseStyle.Uri(MAP_STYLE_URL),
-                initialCameraPosition = CameraPosition(
-                    center = Position(longitude = myLng, latitude = myLat),
-                    zoom = 13.0,
-                ),
-            ) {
-                QoshulPinLayers(
+            if (BuildConfig.MAP_BACKEND == "google") {
+                GoogleMapCanvas(
                     pins = pins,
                     myLat = myLat,
                     myLng = myLng,
                     selectedKey = selected?.key(),
+                    pendingCamera = pendingCamera,
                     onPinTap = { selected = it },
+                    onPinDismiss = { selected = null },
+                    onCameraConsumed = { pendingCamera = null },
+                )
+            } else {
+                MaplibreCanvas(
+                    pins = pins,
+                    myLat = myLat,
+                    myLng = myLng,
+                    selectedKey = selected?.key(),
+                    pendingCamera = pendingCamera,
+                    onPinTap = { selected = it },
+                    onPinDismiss = { selected = null },
+                    onCameraConsumed = { pendingCamera = null },
                 )
             }
-
-            // D-061 "nə olar əgər...": stil yüklənməsə (ofiayn/DNS/paltar
-            // 503) xəritə səthi boş qalmır — aydın vəziyyət + təkrar cəhd.
-            // U2.5 (UI-14): 1.5s polling ləğv olundu — javap sübutu: MapStyleState
-            // 'loadState' = MutableState-backed (maplibre-compose 0.20.0
-            // classes.jar: androidx.compose.runtime.MutableState<StyleLoadState>
-            // loadStateState). D-061-in "reaktiv deyil" qeydi YANLIŞ idi.
-            var styleFailed by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) {
-                snapshotFlow { mapState.style.loadState }
-                    .collect { state -> styleFailed = state is StyleLoadState.Failed }
-            }
-
-            // D-050: fokus istəyi → kameranı pinə uçur (zoom ≥ 15)
-            LaunchedEffect(pendingCamera) {
-                val pos = pendingCamera ?: return@LaunchedEffect
-                mapState.animateCamera(
-                    CameraUpdate(
-                        center = Position(longitude = pos.first, latitude = pos.second),
-                        zoom = maxOf(mapState.cameraPosition.zoom, 15.0),
-                    ),
-                    CameraAnimation.Ease.Standard,
-                )
-                pendingCamera = null
-            }
-
-            // — REAL xəritə: MapLibre vektor render (D-048) —
-            MaplibreMap(
-                state = mapState,
-                modifier = Modifier.fillMaxSize(),
-                uiOptions = MapUiOptions { loadColor = Q.tileFallback },
-                interactions = MapInteractions {
-                    callbacks {
-                        click {
-                            // heç bir qat tutmadı → seçimi burax
-                            onUnhandled { selected = null; ClickResult.Pass }
-                        }
-                    }
-                },
-            )
-
-            // — zoom həbləri (şüşə, D-030) — kamera animasiyası ilə —
-            Column(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 170.dp, end = 12.dp)
-            ) {
-                // U3.1 (UI-06): zoom pilləri glass deyil (D-096) — opaq Q.card dili.
-                // IconButton 48dp hədəfi qorunur (U1.3/UI-04).
-                Box(
-                    Modifier
-                        .background(Q.card, RoundedCornerShape(Q.rPill))
-                        .border(1.dp, Q.border, RoundedCornerShape(Q.rPill))
-                        .padding(7.dp)
-                ) {
-                    IconButton(onClick = {
-                        scope.launch {
-                            mapState.animateCamera(
-                                CameraUpdate(zoom = (mapState.cameraPosition.zoom + 1.0).coerceAtMost(18.0)),
-                                CameraAnimation.Ease.Standard,
-                            )
-                        }
-                    }) {
-                        Icon(Icons.Filled.Add, "Yaxınlaşdır", tint = Q.foreground, modifier = Modifier.size(20.dp))
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                Box(
-                    Modifier
-                        .background(Q.card, RoundedCornerShape(Q.rPill))
-                        .border(1.dp, Q.border, RoundedCornerShape(Q.rPill))
-                        .padding(7.dp)
-                ) {
-                    // U1.3 (UI-04): 16dp clickable → IconButton 48dp hədəfi.
-                    IconButton(onClick = {
-                        scope.launch {
-                            mapState.animateCamera(
-                                CameraUpdate(zoom = (mapState.cameraPosition.zoom - 1.0).coerceAtLeast(3.0)),
-                                CameraAnimation.Ease.Standard,
-                            )
-                        }
-                    }) {
-                        Icon(Icons.Filled.Remove, "Uzaqlaşdır", tint = Q.foreground, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-
-            // — OSM atribusiyası (istifadə qaydası — məcburi kredit) —
-            // D-053 fix: atribusiya nav pill-in arxasında gizlənirdi — yuxarı qalxdı
-            Text(
-                "© OpenStreetMap contributors",
-                style = T.metaSm,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 6.dp, bottom = 96.dp)
-                    .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
-            )
-
-            // D-061: stil yüklenmə xətası — fallback kart ("nə olar əgər"
-            // vəziyyətinin UI placeholder-i; log sellənməsi MapLogGate-də kəsilir)
-            if (styleFailed) {
-                MapLoadFailedCard(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 32.dp),
-                    onRetry = { mapRetry++ },
-                )
-            }
-            } // key(mapRetry)
         }
 
         // — şüşə filtr paneli (D-025 səth #2) —
@@ -465,7 +280,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }
 
         // — seçilmiş pinin alt kartı (D-025 səth #3) —
-        // D-053 fix: kart nav pill-in arxasında qalırdı — "Ətraflı"/"Rezerv et"
+        // D-053 fix: kart nav pill-in arxasında qalırdı — „Ətraflı“/„Rezerv et“
         // düymələri basıla bilmirdi. Pill zone = navbar inset + 10 + 68dp;
         // kart inset + 96dp-dən yuxarı başlayır (18dp boşluq, hər navbar növündə).
         selected?.let { pin ->
@@ -500,211 +315,6 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             onShowOnMap = { e -> detailEvent = null; focus.event(e.id) },
         )
     }
-}
-
-/**
- * D-061: xəritə stili yüklənməyəndə fallback kart — "nə olar əgər internet
- * yoxdur / OpenFreeMap çatılmırdı" vəziyyətinin UI placeholder-i.
- * Filtr həbləri və sayğac işləməyə davam edir (data lokaldır); yalnız tile
- * səthi boşdur — kart bunu aydın deyir və təkrar cəhd verir.
- * (MapLibre-nin retry sellənməsi MapLogGate ilə logcat-də kəsilib.)
- */
-@Composable
-private fun MapLoadFailedCard(
-    modifier: Modifier = Modifier,
-    onRetry: () -> Unit,
-) {
-    val interaction = remember { MutableInteractionSource() }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .background(Q.card, RoundedCornerShape(Q.rXl.dp))
-            .border(1.dp, Q.border, RoundedCornerShape(Q.rXl.dp))
-            .padding(horizontal = 26.dp, vertical = 20.dp),
-    ) {
-        Icon(Icons.Filled.CloudOff, null, tint = Q.destructive, modifier = Modifier.size(28.dp))
-        Spacer(Modifier.height(10.dp))
-        Text("Xəritə yüklənmədi", style = T.h2)
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "İnternet bağlantısı yoxdur və ya xəritə serveri cavab vermir. " +
-                "Məkan və tədbir siyahıları işləyir — bağlantı gələndə yenidən yoxla.",
-            style = T.chipXs.copy(color = Q.mutedFg),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        Spacer(Modifier.height(14.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .scaleTap(interaction)
-                .clickable(interactionSource = interaction, indication = null, onClick = onRetry)
-                .background(Q.primary, RoundedCornerShape(Q.rPill))
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-        ) {
-            Icon(Icons.Filled.Refresh, null, tint = Q.primaryFg, modifier = Modifier.size(15.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Yenidən dənə", style = T.bodyBold.copy(color = Q.primaryFg))
-        }
-    }
-}
-
-/**
- * Pin qatları — MapLibre stil kompozisiyası (rememberMapState content).
- *
- * Render ardıcıllığı (elan sırası): seçim halosu → məkan dot+qlif →
- * tədbir dot+qlif → insan dot+baş hərf → "mənim yerim" dotu.
- */
-@Composable
-private fun QoshulPinLayers(
-    pins: List<MapPin>,
-    myLat: Double,
-    myLng: Double,
-    selectedKey: String?,
-    onPinTap: (MapPin) -> Unit,
-) {
-    val pinByKey = remember(pins) { pins.associateBy { it.key() } }
-
-    // Qat klikləri: feature "key" xassəsindən pin tapılır
-    val pinClick: FeaturesClickHandler = { feats ->
-        feats.firstNotNullOfOrNull { f ->
-            pinByKey[f.properties?.get("key")?.jsonPrimitive?.contentOrNull]
-        }?.let(onPinTap)
-        ClickResult.Consume
-    }
-
-    val venues = pins.filterIsInstance<MapPin.Venue>()
-    val events = pins.filterIsInstance<MapPin.Event>()
-    val people = pins.filterIsInstance<MapPin.PersonP>()
-
-    val allSource = rememberGeoJsonSource(
-        remember(pins) { GeoJsonData.Features(pinFeatures(pins)) },
-    )
-    val venueSource = rememberGeoJsonSource(
-        remember(venues) { GeoJsonData.Features(pinFeatures(venues)) },
-    )
-    val eventSource = rememberGeoJsonSource(
-        remember(events) { GeoJsonData.Features(pinFeatures(events)) },
-    )
-    val peopleSource = rememberGeoJsonSource(
-        remember(people) { GeoJsonData.Features(pinFeatures(people)) },
-    )
-    val meSource = rememberGeoJsonSource(
-        remember(myLat, myLng) {
-            GeoJsonData.Features(
-                FeatureCollection(
-                    listOf(
-                        Feature(
-                            geometry = Point(Position(longitude = myLng, latitude = myLat)),
-                            properties = null,
-                        ),
-                    ),
-                ),
-            )
-        },
-    )
-
-    // — seçilmiş pinin halosu —
-    if (selectedKey != null) {
-        CircleLayer(
-            id = "qoshul-selected-halo",
-            source = allSource,
-            filter = feature["key"] eq const(selectedKey),
-            radius = const(24.dp),
-            color = const(Q.mapPin.copy(alpha = 0.30f)),
-            blur = const(0.65f),
-        )
-    }
-
-    // — məkan pinləri (yaşal dot + storefront qlifi) —
-    if (venues.isNotEmpty()) {
-        CircleLayer(
-            id = "qoshul-venue-dot",
-            source = venueSource,
-            radius = const(17.dp),
-            color = const(Q.primary),
-            strokeColor = const(Q.mapPin),
-            strokeWidth = const(2.5.dp),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-        SymbolLayer(
-            id = "qoshul-venue-glyph",
-            source = venueSource,
-            iconImage = image(
-                rememberVectorPainter(Icons.Filled.Storefront),
-                size = DpSize(16.dp, 16.dp),
-                colorFilter = ColorFilter.tint(Q.mapPin),
-            ),
-            iconAllowOverlap = const(true),
-            iconIgnorePlacement = const(true),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-    }
-
-    // — tədbir pinləri (narıncı dot + təqvim qlifi) —
-    if (events.isNotEmpty()) {
-        CircleLayer(
-            id = "qoshul-event-dot",
-            source = eventSource,
-            radius = const(17.dp),
-            color = const(Q.accent),
-            strokeColor = const(Q.mapPin),
-            strokeWidth = const(2.5.dp),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-        SymbolLayer(
-            id = "qoshul-event-glyph",
-            source = eventSource,
-            iconImage = image(
-                rememberVectorPainter(Icons.Filled.Event),
-                size = DpSize(16.dp, 16.dp),
-                colorFilter = ColorFilter.tint(Q.mapPin),
-            ),
-            iconAllowOverlap = const(true),
-            iconIgnorePlacement = const(true),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-    }
-
-    // — insan pinləri (tünd dot + adın baş hərfi) —
-    if (people.isNotEmpty()) {
-        CircleLayer(
-            id = "qoshul-people-dot",
-            source = peopleSource,
-            radius = const(17.dp),
-            color = const(Q.foreground),
-            strokeColor = const(Q.mapPin),
-            strokeWidth = const(2.5.dp),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-        SymbolLayer(
-            id = "qoshul-people-initial",
-            source = peopleSource,
-            textField = feature["initial"].asString(),
-            textFont = const(listOf(STYLE_TEXT_FONT)),
-            textSize = const(13.sp),
-            textAnchor = const(SymbolAnchor.Center),
-            textColor = const(Q.mapPin),
-            textAllowOverlap = const(true),
-            textIgnorePlacement = const(true),
-            onClick = pinClick,
-            hitPadding = 6.dp,
-        )
-    }
-
-    // — "mənim yerim" (üst qat) —
-    CircleLayer(
-        id = "qoshul-me-dot",
-        source = meSource,
-        radius = const(10.dp),
-        color = const(Q.myLocation),
-        strokeColor = const(Q.mapPin),
-        strokeWidth = const(3.dp),
-    )
 }
 
 /** Alt kart məzmunu — pin tipinə görə (D-050: bütün düymələr canlıdır). */

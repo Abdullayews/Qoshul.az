@@ -20,8 +20,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 38
-        versionName = "0.38.0"
+        versionCode = 39
+        versionName = "0.39.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(
@@ -36,6 +36,16 @@ android {
             "String", "BACKEND_MODE",
             "\"" + (localProps.getProperty("BACKEND_MODE") ?: "MOCK") + "\"",
         )
+        // — D-108: xəritə backend seçimi (hazırlıq — Google SDK keçidi) —
+        // local.properties: MAP_BACKEND=maplibre (default) | google;
+        // MAPS_API_KEY=AIza… yalnız google rejimində lazımdır.
+        // Manifest placeholder boş olanda meta-data boş dəyərlə birləşir —
+        // maplibre rejimində Google xəritə heç kompozisiya olunmur (zərərsiz).
+        buildConfigField(
+            "String", "MAP_BACKEND",
+            "\"" + (localProps.getProperty("MAP_BACKEND") ?: "maplibre") + "\"",
+        )
+        manifestPlaceholders["MAPS_API_KEY"] = localProps.getProperty("MAPS_API_KEY") ?: ""
     }
 
     buildTypes {
@@ -115,6 +125,19 @@ dependencies {
     // FFI nüvə .so ~1 MB/ABI, OpenGL backend (Vulkan runtime-a ehtiyac yoxdur)
     implementation(libs.maplibre.compose.android)
     runtimeOnly(libs.maplibre.compose.runtime.opengl.android)
+
+    // D-107: əsl liquid glass — Kyant0/backdrop 2.0.1 (Apache-2.0; Echo-Music
+    // recipesi: blur+lens+spekulyar kənar; RenderEffect API 31+, aşağıda
+    // fallback solid görünüş — LiquidGlassNav.kt gate)
+    implementation(libs.kyant0.backdrop)
+
+    // D-108: Google Maps SDK hazırlığı — həmişə kompayl olunur (bitrot
+    // olmasın), çalışma vaxtı BuildConfig.MAP_BACKEND ilə seçilir;
+    // google rejimi local.properties-də MAPS_API_KEY tələb edir.
+    // play-services-maps açıq deklarasiya: android-maps-utils-core onu
+    // yalnız RUNTIME verir — compile classpath üçün məcburidir.
+    implementation(libs.google.maps.compose)
+    implementation(libs.google.play.services.maps)
 
     // — M1: Supabase backend (D-068 pin; supabase/README.md §2) —
     // supabase-kt = core (SupabaseClient); modullar ayrıca (CI fəslindən):

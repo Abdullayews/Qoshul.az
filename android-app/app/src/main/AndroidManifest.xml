@@ -12,6 +12,13 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Qoshul">
+        <!-- D-108: Google Maps SDK açarı (MAP_BACKEND=google rejimində).
+             Deyeri gradle manifestPlaceholder MAPS_API_KEY-dan gəlir
+             (local.properties: MAPS_API_KEY=AIza…). maplibre rejimində boş
+             qalır — Google xəritə kompozisiya olunmur, zərərsizdir. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

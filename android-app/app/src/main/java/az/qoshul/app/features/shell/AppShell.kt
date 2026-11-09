@@ -94,6 +94,17 @@ import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBarInlineBehavior
 import az.qoshul.app.core.ui.floatingtabbar.FloatingTabBarScrollConnection
 import az.qoshul.app.core.ui.floatingtabbar.rememberFloatingTabBarScrollConnection
 import az.qoshul.app.core.model.QoshulEvent
+// — D-107: əsl liquid glass (Echo-Music recipesi, Kyant0/backdrop) —
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
+import az.qoshul.app.core.glass.LocalAppBackdrop
+import az.qoshul.app.core.glass.NavPalette
+import az.qoshul.app.core.glass.isLiquidGlassAvailable
+import az.qoshul.app.core.glass.liquidGlassNavBar
+import az.qoshul.app.core.glass.navFallbackPalette
+import az.qoshul.app.core.glass.navGlassPalette
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 
 /**
  * Əsas tətbiq qabığı — 4 tab: Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil.
@@ -199,6 +210,18 @@ fun AppShell(
     // zəngi + D-105 Söhbətlər dairəsi nöqtəsi eyni mənbəyi paylaşır
     val st by engine.state.collectAsStateWithLifecycle()
 
+    // — D-107: app backdrop — şüşə pill-ın nümunə götürdüyü qat. Yalnız
+    // Compact məzmun qutusu qeydə alınır (rail rejimində glass istehlakçı
+    // yoxdur — qeydə alma modifier-i tətbiq olunmur, xərc sıfır). Qeydə
+    // alma qutu çəkməsindən SONRA baş verir (LayerBackdropNode.draw:
+    // drawContent + recordLayer) — bar özünü nümunə ala bilməz (overlay
+    // Row-dan KƏNARDA qurulur).
+    val appBackdrop = rememberLayerBackdrop {
+        drawRect(Q.background)
+        drawContent()
+    }
+
+    CompositionLocalProvider(LocalAppBackdrop provides appBackdrop) {
     Row(Modifier.fillMaxSize().background(Q.background)) {
         // — D-102: LiquidRail (yalnız geniş pəncərələrdə) —
         if (rail) {
@@ -222,9 +245,13 @@ fun AppShell(
             )
             // D-102 + D-105: collapse/expand keçidi yalnız alt panel
             // rejimində qurulur (rail məzmunu örtmür — yığılma mənasızdır).
+            // D-107: məzmun qutusu eyni zamanda glass-un geribesleme
+            // qaynağıdır (layerBackdrop — ekran çəkildikdən sonra qat
+            // qeydə alınır; nav pill bu qatdan nümunə götürür).
             Box(
                 if (rail) Modifier.weight(1f)
                 else Modifier.weight(1f).nestedScroll(navScroll)
+                    .layerBackdrop(appBackdrop)
             ) {
                 // D-088 keçid dili + D-102: slide artıq SPRİNG fizikasıdır
                 // (spatial = spring, alpha = tween qaydası)
@@ -270,6 +297,7 @@ fun AppShell(
             )
         }
     }
+    } // CompositionLocalProvider (D-107 app backdrop)
 }
 
 /** .app-header — 67px, ağ, alt haşiyə (web-parity). */
@@ -367,6 +395,19 @@ private fun Header(
  *  - Gizlənmə (Söhbətlər immersive — D-098/7): „hover“ dili dəyişməz
  *    — spring slide + fade; 14dp scroll həddi D-098-dən miras (amma
  *    artıq gizlətmir — YIĞIR; bar həmişə əlçatandır).
+ *
+ * D-107 (v0.39.0, direktiv 2026-11-09: „olmursa echo music reposunun
+ * koduna bax və yalnız liquid glass teması olan navigation bar stilini
+ * tətbiq et. indiki versiyası heç yaxşı deyil“): barın GÖRÜNÜŞÜ
+ * Echo-Music liquid glass dilinə keçir (yerləşmə D-105/D-106 dili
+ * DƏYİŞMİR — pill/dairə/kənarlar qalır):
+ *  - glass AÇIQ (API 31+ real cihaz): backgroundColor şəffaf,
+ *    tabBarContentModifier = liquidGlassNavBar(percent 50 forma — həm
+ *    həb, həm dairə üçün), məzmun monoxrom (seçili tam tünd, qeyri-seçili
+ *    65% alfa), seçili kapsul ağ @ 0.25, kölgə glass Shadow.Default-dan
+ *    (Compose shadow 0 — ikiqə kölgə yox);
+ *  - glass BAĞLI (API <31, Robolectric): D-103 solid dili qalır
+ *    (Q.card fon, primary/mutedFg, Q.secondary kapsul) — reqressiya yox.
  */
 @Composable
 private fun FloatingNav(
@@ -378,6 +419,9 @@ private fun FloatingNav(
     onCreate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // D-107: glass gate — backdrop təmin olunubsa və cihaz dəstəkləyirsə
+    val glassOn = isLiquidGlassAvailable() && LocalAppBackdrop.current != null
+    val pal = if (glassOn) navGlassPalette() else navFallbackPalette()
     AnimatedVisibility(
         visible = !hidden,
         modifier = modifier,
@@ -391,11 +435,17 @@ private fun FloatingNav(
         FloatingTabBar(
             selectedTabKey = index,
             scrollConnection = connection,
+            // D-107: glass rejimi — Echo-Music inteqrasiya nümunəsi:
+            // şəffaf fon + effect modifier (şüşə özü çəkir); solid
+            // fallback D-103 dilində qalır
             colors = FloatingTabBarDefaults.colors(
-                backgroundColor = Q.card,
-                accessoryBackgroundColor = Q.card,
-                selectedIndicatorColor = Q.secondary,
+                backgroundColor = if (glassOn) Color.Transparent else Q.card,
+                accessoryBackgroundColor = if (glassOn) Color.Transparent else Q.card,
+                selectedIndicatorColor = pal.indicator,
             ),
+            tabBarContentModifier =
+                if (glassOn) Modifier.liquidGlassNavBar(RoundedCornerShape(percent = 50))
+                else Modifier,
             shapes = FloatingTabBarDefaults.shapes(
                 tabBarShape = RoundedCornerShape(100),
                 tabShape = RoundedCornerShape(100),
@@ -410,8 +460,10 @@ private fun FloatingNav(
                 tabSpacing = 0.dp,
             ),
             elevations = FloatingTabBarDefaults.elevations(
-                inlineElevation = 6.dp,
-                expandedElevation = 10.dp,
+                // D-107: glass rejimində Compose kölgəsi sıfır — yumşaq
+                // kölgəni Shadow.Default (glass pipeline) verir
+                inlineElevation = if (glassOn) 0.dp else 6.dp,
+                expandedElevation = if (glassOn) 0.dp else 10.dp,
             ),
             modifier = Modifier
                 .padding(horizontal = 8.dp)
@@ -421,29 +473,30 @@ private fun FloatingNav(
                 .semantics { contentDescription = "Alt naviqasiya paneli" },
         ) {
             // — həb: Kəşf · Xəritə · Yarat (action) · Profil —
+            // (D-107: pal — glass monoxrom / D-103 solid fallback)
             tab(
                 key = 0,
-                title = { NavLabel("Kəşf", index == 0) },
-                icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Kəşf") },
+                title = { NavLabel("Kəşf", index == 0, pal) },
+                icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Kəşf", pal) },
                 onClick = { onChanged(0) },
             )
             tab(
                 key = 1,
-                title = { NavLabel("Xəritə", index == 1) },
-                icon = { NavIcon(Icons.Outlined.Map, Icons.Rounded.Map, index == 1, "Xəritə") },
+                title = { NavLabel("Xəritə", index == 1, pal) },
+                icon = { NavIcon(Icons.Outlined.Map, Icons.Rounded.Map, index == 1, "Xəritə", pal) },
                 onClick = { onChanged(1) },
             )
             tab(
                 // action-slot: seçim DƏYİŞMİR (D-088 „selectable=false“ dili)
                 key = "create",
-                title = { NavLabel("Yarat", false) },
-                icon = { NavIcon(Icons.Filled.Add, Icons.Filled.Add, false, "Yarat") },
+                title = { NavLabel("Yarat", false, pal) },
+                icon = { NavIcon(Icons.Filled.Add, Icons.Filled.Add, false, "Yarat", pal) },
                 onClick = onCreate,
             )
             tab(
                 key = 3,
-                title = { NavLabel("Profil", index == 3) },
-                icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil") },
+                title = { NavLabel("Profil", index == 3, pal) },
+                icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil", pal) },
                 onClick = { onChanged(3) },
             )
             // — standalone dairə: Söhbətlər — AÇIQ: həbin içində sağda
@@ -452,7 +505,7 @@ private fun FloatingNav(
                 key = 2,
                 icon = {
                     val tint by animateColorAsState(
-                        targetValue = if (index == 2) Q.primary else Q.mutedFg,
+                        targetValue = if (index == 2) pal.selected else pal.unselected,
                         animationSpec = tween(Motion.D2), label = "chatTint",
                     )
                     Box {
@@ -482,29 +535,34 @@ private fun FloatingNav(
     }
 }
 
-/** D-105: həb etiketi — D-103 rəng dili (aktiv primary/W700, qeyri-aktiv mutedFg/W500). */
+/**
+ * D-105: həb etiketi — D-103 rəng dili (aktiv primary/W700, qeyri-aktiv
+ * mutedFg/W500); D-107: [pal] glass monoxromu (seçili tam tünd / 65% alfa)
+ * və ya fallback D-103 dili.
+ */
 @Composable
-private fun NavLabel(label: String, active: Boolean) {
+private fun NavLabel(label: String, active: Boolean, pal: NavPalette) {
     Text(
         label,
         style = T.metaSm.copy(
             fontWeight = if (active) FontWeight.W700 else FontWeight.W500,
-            color = if (active) Q.primary else Q.mutedFg,
+            color = if (active) pal.selected else pal.unselected,
         ),
         maxLines = 1,
     )
 }
 
-/** D-105: həb ikonu — aktiv/qeyri-aktiv variant + rəng keçidi (tween D2). */
+/** D-105: həb ikonu — aktiv/qeyri-aktiv variant + rəng keçidi (tween D2); D-107: [pal]. */
 @Composable
 private fun NavIcon(
     inactive: ImageVector,
     active: ImageVector,
     isActive: Boolean,
     desc: String,
+    pal: NavPalette,
 ) {
     val tint by animateColorAsState(
-        targetValue = if (isActive) Q.primary else Q.mutedFg,
+        targetValue = if (isActive) pal.selected else pal.unselected,
         animationSpec = tween(Motion.D2), label = "navTint",
     )
     Icon(

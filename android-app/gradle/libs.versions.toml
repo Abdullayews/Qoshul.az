@@ -16,6 +16,17 @@ desugar = "2.1.5"
 profileinstaller = "1.4.1"
 robolectric = "4.17"
 maplibreCompose = "0.20.0" # MapLibre Compose — vektor xəritə (D-048); FFI nüvə 0.202610.0
+# — D-107: əsl liquid glass (backdrop) — Echo-Music recipesi; POM sübutu:
+# repo1.maven.org/io/github/kyant0/backdrop/2.0.1 (.module: androidJvm AAR +
+# compose 1.12 / kotlin 2.4.20 — bizim BOM 2026.09.00 ilə eyni nəsil)
+kyant0Backdrop = "2.0.1"
+# — D-108: Google Maps SDK hazırlığı — maps-compose 9.0.1 (.module:
+# androidx.compose:compose-bom:2026.09.00 — BİZİMKİ İLƏ BAĞDAŞIR).
+# QEYD: play-services-maps android-maps-utils-core-un RUNTIME asılılığıdır
+# (compile classpath-ə düşmür) — açıq deklarasiya məcburidir
+# (deptree sübutu: debugRuntimeClasspath-da VAR, compile-da YOX)
+mapsCompose = "9.0.1"
+playServicesMaps = "20.0.0"
 # — M1 (D-068): Supabase + Ktor + serialization —
 # qrup: io.github.jan-tennert.supabase (search.maven.org + gotrue-kt 2.6.1 POM
 # 200 ilə təsdiq; supabase-kt/postgrest-kt 3.9.0 bu gün D-068 metadata ilə
@@ -47,6 +58,11 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 maplibre-compose-android = { group = "org.maplibre.compose", name = "maplibre-compose-android", version.ref = "maplibreCompose" }
 maplibre-compose-runtime-opengl-android = { group = "org.maplibre.compose", name = "maplibre-compose-runtime-opengl-android", version.ref = "maplibreCompose" }
+# D-107: Compose Multiplatform Liquid Glass effects (Apache-2.0, Kyant0)
+kyant0-backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "kyant0Backdrop" }
+# D-108: Google Maps SDK (maps-compose — Play Services xəritə)
+google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
+google-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 # — M1: Supabase (D-068 pin) — QEYD (CI fəslindən, D-078 düzəlişi):
 # supabase-kt "umbrella" əslində CORE-dur (SupabaseClient); modullar
 # ayrıca deklarasiya olunur: gotrue-kt (auth), postgrest-kt (RPC).
