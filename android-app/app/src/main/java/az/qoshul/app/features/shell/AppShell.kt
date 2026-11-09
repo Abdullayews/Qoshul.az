@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -17,7 +16,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
@@ -31,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,7 +56,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -71,8 +67,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.boundsInParent
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -98,7 +92,6 @@ import az.qoshul.app.core.ui.WindowWidthClass
 import az.qoshul.app.core.ui.Wordmark
 import az.qoshul.app.core.ui.rememberWindowWidthClass
 import az.qoshul.app.core.model.QoshulEvent
-import kotlin.math.roundToInt
 
 /**
  * Əsas tətbiq qabığı — 4 tab: Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil.
@@ -336,16 +329,21 @@ private fun Header(
  * sıfırdan yaz, liquid glass stilində"). D-088-in qfw pill dili TAM
  * əvəz olunur; ölçü dili (72dp panel, 5 slot, "Yarat" mərkəzdə) qalır.
  *
- * Dizayn — Glass.kt-in 4 liquid-glass prinsipi üzərində:
+ * D-103 (2026-11-09, istifadəçi direktivi: "navigation tab düymələrinin
+ * ətrafındakı dairəni sil"): aktiv slotun arxasındakı lentz kapsulu
+ * SİLİNDİ — seçim artıq YALNIZ rəng dili ilə ifadə olunur (aktiv ikon/
+ * mətn primary + 2dp dip; qeyri-aktiv mutedFg). Glass.kt-in phase-
+ * lensing qatına (həqiqi linza effekti) toxunulmur — bu, bəzək kapsulu
+ * idi, riyazi lens deyil.
+ *
+ * Dizayn — Glass.kt-in liquid-glass prinsipləri üzərində:
  *  1) SƏTH: gerçek şüşə intensivliyi (intensity 0.35 — D-060-ın
  *     "0.1x" rejimindən güclü, amma məzmun barın içindən oxunmur);
  *     30dp radius (D-098 dairəviləşdirmə), yumşaq kölgə.
- *  2) LENTZ: aktiv slotun ARXASINDA süpürüğü yaşıl şüşə kapsulu —
- *     slot sərhədləri layout-dan ölçülür, spring ilə üzür (hover).
- *  3) YARAT: marka qradiyenti (primary→primaryDeep) + parlaq kölgəli
+ *  2) YARAT: marka qradiyenti (primary→primaryDeep) + parlaq kölgəli
  *     dairə — barın İÇİNDƏ, daşma yox (D-088 qərarı qorunur).
- *  4) HƏRƏKƏT: gizlənmə/göstərmə — "hover" (spring slide + fade,
- *     aşağıdan yarı-hündürlüklə qayıdış); ikon 2dp dip; lentz spring.
+ *  3) HƏRƏKƏT: gizlənmə/göstərmə — "hover" (spring slide + fade,
+ *     aşağıdan yarı-hündürlüklə qayıdış); ikon 2dp dip.
  */
 @Composable
 private fun LiquidNav(
@@ -362,9 +360,6 @@ private fun LiquidNav(
         Item(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, "Söhbətlər"),
         Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
     )
-
-    // Slot sərhədləri nav koordinatlarında (px) — lentz üçün.
-    val slots = remember { mutableStateListOf(Rect.Zero, Rect.Zero, Rect.Zero, Rect.Zero) }
 
     // — hover hərəkəti: spring ilə aşağı süüşmə + fade —
     AnimatedVisibility(
@@ -388,35 +383,7 @@ private fun LiquidNav(
             intensity = 0.35f,
         ) {
             Box(Modifier.height(72.dp)) {
-                // — lentz: aktiv slotun arxasında sürüşən şüşə kapsulu —
-                val active = slots[index]
-                if (active.left > 0f) {
-                    val density = LocalDensity.current
-                    val lensSpec = spring<Float>(
-                        stiffness = Spring.StiffnessMediumLow,
-                        dampingRatio = 0.82f,
-                    )
-                    val left by animateFloatAsState(active.left, lensSpec, label = "lensL")
-                    val right by animateFloatAsState(active.right, lensSpec, label = "lensR")
-                    val top = with(density) { (72.dp.toPx() - 46.dp.toPx()) / 2f }
-                    Box(
-                        Modifier
-                            .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
-                            .width(with(density) { (right - left).toDp() })
-                            .height(46.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Q.secondary.copy(alpha = 0.95f),
-                                        Q.secondary.copy(alpha = 0.55f),
-                                    )
-                                ),
-                                RoundedCornerShape(23.dp),
-                            )
-                            .border(1.dp, Q.primary.copy(alpha = 0.35f), RoundedCornerShape(23.dp))
-                    )
-                }
-                // — slotlar —
+                // — slotlar — (D-103: fon kapsulu yoxdur — yalnız rəng dili) —
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -431,12 +398,7 @@ private fun LiquidNav(
                             label = item.label,
                             active = index == i,
                             onClick = { onChanged(i) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .onGloballyPositioned { coords ->
-                                    val b = coords.boundsInParent()
-                                    if (slots[i] != b) slots[i] = b
-                                },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
@@ -448,10 +410,11 @@ private fun LiquidNav(
 /**
  * LIQUID RAIL — D-102 (v0.35.0): geniş pəncərələrdə (≥600dp) sol şaquli
  * naviqasiya dəmiryolu. Alt LiquidNav-in dili DAŞINIR (eyni şüşə səthi
- * 0.35, eyni lentz kapsulu — şaquli, eyni "Yarat" qradiyenti, eyni
- * slot sırası: Kəşf · Xəritə · [Yarat] · Söhbətlər · Profil) — yalnız
- * istiqamət dəyişir. Planşet/qatlanan istifadəsində baş barmaq zonada
- * qalır, məzmun tam eni qazanır (alt panelin 82dp-i qaytarılır).
+ * 0.35, eyni rəng-seçim dili — D-103: lentz kapsulu burada da silinib,
+ * eyni "Yarat" qradiyenti, eyni slot sırası: Kəşf · Xəritə · [Yarat] ·
+ * Söhbətlər · Profil) — yalnız istiqamət dəyişir. Planşet/qatlanan
+ * istifadəsində baş barmaq zonada qalır, məzmun tam eni qazanır (alt
+ * panelin 82dp-i qaytarılır).
  *
  * Hündürlük: tam ekran (statusBar daxil — edge-to-edge D-031 dili);
  * en: 84dp (4 slot + FAB şaquli düzümdə rahat toxunma hədəfi 48dp+).
@@ -470,9 +433,6 @@ private fun LiquidRail(
         Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
     )
 
-    // Slot sərhədləri rail koordinatlarında (px) — şaquli lentz üçün.
-    val slots = remember { mutableStateListOf(Rect.Zero, Rect.Zero, Rect.Zero, Rect.Zero) }
-
     LiquidGlassSurface(
         modifier = Modifier
             .fillMaxHeight()
@@ -490,35 +450,8 @@ private fun LiquidRail(
                 .navigationBarsPadding()
                 .padding(vertical = 14.dp),
         ) {
-            // — şaquli lentz: aktiv slotun arxasında üzən kapsul —
-            val active = slots.getOrNull(index)
-            if (active != null && active.top > 0f) {
-                val density = LocalDensity.current
-                val lensSpec = spring<Float>(
-                    stiffness = Spring.StiffnessMediumLow,
-                    dampingRatio = 0.82f,
-                )
-                val top by animateFloatAsState(active.top, lensSpec, label = "railLensT")
-                val bottom by animateFloatAsState(active.bottom, lensSpec, label = "railLensB")
-                val left = with(density) { (84.dp.toPx() - 60.dp.toPx()) / 2f }
-                Box(
-                    Modifier
-                        .offset { IntOffset(left.roundToInt(), top.roundToInt()) }
-                        .height(with(density) { (bottom - top).toDp() })
-                        .width(60.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    Q.secondary.copy(alpha = 0.95f),
-                                    Q.secondary.copy(alpha = 0.55f),
-                                )
-                            ),
-                            RoundedCornerShape(22.dp),
-                        )
-                        .border(1.dp, Q.primary.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
-                )
-            }
             // — slotlar: Kəşf, Xəritə, [Yarat], Söhbətlər, Profil —
+            // (D-103: fon kapsulu yoxdur — yalnız rəng dili)
             items.forEachIndexed { i, item ->
                 if (i == 2) {
                     Spacer(Modifier.height(14.dp))
@@ -531,12 +464,7 @@ private fun LiquidRail(
                     label = item.label,
                     active = index == i,
                     onClick = { onChanged(i) },
-                    modifier = Modifier
-                        .width(64.dp)
-                        .onGloballyPositioned { coords ->
-                            val b = coords.boundsInParent()
-                            if (slots[i] != b) slots[i] = b
-                        },
+                    modifier = Modifier.width(64.dp),
                 )
             }
         }
@@ -580,9 +508,9 @@ private fun CreateFab(onCreate: () -> Unit) {
 }
 
 /**
- * Alt nav item — UI-7 (D-098): lentz dili ilə — item özü NEYTRALDIR
- * (fon tinti yoxdur, seçim lentz kapsulu ilə ifadə olunur); aktiv
- * ikon/mətn primary + ikon 2dp aşağı enir; qeyri-aktiv mutedFg.
+ * Alt nav item — UI-7 (D-098) + D-103: item özü NEYTRALDIR — fon tinti
+ * və arxa kapsul YOXDUR; seçim YALNIZ rəng dili ilə ifadə olunur
+ * (aktiv ikon/mətn primary + ikon 2dp aşağı enir; qeyri-aktiv mutedFg).
  */
 @Composable
 private fun LiquidNavItem(

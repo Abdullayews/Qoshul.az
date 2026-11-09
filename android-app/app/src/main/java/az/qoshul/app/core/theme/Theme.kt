@@ -1,9 +1,13 @@
 package az.qoshul.app.core.theme
 
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 /**
  * Qoshul Material3 teması — Flutter buildQoshulTheme() portu.
@@ -28,6 +32,23 @@ private val QoshulColors = lightColorScheme(
 
 @Composable
 fun QoshulTheme(content: @Composable () -> Unit) {
+    // D-104 (2026-11-09): tema yalnız İŞIQDIR → sistem barlarının görünüşü
+    // də həmişə İŞIQ olmalıdır (tünd status/nav ikonları — saat, wifi,
+    // batareya açıq #F8FAFC fonda oxunur). MainActivity-dəki
+    // SystemBarStyle.light çağırışının kompozisiya səviyyəsində təkrarı:
+    // sistem qaranlıq rejimi İŞLƏK app ikən dəyişsə belə (uiMode
+    // konfiqurasiyası) görünüş hər recompose-da yenidən təsdiqlənir.
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            (view.context as? Activity)?.window?.let { w ->
+                WindowCompat.getInsetsController(w, view).apply {
+                    isAppearanceLightStatusBars = true
+                    isAppearanceLightNavigationBars = true
+                }
+            }
+        }
+    }
     MaterialTheme(
         colorScheme = QoshulColors,
         typography = qoshulTypography(),

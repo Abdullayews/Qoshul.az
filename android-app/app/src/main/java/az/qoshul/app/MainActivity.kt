@@ -1,8 +1,10 @@
 package az.qoshul.app
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -50,10 +52,28 @@ import kotlinx.coroutines.Dispatchers
  *
  * Edge-to-edge (D-031 pariteti): enableEdgeToEdge — məzmun şəffaf status/nav
  * barların altından axır; insetlər statusBarsPadding/navigationBarsPadding ilə.
+ *
+ * D-104 (2026-11-09, istifadəçi direktivi: „saat, internet, şarj ilə iç içə
+ * girir"): arqumentsiz enableEdgeToEdge() SystemBarStyle.auto — SİSTEMİN
+ * qaranlıq rejiminə baxır; tətbiq isə yalnız İŞIQ temadır (D-023, Q.background
+ * #F8FAFC). Sistem tünd olanda status/nav ikonları AĞ düşürdü və açıq fonda
+ * oxunmurdu. Həll: hər iki barın görünüşü İŞİQ kimi SABİTLƏNİR (tünd ikonlar,
+ * scrim şəffaf) — sistem temasından asılılıq aradan qalxır; edge-to-edge
+ * (D-031) və cutout (D-051) dili dəyişmir. Paralel təsdiq: QoshulTheme
+ * (SideEffect) — konfiqurasiya dəyişikliyində belə görünüşü yenidən qoyur.
  */
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                Color.TRANSPARENT,
+                Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                Color.TRANSPARENT,
+                Color.TRANSPARENT,
+            ),
+        )
         super.onCreate(savedInstanceState)
         // D-051: full-screen sizing — çentikli (cutout) ekranlarda məzmun
         // bütün displeyə yayılır (default letterbox/qara zolaqlar əvəzinə).
