@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
@@ -23,14 +25,18 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.NearMe
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RadioButtonChecked
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.HealthAndSafety
@@ -54,11 +60,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.BuildConfig
 import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.theme.Q
+import az.qoshul.app.core.theme.DesignColor
+import az.qoshul.app.core.theme.DesignMode
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
@@ -85,6 +94,9 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     var showCompany by remember { mutableStateOf(false) }
     var cityOpen by remember { mutableStateOf(false) }
     var inviteOpen by remember { mutableStateOf(false) }
+    // D-119: dizayn seçim dialoqları (rəng + mod)
+    var showDesignColor by remember { mutableStateOf(false) }
+    var showDesignMode by remember { mutableStateOf(false) }
 
     PushScreenScaffold(title = "Ayarlar", onBack = { nav.pop() }) { mod ->
         LazyColumn(
@@ -153,6 +165,24 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     }
                 }
             }
+            item { SectionLabel("Dizayn") }
+            item {
+                // D-119 (direktiv 2026-11-10: „ayarlarda dizayn bölməsində ağ və
+                // qara modu əlavə olunacaq, seçim olaraq rənglər #008b2d
+                // (default) və #eac66c“): rəng × mod seçimi — dərhal tətbiq
+                // olunur (Q.apply — bütün app recompose).
+                SettingsCard {
+                    NavRow(
+                        Icons.Filled.Palette, "Rəng", value = st.designColor.label,
+                        subtitle = "Brend rəngi — Yaşıl (#008B2D) və ya Qızılı (#EAC66C)",
+                    ) { showDesignColor = true }
+                    DividerLine()
+                    NavRow(
+                        Icons.Filled.DarkMode, "Mod", value = st.designMode.label,
+                        subtitle = "Ağ (default) və ya Qara üzlük",
+                    ) { showDesignMode = true }
+                }
+            }
             item { SectionLabel("Təhlükəsizlik və dəstək") }
             item {
                 SettingsCard {
@@ -169,6 +199,13 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     DividerLine()
                     NavRow(Icons.Filled.Info, "Haqqında (v${BuildConfig.VERSION_NAME})", null,
                         subtitle = "Native (Compose) — ${AppConfig.modeLabel}")
+                    DividerLine()
+                    // D-117: xəritə krediti — xəritə üzərindəki SDK atribusiya
+                    // zolağı gizlədilib (overlay ləğv); OSM/OpenFreeMap lisenziya
+                    // krediti burada, Haqqında-da qalır.
+                    NavRow(Icons.Filled.Public, "Xəritə məlumatları",
+                        value = "© OpenStreetMap contributors",
+                        subtitle = "OpenFreeMap × OpenMapTiles tile-ları")
                     DividerLine()
                     NavRow(Icons.Filled.Description, "Şərtlər və məxfilik", null)
                 }
@@ -256,6 +293,94 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             // U1.6 (UI-32): heç bir affirmativ düyməsi olmayan dialoq — „Bağla“
             // düyməsi əlavə olundu (əvvəl confirmButton = {} — boş idi).
             confirmButton = { TextButton(onClick = { showVisibility = false }) { Text("Bağla") } },
+        )
+    }
+
+    // — D-119: dizayn seçim dialoqları (rəng × mod — dərhal tətbiq) —
+    if (showDesignColor) {
+        AlertDialog(
+            onDismissRequest = { showDesignColor = false },
+            title = { Text("Rəng") },
+            text = {
+                Column {
+                    DesignColor.entries.forEach { c ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .androidxVisRow { engine.setDesignColor(c); showDesignColor = false }
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                        ) {
+                            // nümayiş rəngi (swatch) — seçimin görünən təsdiqi
+                            Box(
+                                Modifier
+                                    .size(20.dp)
+                                    .background(c.swatch, CircleShape)
+                                    .border(1.5.dp, if (st.designColor == c) Q.primary else Q.border, CircleShape)
+                            )
+                            Spacer(Modifier.padding(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(c.label, style = T.bodyBold)
+                                Text(
+                                    if (c == DesignColor.GREEN) "Brend yaşılı — düymələr və vurğular"
+                                    else "Qızılı — isti, günəşli alternativ",
+                                    style = T.chipXs.copy(color = Q.mutedFg),
+                                )
+                            }
+                            Icon(
+                                if (st.designColor == c) Icons.Filled.RadioButtonChecked
+                                else Icons.Filled.RadioButtonUnchecked, null,
+                                tint = if (st.designColor == c) Q.primary else Q.mutedFg,
+                                modifier = Modifier.height(19.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showDesignColor = false }) { Text("Bağla") } },
+        )
+    }
+
+    if (showDesignMode) {
+        AlertDialog(
+            onDismissRequest = { showDesignMode = false },
+            title = { Text("Mod") },
+            text = {
+                Column {
+                    DesignMode.entries.forEach { m ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .androidxVisRow { engine.setDesignMode(m); showDesignMode = false }
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                        ) {
+                            Icon(
+                                if (m == DesignMode.LIGHT) Icons.Filled.LightMode
+                                else Icons.Filled.DarkMode, null,
+                                tint = if (st.designMode == m) Q.primary else Q.mutedFg,
+                                modifier = Modifier.height(19.dp),
+                            )
+                            Spacer(Modifier.padding(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(m.label, style = T.bodyBold)
+                                Text(
+                                    if (m == DesignMode.LIGHT) "Ağ fon, tünd mətn (default)"
+                                    else "Qara fon, işıq mətn — gecə gözləri üçün",
+                                    style = T.chipXs.copy(color = Q.mutedFg),
+                                )
+                            }
+                            Icon(
+                                if (st.designMode == m) Icons.Filled.RadioButtonChecked
+                                else Icons.Filled.RadioButtonUnchecked, null,
+                                tint = if (st.designMode == m) Q.primary else Q.mutedFg,
+                                modifier = Modifier.height(19.dp),
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showDesignMode = false }) { Text("Bağla") } },
         )
     }
 
@@ -505,9 +630,9 @@ private fun Modifier.androidxSettingsCard(): Modifier = this.then(
 
 // U1.6 (UI-40): onClick nullable — null olduqda sətir kliklənmir, ripple YOX
 private fun Modifier.androidxNavRowTap(enabled: Boolean, onClick: (() -> Unit)?): Modifier =
-    this.then(if (enabled && onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    this.then(if (enabled && onClick != null) Modifier.pressable(enabled = enabled, onClick = onClick) else Modifier)
 
 private fun Modifier.androidxDivider(): Modifier = this.then(Modifier.background(Q.border))
 
 private fun Modifier.androidxVisRow(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))

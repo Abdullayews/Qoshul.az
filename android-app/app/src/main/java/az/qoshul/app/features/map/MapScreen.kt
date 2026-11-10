@@ -6,7 +6,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +55,7 @@ import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.SelectBoxTrigger
@@ -424,14 +424,16 @@ private fun BottomCardContent(
 private fun BottomCardButton(
     label: String, primary: Boolean, onClick: () -> Unit, fill: Boolean = false,
 ) {
+    // D-121: pressable dili — pressScale + haptik + indication=null
+    val interaction = remember { MutableInteractionSource() }
     val bg = if (primary) Q.primary else Q.mapPin.copy(alpha = 0.5f)
     val fg = if (primary) Q.primaryFg else Q.foreground
     val line = if (fill) Modifier.fillMaxWidth() else Modifier.fillMaxWidth(0.42f)
     Box(
         line
             .height(42.dp)
-            .background(bg, RoundedCornerShape(Q.rPill))
-            .clickable(onClick = onClick),
+            .pressable(interaction, onClick = onClick)
+            .background(bg, RoundedCornerShape(Q.rPill)),
         contentAlignment = Alignment.Center,
     ) { Text(label, style = T.button.copy(color = fg)) }
 }
@@ -443,7 +445,7 @@ private fun GlassFilterChip(label: String, icon: androidx.compose.ui.graphics.ve
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .androidxChipTap(interaction, onClick)
+            .pressable(interaction, onClick = onClick)
             .height(31.dp)
             .androidxChipBg(active)
             .padding(horizontal = 11.dp),
@@ -453,9 +455,6 @@ private fun GlassFilterChip(label: String, icon: androidx.compose.ui.graphics.ve
         Text(label, style = T.chipXs.copy(fontWeight = if (active) FontWeight.W700 else FontWeight.W500, color = if (active) Q.primaryFg else Q.foreground))
     }
 }
-
-private fun Modifier.androidxChipTap(interaction: MutableInteractionSource, onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick))
 
 private fun Modifier.androidxChipBg(active: Boolean): Modifier = this.then(
     Modifier

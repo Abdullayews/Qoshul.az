@@ -36,6 +36,9 @@ import az.qoshul.app.core.backend.SyncEvent
 import az.qoshul.app.core.backend.SyncSink
 import az.qoshul.app.core.safety.Safety
 import az.qoshul.app.core.model.parseAssistantEvent
+import az.qoshul.app.core.theme.DesignColor
+import az.qoshul.app.core.theme.DesignMode
+import az.qoshul.app.core.theme.Q
 import java.time.LocalDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -113,6 +116,11 @@ class AppEngine(
     // — ROL TAB 5 + D-027: məxfilik —
     private var mapVisibilityV = MapVisibility.EVERYONE
     private var showDistanceV = true
+
+    // — D-119: dizayn seçimi (Rəng: Yaşıl default / Qızılı; Mod: Ağ default /
+    // Qara) — başlanğıc Q tokenlərinin ilkin dəyərləri ilə eynidir —
+    private var designColorV = DesignColor.GREEN
+    private var designModeV = DesignMode.LIGHT
 
     // — XP 1: Peşəkarlıq (xərclənmir) —
     private var xpV = 320
@@ -235,6 +243,7 @@ class AppEngine(
         photoCount = photoCountV, phoneVerified = phoneVerifiedV,
         profileCompleted = profileCompletedV,
         mapVisibility = mapVisibilityV, showDistance = showDistanceV,
+        designColor = designColorV, designMode = designModeV,
         xp = xpV, earnedBadges = earnedBadgesV.toSet(), loginStreak = loginStreakV,
         venueXp = venueXp, discountXpTotal = venueXp.values.sumOf { it.balance },
         xpCard = xpCardV, xpCardVenueId = xpCardVenueIdV,
@@ -510,6 +519,29 @@ class AppEngine(
 
     fun setShowDistance(v: Boolean) {
         showDistanceV = v
+        emit()
+    }
+
+    // ═════════════════════════ Dizayn (D-118/D-119) ═════════════════════════
+
+    /**
+     * D-119 (direktiv 2026-11-10): dizayn seçimi — brend rəngi (Yaşıl default /
+     * Qızılı) və mod (Ağ default / Qara). Setter Q.apply çağırır — bütün tokenlər
+     * snapshot-state olduğundan bütün kompozisiyalar dərhal yenidən çəkilir.
+     * (Demo mərhələsi: digər ayarlar kimi — şəhər, görünüş rejimi — sessiya
+     * daxilində saxlanılır, saxlamanın D-079 backend-i gələndə davam edəcək.)
+     */
+    fun setDesignColor(c: DesignColor) {
+        if (designColorV == c) return
+        designColorV = c
+        Q.apply(designColorV, designModeV)
+        emit()
+    }
+
+    fun setDesignMode(m: DesignMode) {
+        if (designModeV == m) return
+        designModeV = m
+        Q.apply(designColorV, designModeV)
         emit()
     }
 
@@ -1267,6 +1299,9 @@ data class AppUiState(
     // məxfilik
     val mapVisibility: MapVisibility,
     val showDistance: Boolean,
+    // dizayn (D-119)
+    val designColor: DesignColor,
+    val designMode: DesignMode,
     // XP 1
     val xp: Int,
     val earnedBadges: Set<String>,

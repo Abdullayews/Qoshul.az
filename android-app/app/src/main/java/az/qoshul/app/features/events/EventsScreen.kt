@@ -79,6 +79,7 @@ import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.StaggerIn
 import az.qoshul.app.core.motion.scaleTap
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
@@ -538,5 +539,5 @@ private fun Modifier.androidxFooterBorder(): Modifier =
     this.then(Modifier.background(Q.border))
 
 private fun Modifier.androidxMinTouch(onClick: () -> Unit): Modifier = this.then(
-    Modifier.clickable(onClick = onClick)
+    Modifier.pressable(onClick = onClick)
 )

@@ -1,21 +1,11 @@
 package az.qoshul.app.features.map
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,12 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import az.qoshul.app.core.theme.Q
-import az.qoshul.app.core.theme.T
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import org.maplibre.compose.camera.CameraAnimation
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.CameraUpdate
+import org.maplibre.compose.map.AndroidRenderMode
+import org.maplibre.compose.map.MapUiOptions
 import org.maplibre.compose.expressions.dsl.asString
 import org.maplibre.compose.expressions.dsl.const
 import org.maplibre.compose.expressions.dsl.eq
@@ -45,7 +36,6 @@ import org.maplibre.compose.interaction.MapInteractions
 import org.maplibre.compose.layers.CircleLayer
 import org.maplibre.compose.layers.FeaturesClickHandler
 import org.maplibre.compose.layers.SymbolLayer
-import org.maplibre.compose.map.MapUiOptions
 import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.StyleLoadState
 import org.maplibre.compose.map.rememberMapState
@@ -58,8 +48,6 @@ import org.maplibre.spatialk.geojson.Point
 import org.maplibre.spatialk.geojson.Position
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.JsonObject
@@ -90,9 +78,24 @@ private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject
 /**
  * MAPLIBRE KANVAS — D-048 (MapLibre Compose 0.20 + OpenFreeMap liberty) —
  * D-108-də MapScreen-dən AYRILDI: backend kanvası kimi (google rejimində
- * GoogleMapCanvas onu əvəz edir). Özündə: tile səthi + stil yüklenmə
- * retry (D-061) + zoom həbləri + OSM atribusiyası (Google tile-larında
- * YOX — orada SDK öz logosunu çəkir).
+ * GoogleMapCanvas onu əvəz edir).
+ *
+ * D-117 (v0.42.0, direktiv 2026-11-10: „xəritədə openstreetmap xəttini,
+ * üst solda olan miqyas göstəricisini və maplibre xəttini gizlət (import
+ * konfiqurasiyasında elə ayarlar var)“ + „üst hissədə olan qaranlıq
+ * hissəni bərpa et“):
+ *  - OVERLAY LƏĞV — MaplibreMap-in default overlay dəsti (MapLibre loqosu,
+ * atribusiya ⓘ düyməsi + „OpenFreeMap © OpenMapTiles“ sətri, üst-sol
+ * miqyas göstəricisi, compass) maplibre-compose konfiqurasiyasından
+ * (overlay parametri — SDK-in öz hissələri) söndürülüb: `overlay = {}`.
+ * OSM/OpenFreeMap lisenziya krediti Ayarlar → Haqqında-da qalır (D-117).
+ *  - QARA ZOLAQ TAMİRİ — üst ~50dp-dəki saf-qara „deşik“ (SurfaceView
+ * kompozitinq bug-ı: xəritə səthi pəncərənin ARXASINDA ayrı qatdadır,
+ * ilk kadrla sinxronlaşmayan sahə qara görünür — maplibre-compose#1125
+ * „blank/black hole until a redraw“) render rejiminin Surface → TEXTURE
+ * keçirilməsi ilə aradan qaldırıldı (AndroidRenderMode.Texture: kanvas
+ * adi TextureView kimi pəncərə İÇİNDə kompositə olunur — deşik yoxdur;
+ * bonus: glass səthlər artıq xəritəni nümunə görə bilir).
  *
  * Pin qatları (D-027 render dili): seçim halosu → məkan yaşal dot +
  * storefront qlifi → tədbir narıncı dot + təqvim qlifi → insan tünd dot +
@@ -158,10 +161,18 @@ internal fun MaplibreCanvas(
         // Kanvas kökü — align() (zoom/atribusiya/fail kart) BoxScope tələb edir
         Box(Modifier.fillMaxSize()) {
         // — REAL xəritə: MapLibre vektor render (D-048) —
+        // D-117: uiOptions — Texture rejimi (qara zolaq təmiri) + yüklənmə
+        // rəngi; overlay = {} — SDK öz widget-ləri (loqo/atribusiya/miqyas/
+        // compass) çəkmir (bax sinif KDoc). Xəritə üzərindəkilərin hamısı
+        // bizim xromdur (filtr paneli, zoom/düzləşdirmə həbləri, sayğac).
         MaplibreMap(
             state = mapState,
             modifier = Modifier.fillMaxSize(),
-            uiOptions = MapUiOptions { loadColor = Q.tileFallback },
+            uiOptions = MapUiOptions {
+                loadColor = Q.tileFallback
+                renderMode = AndroidRenderMode.Texture
+            },
+            overlay = {},
             interactions = MapInteractions {
                 callbacks {
                     click {
@@ -172,7 +183,7 @@ internal fun MaplibreCanvas(
             },
         )
 
-        // — zoom həbləri (şüşə, D-030) — kamera animasiyası ilə —
+        // — zoom + düzləşdirmə həbləri (D-117) — kamera animasiyası ilə —
         MapZoomControls(
             onZoom = { delta ->
                 scope.launch {
@@ -185,20 +196,16 @@ internal fun MaplibreCanvas(
                     )
                 }
             },
-        )
-
-        // — OSM atribusiyası (istifadə qaydası — məcburi kredit; yalnız
-        // OSM tile-larında — Google backend-də SDK logosu özü çəkilir) —
-        // D-053 fix: atribusiya nav pill-in arxasında gizlənirdi — yuxarı qalxdı
-        Text(
-            "© OpenStreetMap contributors",
-            style = T.metaSm,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 6.dp, bottom = 96.dp)
-                .background(Q.card.copy(alpha = 0.85f), RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 3.dp),
+            onResetBearing = {
+                scope.launch {
+                    // D-117: fırlanmış/əyilmiş xəritəni şimala düzləşdir
+                    // (CameraUpdate hissəvi yeniləmədir — center/zoom saxlanılır)
+                    mapState.animateCamera(
+                        CameraUpdate(bearing = 0.0, pitch = 0.0),
+                        CameraAnimation.Ease.Standard,
+                    )
+                }
+            },
         )
 
         // D-061: stil yüklenmə xətası — fallback kart + təkrar cəhd

@@ -69,6 +69,7 @@ import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.scaleTap
+import az.qoshul.app.core.motion.pressable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
@@ -437,7 +438,7 @@ fun CreateEventSheet(
 }
 
 private fun Modifier.androidxApprovalToggle(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 /** UI-7 (D-098 → D-114): saat PICKER-dən gəlir — format həmişə HH:MM;
  * regex yalnız müdafiə qalıdır (xarici prefill üçün). */
@@ -546,7 +547,7 @@ private fun Modifier.androidxDropdownBg(): Modifier = this.then(
 )
 
 private fun Modifier.androidxDropdownClick(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 // ═══════════════════════════════════════════════════════════════════
 // Bitirmə axını — Flutter finish_activity_sheet.dart portu (D-026 L.3)
@@ -822,7 +823,7 @@ private fun KvRow(k: String, v: String) {
 
 private fun Modifier.androidxPhotoTile(sel: Boolean, onClick: () -> Unit): Modifier = this.then(
     Modifier
-        .clickable(onClick = onClick)
+        .pressable(onClick = onClick)
         .background(if (sel) Q.secondary else Q.muted, RoundedCornerShape(Q.rMd.dp))
         .border(
             if (sel) 2.dp else 1.dp,
@@ -833,7 +834,7 @@ private fun Modifier.androidxPhotoTile(sel: Boolean, onClick: () -> Unit): Modif
 
 private fun Modifier.androidxTagRow(sel: Boolean, onClick: () -> Unit): Modifier = this.then(
     Modifier
-        .clickable(onClick = onClick)
+        .pressable(onClick = onClick)
         .background(if (sel) Q.secondary else Q.card, RoundedCornerShape(Q.rMd.dp))
         .border(
             if (sel) 2.dp else 1.dp,

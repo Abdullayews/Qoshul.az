@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Brend fonu: primary indiqo (Q.primary #4F46E5, D-116 palitra keçidi) -->
+<!-- D-120: ikonun üst kənarlarının orta göy tonu (full-bleed foreground-in
+     arxası — yalnız nadir maska/kenar hallarda görünür) -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#4F46E5" />
+    <solid android:color="#D3F0EF" />
 </shape>

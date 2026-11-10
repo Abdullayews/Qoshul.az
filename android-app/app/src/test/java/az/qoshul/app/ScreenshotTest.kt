@@ -272,6 +272,90 @@ class ScreenshotTest {
         shot("26-map-cat-picked")
     }
 
+    // ═══════════════ 5.6 Dizayn variantları — qızılı + qara (D-118/D-119) ═══════════════
+
+    /**
+     * D-118/D-119 vizual sübutu: dinamik palitra — ayarlardakı Dizayn
+     * bölməsindən Qızılı (#EAC66C) + Qara seçilir; bütün app (state +
+     * Q tokenləri) dərhal yenidən çəkilir. Şəkillər: settings (Dizayn
+     * bölməsi + dialoq dili) və home (qara fon, qızılı vurğular).
+     * Q GLOBALdır — finally-də SIFIRLAMA (Ağ+Yaşıl) qorunur.
+     */
+    @Test
+    fun `dizayn variantlari — qizili ve qara mod`() {
+        val engine = newEngine()
+        val nav = NavState()
+        var screen by mutableIntStateOf(0)
+        try {
+            compose.setContent {
+                QoshulTheme {
+                    androidx.compose.runtime.key(screen) {
+                        if (screen == 0) SettingsScreen(engine = engine, nav = nav)
+                        else AppShell(engine = engine, nav = nav, onOpenCreate = {})
+                    }
+                }
+            }
+            engine.setDesignColor(az.qoshul.app.core.theme.DesignColor.GOLD)
+            engine.setDesignMode(az.qoshul.app.core.theme.DesignMode.DARK)
+            settle()
+            shot("27-design-gold-dark-settings")
+
+            screen = 1
+            settle()
+            shot("28-design-gold-dark-home")
+        } finally {
+            az.qoshul.app.core.theme.Q.apply(
+                az.qoshul.app.core.theme.DesignColor.GREEN,
+                az.qoshul.app.core.theme.DesignMode.LIGHT,
+            )
+        }
+    }
+
+    // ═══════════════ 5.7 NAV AKTİF SLOT — tab keçidində rəng (D-122) ═══════════════
+
+    /**
+     * D-122 reqressiya: vendored FloatingTabBar remember(contentKey) ilə tab
+     * obyektlərini dondurur — sabit açarda slot content-i (ikon/etiket rəngi)
+     * İLK kompozisiyada donurdu (v0.41.0: xəritə/profil tablarında Ana menyu
+     * aktif rəngdə qalırdı, kapsul isə düzgün slotda hərəkət edirdi).
+     * Həll: contentKey = index. Piksel sübutu: aktiv slotun zonasında Q.primary
+     * yaşıl pikselləri, digər slotlarda isə YOX.
+     */
+    @Test
+    fun `nav aktiv slot — xəritə tabında Xəritə yaşılıdır`() {
+        val engine = newEngine()
+        compose.setContent {
+            QoshulTheme { AppShell(engine = engine, nav = NavState(), onOpenCreate = {}) }
+        }
+        settle()
+        compose.onNodeWithText("Xəritə", substring = true).performClick()
+        settle()
+
+        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
+        val w = bmp.width
+        val h = bmp.height
+        // slot enləri (bar ~16dp kənar padding): 5 bərabər zona
+        fun greenCount(x0: Int, x1: Int): Int {
+            var n = 0
+            for (y in h - 260 until h - 10 step 2) {
+                for (x in x0 until x1 step 2) {
+                    val p = bmp.getPixel(x, y)
+                    val r = (p shr 16) and 0xFF
+                    val g = (p shr 8) and 0xFF
+                    val b = p and 0xFF
+                    if (g > 100 && r < 90 && b < 100 && g - r > 50) n++
+                }
+            }
+            return n
+        }
+        val slotW = w / 5
+        val slot0 = greenCount(0, slotW)
+        val slot1 = greenCount(slotW, slotW * 2)
+        check(slot1 > 50 && slot0 < slot1 / 4) {
+            "D-122 reqressiya: Xəritə slotunda aktif rəng yoxdur (slot0=$slot0, slot1=$slot1)"
+        }
+    }
+
     // ═══════════════ 6. DPI AUDİTİ — sıx/kompakt ekran (560dpi, w360dp) ═══════════════
     // D-054 tələbi: "hərşey dpi ilə uyğunlaşan olmalıdır" — dəyişən sahələr
     // (ana ekran aktiv zolağı + profil nişanları) fərqli sıxlıqda da düzgün

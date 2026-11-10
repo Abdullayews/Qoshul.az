@@ -62,6 +62,7 @@ import az.qoshul.app.core.model.badgeDefs
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.countUpAsState
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.model.QoshulEvent
@@ -375,7 +376,7 @@ private fun QuickCard(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .androidxQuickBg()
-            .clickable(onClick = onClick)
+            .pressable(onClick = onClick)
             .padding(13.dp),
     ) {
         Icon(icon, null, tint = Q.primary, modifier = Modifier.size(19.dp))

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.motion.Motion
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.glass.GlassPill
 import az.qoshul.app.core.model.Person
 import az.qoshul.app.core.theme.Q
@@ -556,4 +557,4 @@ private fun Modifier.androidxInterestBorder(shared: Boolean): Modifier = this.th
 )
 
 private fun Modifier.androidxPassTap(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))

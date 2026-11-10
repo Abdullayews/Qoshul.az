@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.QoshulEvent
@@ -323,7 +324,7 @@ fun EventDetailSheet(
 }
 
 private fun Modifier.androidxTapStar(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 private fun Modifier.androidxDetailClip(): Modifier =
     this.then(Modifier.background(Q.card, RoundedCornerShape(Q.rMd.dp)))

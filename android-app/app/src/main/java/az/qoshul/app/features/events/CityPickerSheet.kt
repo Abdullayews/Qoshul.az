@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
@@ -105,7 +106,7 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
 
 private fun Modifier.androidxCityRow(active: Boolean, onClick: () -> Unit): Modifier = this.then(
     Modifier
-        .clickable(onClick = onClick)
+        .pressable(onClick = onClick)
         .background(if (active) Q.secondary else androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(12.dp))
 )
 

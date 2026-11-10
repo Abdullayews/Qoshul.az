@@ -1,6 +1,7 @@
 package az.qoshul.app.core.motion
 
 import android.provider.Settings
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.EaseOutBack
@@ -16,6 +17,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 
 /**
@@ -144,6 +147,60 @@ fun Modifier.scaleTap(
         label = "scaleTap",
     )
     scale(scale)
+}
+
+/**
+ * D-121 (v0.42.0, direktiv 2026-11-10: „Haptik və pressScale əlavə
+ * dəyişikliklərdir və indication = null edilməlidir“): VAHİD BASIQLAMA
+ * MODİFİKATORU — pressScale (0.97) + klik anında yüngül haptik
+ * (CONTEXT_CLICK „tick“) + ripple YOX (indication = null). Bütün custom
+ * basıla bilən elementlərin (nav, FAB, çiplər, selector box-lar, xəritə
+ * düymələri, kartlar) ortaq dili — ripple-in animasiyaları „iç içə
+ * girməsinin“ də qarşısını alır (D-122 sıralama qərarı).
+ *
+ * Robolectric (JVM test): performHapticFeedback no-op — test təhlükəsizliyi.
+ */
+fun Modifier.pressable(
+    interactionSource: MutableInteractionSource,
+    enabled: Boolean = true,
+    haptic: Boolean = true,
+    onClick: () -> Unit,
+): Modifier = composed {
+    val view = LocalView.current
+    this
+        .scaleTap(interactionSource, enabled)
+        .clickable(
+            interactionSource = interactionSource,
+            indication = null,
+            enabled = enabled,
+        ) {
+            if (haptic) view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            onClick()
+        }
+}
+
+/**
+ * D-121: haptik „tick“ — pressable istifadə edə bilməyən yerlər üçün (məs.
+ * vendored FloatingTabBar-in onClick lambda-ları). Click anında çağırılır.
+ */
+@Composable
+fun rememberHaptic(): () -> Unit {
+    val view = LocalView.current
+    return remember(view) { { view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK) } }
+}
+
+/**
+ * D-121: pressable-in SADƏ yükü — interactionSource daxildən yadda saxlanır
+ * (sətir/kart çağırışlarında ayrıca `remember { MutableInteractionSource() }`
+ * yazmaq lazım deyil). Dil eynidir: pressScale + haptik + indication=null.
+ */
+fun Modifier.pressable(
+    enabled: Boolean = true,
+    haptic: Boolean = true,
+    onClick: () -> Unit,
+): Modifier = composed {
+    val interaction = remember { MutableInteractionSource() }
+    this.pressable(interaction, enabled, haptic, onClick)
 }
 
 /** CountUp — animasiyalı rəqəm (XP/stat); göstərilən dəyəri qaytarır. */

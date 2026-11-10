@@ -62,6 +62,7 @@ import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.VenueXpAccount
 import az.qoshul.app.core.motion.PopIn
 import az.qoshul.app.core.motion.countUpAsState
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
@@ -523,7 +524,7 @@ private fun Modifier.androidxVenueChip(sel: Boolean, onClick: () -> Unit): Modif
 )
 
 private fun Modifier.androidxChipClick(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 private fun Modifier.androidxVenueChipBorder(sel: Boolean): Modifier = this.then(
     Modifier.border(

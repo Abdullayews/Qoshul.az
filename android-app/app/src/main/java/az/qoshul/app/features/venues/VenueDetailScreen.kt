@@ -69,6 +69,7 @@ import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CategoryChip
@@ -537,7 +538,7 @@ private fun Modifier.androidxResultBorder(): Modifier = this.then(
 
 private fun Modifier.androidxCouponTile(active: Boolean, onClick: () -> Unit): Modifier = this.then(
     Modifier
-        .clickable(onClick = onClick)
+        .pressable(onClick = onClick)
         .background(if (active) Q.secondary else Q.card, RoundedCornerShape(Q.rMd.dp))
         .androidxCouponBorder(active)
 )

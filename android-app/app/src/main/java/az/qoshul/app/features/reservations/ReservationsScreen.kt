@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.Reservation
@@ -237,7 +238,7 @@ private fun Modifier.androidxResvCard(): Modifier = this.then(
 )
 
 private fun Modifier.androidxResvTap(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 private fun Modifier.androidxResvBorder(): Modifier = this.then(
     Modifier.border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))

@@ -29,14 +29,22 @@ object T {
     val h3 = TextStyle(fontFamily = OpenSans, fontSize = 13.sp, fontWeight = FontWeight.W800, lineHeight = 20.sp)
     val eventTitle = TextStyle(fontFamily = OpenSans, fontSize = 16.sp, fontWeight = FontWeight.W800, lineHeight = 24.sp)
     val personName = TextStyle(fontFamily = OpenSans, fontSize = 15.sp, fontWeight = FontWeight.W800, lineHeight = 21.sp)
-    val subtitle = TextStyle(fontFamily = OpenSans, fontSize = 13.sp, fontWeight = FontWeight.W400, lineHeight = 22.sp, color = Q.mutedFg)
+    // D-118: rəng daşıyan stillər GETTER-prop-dur — TextStyle bir dəfəlik
+    // donmasın; Q.apply (dizayn seçimi) dəyəşəndə hər oxunuş təzə rəng qaytarır.
+    val subtitle: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 13.sp, fontWeight = FontWeight.W400, lineHeight = 22.sp, color = Q.mutedFg)
     val body = TextStyle(fontFamily = OpenSans, fontSize = 13.5.sp, lineHeight = 23.sp)
     val bodySm = TextStyle(fontFamily = OpenSans, fontSize = 12.5.sp, lineHeight = 20.sp)
-    val meta = TextStyle(fontFamily = OpenSans, fontSize = 12.sp, lineHeight = 18.sp, color = Q.mutedFg)
-    val metaSm = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, lineHeight = 16.sp, color = Q.mutedFg)
-    val category = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, fontWeight = FontWeight.W700, color = Q.primary)
-    val chip = TextStyle(fontFamily = OpenSans, fontSize = 11.5.sp, fontWeight = FontWeight.W500, color = Q.mutedFg)
-    val chipActive = TextStyle(fontFamily = OpenSans, fontSize = 11.5.sp, fontWeight = FontWeight.W700, color = Q.primaryFg)
+    val meta: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 12.sp, lineHeight = 18.sp, color = Q.mutedFg)
+    val metaSm: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, lineHeight = 16.sp, color = Q.mutedFg)
+    val category: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, fontWeight = FontWeight.W700, color = Q.primary)
+    val chip: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 11.5.sp, fontWeight = FontWeight.W500, color = Q.mutedFg)
+    val chipActive: TextStyle
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 11.5.sp, fontWeight = FontWeight.W700, color = Q.primaryFg)
     // D-058: 13sp/W600 → 15sp/W700 — reference app düymə etiketi (16px/600) miqyası
     val button = TextStyle(fontFamily = OpenSans, fontSize = 15.sp, fontWeight = FontWeight.W700)
     val label = TextStyle(fontFamily = OpenSans, fontSize = 12.sp, fontWeight = FontWeight.W600)

@@ -80,6 +80,7 @@ import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
@@ -375,7 +376,7 @@ private fun GenderChip(label: String, icon: ImageVector, active: Boolean, onClic
             .height(36.dp)
             .background(if (active) Q.primary else Q.card, RoundedCornerShape(Q.rMd.dp))
             .border(1.dp, if (active) Q.primary else Q.border, RoundedCornerShape(Q.rMd.dp))
-            .clickable(onClick = onClick)
+            .pressable(onClick = onClick)
             .padding(horizontal = 13.dp),
     ) {
         Icon(icon, null, tint = if (active) Q.primaryFg else Q.mutedFg, modifier = Modifier.size(14.5.dp))

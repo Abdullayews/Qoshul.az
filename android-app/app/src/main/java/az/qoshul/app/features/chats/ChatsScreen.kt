@@ -84,6 +84,7 @@ import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.StaggerIn
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.motion.TypingDots
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.ChatBubble
@@ -590,7 +591,7 @@ private fun SendFab(enabled: Boolean, onClick: () -> Unit) {
 }
 
 private fun Modifier.androidxChatTap(onClick: () -> Unit): Modifier =
-    this.then(Modifier.clickable(onClick = onClick))
+    this.then(Modifier.pressable(onClick = onClick))
 
 private fun Modifier.androidxChatClip(): Modifier =
     this.then(Modifier.clip(RoundedCornerShape(Q.rLg.dp)))

@@ -23,7 +23,6 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,7 +82,8 @@ import az.qoshul.app.core.glass.LiquidGlassSurface
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
-import az.qoshul.app.core.motion.scaleTap
+import az.qoshul.app.core.motion.pressable
+import az.qoshul.app.core.motion.rememberHaptic
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.MapFocusState
@@ -250,10 +250,14 @@ fun AppShell(
             // məzmun status barın altından başlayır (tam-ekran dili).
             AnimatedVisibility(
                 visible = index != 1 && index != 2,
-                enter = fadeIn(tween(180, easing = Motion.ease)) +
-                    expandVertically(tween(180, easing = Motion.ease)),
+                // D-122: SIRALI keçid — baş barın GİRİŞİ yeni tabın giriş
+                // fazası ilə eyni anda başlayır (140ms — köhnə tab tam çıxandan
+                // sonra); ÇIXIŞ isə köhnə tabın çıxış fazası ilə paraleldir.
+                // (Əvvəl: dörd animasiya eyni anda başlayıb „iç içə“ görünürdü.)
+                enter = fadeIn(tween(180, delayMillis = 140, easing = Motion.ease)) +
+                    expandVertically(tween(180, delayMillis = 140, easing = Motion.ease)),
                 exit = fadeOut(tween(140)) +
-                    shrinkVertically(tween(180, easing = Motion.ease)),
+                    shrinkVertically(tween(140, easing = Motion.ease)),
             ) {
                 Header(
                     onPartners = { nav.push(Route.Partners) },
@@ -273,13 +277,17 @@ fun AppShell(
             ) {
                 // D-113 (direktiv: „tablar arası keçiş animasiyasını dəyişdir,
                 // xəritədən ana menyuya keçəndə xəritə bir neçə saniyəlik
-                // görünür“): spring-slide (~1s+ köhnə tab ekranda qalırdı,
-                // xəritə kanvası da çəkilməyə davam edirdi) əvəzinə SÜRƏTLİ
-                // FADE — köhnə tab 140ms-də yox olur, yeni 220ms-də girir.
+                // görünür“): spring-slide əvəzinə SÜRƏTLİ FADE.
+                // D-122 (direktiv 2026-11-10: „animasiyaların iç içə girməsini
+                // düzəlt, sırala“): keçid artıq 2 FAZALIDIR — (1) köhnə tab
+                // 140ms-də tam çıxır, (2) yeni tab yalnız SONRA girir (220ms,
+                // 140ms gecikmə ilə). Crossfade-in „iç içə girməsi“ (iki tabın
+                // eyni anda görünməsi — xəritə yeni ekranın altında görünür
+                // qalırdı) ləğv olunub; keçid ardıcıl, təmiz oxunur.
                 AnimatedContent(
                     targetState = index,
                     transitionSpec = {
-                        (fadeIn(tween(220, easing = Motion.ease)))
+                        (fadeIn(tween(220, delayMillis = 140, easing = Motion.ease)))
                             .togetherWith(fadeOut(tween(140)))
                     },
                     label = "tabs",
@@ -311,11 +319,11 @@ fun AppShell(
             )
         }
     }
-    // — D-111: AI FAB (direktiv: „ai düyməsini floating button kimi
-    // mesajların üstündə əlavə et, yuxarıdan sil … eventlərdə görünsün“) —
-    // sağ altda, nav pill zone-unun üstündə (sağ kənar çat dairəsinin
-    // üstü — „mesajların üstündə“); YALNIZ Kəşf→Tədbirlər görünüşündə:
-    // chat, xəritə, profil, ayarlar və digər push ekranlarda gizlidir.
+    // — D-111: AI FAB (direktiv 2026-11-10: „ai düyməsini navigation barın
+    // üstündə sağ tərəfdə floating button kimi et“) — sağ altda, nav pill
+    // zone-unun dəqiq üstündə (96dp — navbar inset + 10 + bar hündürlüyü +
+    // boşluq), yalnız Kəşf→Tədbirlər görünüşündə: chat, xəritə, profil,
+    // ayarlar və digər push ekranlarda gizlidir.
     Box(Modifier.fillMaxSize()) {
         AiFab(
             visible = index == 0 && feedEvents,
@@ -328,8 +336,11 @@ fun AppShell(
 
 /**
  * D-111: AI üzən düyməsi — marka qradiyentli (primary→primaryDeep) 54dp
- * dairə, sağ altda nav zone üstündə; görünəndə pop (scale+fade),
- * yox olanda yığılır. CreateFab (rail) ilə eyni vizual dili daşıyır.
+ * dairə, nav barın üstündə sağda; görünəndə pop (scale+fade), yox olanda
+ * yığılır. CreateFab (rail) ilə eyni vizual dili daşıyır.
+ * D-121: pressable (pressScale + haptik + indication=null).
+ * D-122: GİRİŞ 220ms gecikir — tab keçidinin 2-ci fazası (yeni tabın
+ * girişi) bitəndən sonra pop edir; keçid animasiyaları ilə iç-içə girmir.
  */
 @Composable
 private fun AiFab(
@@ -341,7 +352,7 @@ private fun AiFab(
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
-        enter = fadeIn(tween(160, easing = Motion.ease)) +
+        enter = fadeIn(tween(160, delayMillis = 220, easing = Motion.ease)) +
             scaleIn(
                 initialScale = 0.55f,
                 animationSpec = spring(
@@ -358,8 +369,7 @@ private fun AiFab(
                 .navigationBarsPadding()
                 // nav pill zone-unun üstü (pill + 10 + 24dp qədər)
                 .padding(bottom = 96.dp)
-                .scaleTap(interaction)
-                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .pressable(interaction, onClick = onClick)
                 .size(54.dp)
                 .shadow(
                     9.dp, CircleShape,
@@ -500,6 +510,10 @@ private fun FloatingNav(
     // D-107: glass gate — backdrop təmin olunubsa və cihaz dəstəkləyirsə
     val glassOn = isLiquidGlassAvailable() && LocalAppBackdrop.current != null
     val pal = if (glassOn) navGlassPalette() else navFallbackPalette()
+    // D-121: haptik — hər tab klikində yüngül „tick“ (pressable istifadə
+    // edə bilmirik — klik vendored FloatingTabBar-in combinedClickable-idir,
+    // ona görə indication=null DSL parametri + rememberHaptic)
+    val haptic = rememberHaptic()
     AnimatedVisibility(
         visible = !hidden,
         modifier = modifier,
@@ -513,6 +527,14 @@ private fun FloatingNav(
         FloatingTabBar(
             selectedTabKey = index,
             scrollConnection = connection,
+            // D-122: scope tab keçidində yenidən qurulur — vendored
+            // FloatingTabBar remember(contentKey) ilə tab obyektlərini
+            // DONDRUR; sabit açarla slot content-i (ikon/etiket rəngi)
+            // ilk kompozisiyanın görünüşündə qalırdı (v0.41.0 reqressiyası:
+            // xəritə/profil tablarında Ana menyu aktif rəngdə, kapsul isə
+            // düzgün slotda — piksel sübutu 24-map/05-profile). Açar=index
+            // → hər keçiddə təzə lambdalar → slotlar recompose olunur.
+            contentKey = index,
             // D-107: glass rejimi — Echo-Music inteqrasiya nümunəsi:
             // şəffaf fon + effect modifier (şüşə özü çəkir); solid
             // fallback D-103 dilində qalır
@@ -561,33 +583,38 @@ private fun FloatingNav(
                 key = 0,
                 title = { NavLabel("Ana menyu", index == 0, pal) },
                 icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Ana menyu", pal) },
-                onClick = { onChanged(0) },
+                onClick = { haptic(); onChanged(0) },
+                indication = null,
             )
             tab(
                 key = 1,
                 title = { NavLabel("Xəritə", index == 1, pal) },
                 icon = { NavIcon(Icons.Outlined.Map, Icons.Rounded.Map, index == 1, "Xəritə", pal) },
-                onClick = { onChanged(1) },
+                onClick = { haptic(); onChanged(1) },
+                indication = null,
             )
             tab(
                 // action-slot: seçim DƏYİŞMİR (D-088 „selectable=false“ dili)
                 key = "create",
                 title = { NavLabel("Yarat", false, pal) },
                 icon = { NavIcon(Icons.Filled.Add, Icons.Filled.Add, false, "Yarat", pal) },
-                onClick = onCreate,
+                onClick = { haptic(); onCreate() },
+                indication = null,
             )
             tab(
                 key = 3,
                 title = { NavLabel("Profil", index == 3, pal) },
                 icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil", pal) },
-                onClick = { onChanged(3) },
+                onClick = { haptic(); onChanged(3) },
+                indication = null,
             )
             tab(
                 // D-111: chat — adi 5-ci slot (etiketli), sağ ucda
                 key = 2,
                 title = { NavLabel("Söhbətlər", index == 2, pal) },
                 icon = { NavIcon(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, index == 2, "Söhbətlər", pal) },
-                onClick = { onChanged(2) },
+                onClick = { haptic(); onChanged(2) },
+                indication = null,
             )
             // — standalone dairə: YALNIZ yığılmış hal üçün (sağ kənar) —
             // açıq halda Söhbətlər yuxarıdakı adi slotdur
@@ -619,7 +646,8 @@ private fun FloatingNav(
                         }
                     }
                 },
-                onClick = { onChanged(2) },
+                onClick = { haptic(); onChanged(2) },
+                indication = null,
             )
         }
     }
@@ -737,12 +765,12 @@ private fun LiquidRail(
  */
 @Composable
 private fun CreateFab(onCreate: () -> Unit) {
+    // D-121: pressable — pressScale + haptik + indication=null
     val interaction = remember { MutableInteractionSource() }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .scaleTap(interaction)
-            .clickable(interactionSource = interaction, indication = null, onClick = onCreate)
+            .pressable(interaction, onClick = onCreate)
             .padding(horizontal = 6.dp),
     ) {
         Box(
@@ -798,8 +826,7 @@ private fun LiquidNavItem(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
-            .scaleTap(interaction)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .pressable(interaction, onClick = onClick)
             .padding(vertical = 8.dp),
     ) {
         Icon(

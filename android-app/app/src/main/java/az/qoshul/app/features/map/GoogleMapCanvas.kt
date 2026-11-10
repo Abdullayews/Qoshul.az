@@ -142,11 +142,25 @@ internal fun GoogleMapCanvas(
         }
     }
 
-    // — zoom həbləri (ortaq xrom, D-030 dili) —
+    // — zoom + düzləşdirmə həbləri (ortaq xrom, D-030 dili; D-117 reset) —
     MapZoomControls(
         onZoom = { delta ->
             scope.launch {
                 cameraPositionState.animate(CameraUpdateFactory.zoomBy(delta.toFloat()))
+            }
+        },
+        onResetBearing = {
+            scope.launch {
+                // D-117: fırlanmış/əyilmiş xəritəni şimala düzləşdir —
+                // mövcqe/zoom saxlanılır, bearing/tilt sıfırlanır
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.builder(cameraPositionState.position)
+                            .bearing(0f)
+                            .tilt(0f)
+                            .build()
+                    )
+                )
             }
         },
     )
