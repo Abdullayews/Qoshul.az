@@ -58,7 +58,7 @@ import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.ui.MapFocusState
-import az.qoshul.app.core.ui.MiniPickTrigger
+import az.qoshul.app.core.ui.SelectBoxTrigger
 import az.qoshul.app.core.ui.PickHostOverlay
 import az.qoshul.app.core.ui.PickOption
 import az.qoshul.app.core.ui.pickAnchor
@@ -130,11 +130,18 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }.map { MapPin.PersonP(it) }
     val pins = venuePins + eventPins + peoplePins
 
-    // D-089: xəritə filtr ikonları (əvvəl inline siyahı idi)
+    // D-089: xəritə filtr ikonları (əvvəl inline siyahı idi) + D-110 izahları
     val mapCatIcons = linkedMapOf(
         "Hamısı" to Icons.Filled.Public, "İdman" to Icons.Filled.SportsVolleyball,
         "Qəhvə" to Icons.Filled.LocalCafe, "Texnologiya" to Icons.Filled.Memory,
         "Piknik" to Icons.Filled.Park,
+    )
+    val mapCatHints = mapOf(
+        "Hamısı" to "Bütün pinlər görünür",
+        "İdman" to "İdman məkanları və tədbirlər",
+        "Qəhvə" to "Kafe və qəhvə görüşləri",
+        "Texnologiya" to "IT məkanları",
+        "Piknik" to "Açıq hava məkanları",
     )
 
     // Robolectric (JVM test): MapLibre FFI .so yüklənə bilməz, Google SDK
@@ -200,38 +207,48 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             luminance = 0.5f,
         ) {
             Column(Modifier.padding(10.dp)) {
-                // D-089: iki sürüşən filtr zolağı → iki MiniPickTrigger
-                // (panellər PickHostOverlay-də — root Box-da, aşağıda)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    MiniPickTrigger(
-                        label = category,
-                        icon = mapCatIcons[category] ?: Icons.Filled.Public,
-                        open = pickHost.openReq?.key == "mcat",
-                        onClick = {
-                            pickHost.toggle(
-                                "mcat",
-                                mapCatIcons.map { PickOption(it.key, it.value) },
-                                category,
-                            ) { category = it }
-                        },
-                        modifier = Modifier.pickAnchor(pickHost, "mcat"),
-                    )
-                    Spacer(Modifier.weight(1f))
-                    MiniPickTrigger(
-                        label = "$distanceKm km",
-                        icon = Icons.Filled.NearMe,
-                        open = pickHost.openReq?.key == "mdist",
-                        onClick = {
-                            pickHost.toggle(
-                                "mdist",
-                                listOf(1, 3, 5, 10).map { PickOption("$it km") },
-                                "$distanceKm km",
-                            ) { distanceKm = it.removeSuffix(" km").toInt() }
-                        },
-                        modifier = Modifier.pickAnchor(pickHost, "mdist"),
-                    )
+                // D-110: iki sürüşən filtr zolağı → iki SELECTOR BOX (etiketli
+                // qutu; panellər PickHostOverlay-də — root Box-da, aşağıda)
+                Row {
+                    Box(Modifier.weight(1f)) {
+                        SelectBoxTrigger(
+                            fieldLabel = "Kateqoriya",
+                            value = category,
+                            icon = mapCatIcons[category] ?: Icons.Filled.Public,
+                            open = pickHost.openReq?.key == "mcat",
+                            onClick = {
+                                pickHost.toggle(
+                                    "mcat",
+                                    mapCatIcons.map {
+                                        PickOption(it.key, it.value, mapCatHints[it.key])
+                                    },
+                                    category,
+                                ) { category = it }
+                            },
+                            modifier = Modifier.pickAnchor(pickHost, "mcat"),
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.weight(1f)) {
+                        SelectBoxTrigger(
+                            fieldLabel = "Məsafə",
+                            value = "$distanceKm km",
+                            icon = Icons.Filled.NearMe,
+                            open = pickHost.openReq?.key == "mdist",
+                            onClick = {
+                                pickHost.toggle(
+                                    "mdist",
+                                    listOf(1, 3, 5, 10).map {
+                                        PickOption("$it km", Icons.Filled.NearMe)
+                                    },
+                                    "$distanceKm km",
+                                ) { distanceKm = it.removeSuffix(" km").toInt() }
+                            },
+                            modifier = Modifier.pickAnchor(pickHost, "mdist"),
+                        )
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(9.dp))
                 Row {
                     GlassFilterChip("indi açıqdır", Icons.Filled.Schedule, openNow) { openNow = !openNow }
                     Spacer(Modifier.width(7.dp))
@@ -240,13 +257,14 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             }
         }
 
-        // D-089: xəritə filtr panelləri — xəritənin ÜZƏRİNƏ
+        // D-110: xəritə filtr panelləri — xəritənin ÜZƏRİNƏ (vahid sütun,
+        // ikon + başlıq + izah sətirləri)
         PickHostOverlay(
             host = pickHost,
             panelModifier = Modifier.align(Alignment.TopStart)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            columns = 3,
+            maxHeight = 320.dp,
         )
         // — sayğac (şüşə həb) —
         // D-053 fix: nav pill zone-unun üstünə qaldırıldı (əvvəl arxasında gizlənirdi)

@@ -87,6 +87,9 @@ class AppEngine(
     private var profileNameV = "Dost"
     private var firstNameV = "Dost"
     private var lastNameV = ""
+    // D-112: profil şəkli açarı (imagePaint açarları — coffee/padel/tech/
+    // friends_baku); profil redaktə ekranından seçilir
+    private var avatarV = "coffee"
     private var cityV = "Bakı"
     private var statusV = "student"
     private var universityV = ""
@@ -223,6 +226,7 @@ class AppEngine(
         version = ++version,
         signedIn = signedInV, onboarded = onboardedV,
         profileName = profileNameV, firstName = firstNameV, lastName = lastNameV,
+        avatar = avatarV,
         city = cityV, status = statusV, university = universityV, workField = workFieldV,
         languages = languagesV, interests = interestsV, goals = goalsV,
         personality = personalityV, availability = availabilityV,
@@ -471,6 +475,26 @@ class AppEngine(
         firstNameV = if (parts.isNotEmpty()) parts.first() else name
         lastNameV = if (parts.size > 1) parts.subList(1, parts.size).joinToString(" ") else ""
         adoptDemoHostedEvent()
+        emit()
+    }
+
+    /**
+     * D-112 (profil redaktə ekranı): ad + soyad AYRI sahələr — vahid
+     * profileName törəməsi "Ad Soyad" (boş soyadda yalnız ad). Demo host
+     * adoptu saxlanılır (setProfileName pariteti).
+     */
+    fun setProfileFullName(first: String, last: String) {
+        firstNameV = first.trim()
+        lastNameV = last.trim()
+        profileNameV = listOf(firstNameV, lastNameV)
+            .filter { it.isNotEmpty() }.joinToString(" ")
+        adoptDemoHostedEvent()
+        emit()
+    }
+
+    /** D-112: profil şəkli seçimi — imagePaint açarı. */
+    fun setAvatar(key: String) {
+        avatarV = key
         emit()
     }
 
@@ -1221,6 +1245,8 @@ data class AppUiState(
     val profileName: String,
     val firstName: String,
     val lastName: String,
+    /** D-112: profil şəkli açarı (imagePaint). */
+    val avatar: String,
     val city: String,
     val status: String,
     val university: String,

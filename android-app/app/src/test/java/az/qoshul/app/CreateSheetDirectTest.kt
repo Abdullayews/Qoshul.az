@@ -87,17 +87,22 @@ class CreateSheetDirectTest {
         compose.onNodeWithText("Sumqayıt").assertExists()
         pick("Sumqayıt")
 
-        // ── Tarix: Sabah → Bu gün ──
-        open("Sabah")
-        compose.onNodeWithText("Bu gün").assertExists()
-        pick("Bu gün")
-
-        // ── Saat (UI-7 D-098): ƏL İLƏ yazılır — dropdown/pick YOXDUR ──
-        compose.onNode(hasSetTextAction() and hasText("18:00"))
-            .performScrollTo()
-            .performTextReplacement("19:45")
+        // ── Tarix (D-114): kalendar dialoqu açılır; etiket „Sabah“ qalır ──
+        compose.onNodeWithText("Sabah").performScrollTo().performClick()
         settle()
-        compose.onNode(hasSetTextAction() and hasText("19:45")).assertExists()
+        // DatePickerDialog açıldı — təsdiq/ləğv düymələri görünür
+        compose.onNodeWithText("Təsdiqlə").assertExists()
+        compose.onNodeWithText("Ləğv et").performClick()
+        settle()
+        compose.onNodeWithText("Sabah").assertExists() // dəyişmədən bağlandı
+
+        // ── Saat (D-114): TimePicker dialoqu — 24s seçici, əl yazmağı yox ──
+        compose.onNodeWithText("18:00").performScrollTo().performClick()
+        settle()
+        compose.onNodeWithText("Saatı seç").assertExists()
+        compose.onNodeWithText("Təsdiqlə").performClick()
+        settle()
+        compose.onNodeWithText("18:00").assertExists() // ilkin saat qorunur
 
         // ── İştirak haqqı: Pulsuz → Ödənişli → Pulsuz ──
         // D-063: forma sahələrinin boşluqları artdı — açılan 200dp siyahı

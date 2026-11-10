@@ -17,10 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Toll
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.filled.AddPhotoAlternate
@@ -30,18 +31,25 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -52,7 +60,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.data.dateLabelFor
-import az.qoshul.app.core.data.nextDateLabels
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.ActivityXpResult
 import az.qoshul.app.core.theme.Q
@@ -61,6 +68,8 @@ import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.LocalDate
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.motion.PopIn
+import az.qoshul.app.core.motion.scaleTap
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.AiBox
@@ -76,11 +85,14 @@ import az.qoshul.app.core.ui.rememberPickHostState
 import az.qoshul.app.features.auth.QoshulTextField
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * "Birlikdə yeni plan quraq" — Flutter create_event_sheet.dart portu.
  * [initial] — Assistant [TƏDBİR] təklifindən prefill.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventSheet(
     engine: AppEngine,
@@ -117,6 +129,10 @@ fun CreateEventSheet(
     }
     var paid by rememberSaveable { mutableStateOf(false) }
     var approval by rememberSaveable { mutableStateOf(false) }
+    // D-114: tarix/saat PICKER dialoqları (kalendar + saat seçici — əl ilə
+    // yazmaq/dropdown siyahısı əvəzinə)
+    var dateOpen by remember { mutableStateOf(false) }
+    var timeOpen by remember { mutableStateOf(false) }
     var aiBusy by remember { mutableStateOf(false) }
     var aiLocation by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
@@ -170,11 +186,11 @@ fun CreateEventSheet(
     SheetScaffold(
         onDismiss = onDismiss,
         overlay = {
-            // D-089: pick panelləri formanın ÜZƏRİNƏ — sheet kök qatı
+            // D-089: pick panelləri formanın ÜZƏRİNƏ — sheet kök qatı;
+            // D-110: vahid sütun (ikon + başlıq siyahısı)
             PickHostOverlay(
                 host = pickHost,
                 panelModifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                columns = 3,
                 maxHeight = 300.dp,
                 placement = PickPlacement.CENTERED,
             )
@@ -258,36 +274,25 @@ fun CreateEventSheet(
             Row {
                 Box(Modifier.weight(1f)) {
                     FormLine("Tarix") {
-                        DropdownLine(
-                            host = pickHost, key = "date",
-                            options = nextDateLabels(14, engine.today()),
-                            // D-053 fix: əvvəl selected = "01.11" formatında idi —
-                            // options siyahısında ("Bu gün"/"Sabah"/"Noy 2") yox idi,
-                            // heç bir seçim vurğulanmırdı. Artıq eyni etiket sistemi.
-                            selected = dateLabelFor(date.toEpochDay(), engine.today()),
-                            onSelect = { sel ->
-                                val idx = nextDateLabels(14, engine.today()).indexOf(sel)
-                                if (idx >= 0) date = engine.today().plusDays(idx.toLong())
-                            },
+                        // D-114 (direktiv: „tarix və saat tarix seçici kalendar
+                        // ilə açılsın“): etiket tarixin oxunaqlı adı („Sabah“/
+                        // „Bu gün"/„Noy 12"), klik KALENDAR dialoqu açır.
+                        PickerFieldTrigger(
+                            value = dateLabelFor(date.toEpochDay(), engine.today()),
+                            icon = Icons.Filled.CalendarMonth,
+                            onClick = { dateOpen = true },
                         )
                     }
                 }
                 Spacer(Modifier.width(12.dp))
                 Box(Modifier.weight(1f)) {
                     FormLine("Saat") {
-                        // UI-7 (D-098): saat ƏL İLƏ yazılır — pick/seçim YOX
-                        // (istifadəçi direktivi 2026-11-08). Yalnız rəqəm +
-                        // ":" keçir, maks 5 simvol ("HH:MM"); submittə format
-                        // yoxlanılır, səhvdirsə default 18:00 (aşağıda).
-                        QoshulTextField(
+                        // D-114: saat da seçicidir („saat da onunla birlikdə“) —
+                        // 24s TimePicker dialoqu; əl ilə yazmaq ləğv.
+                        PickerFieldTrigger(
                             value = time,
-                            onValueChange = { raw ->
-                                time = raw.filter { it.isDigit() || it == ':' }.take(5)
-                            },
-                            hint = "18:00",
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                            ),
+                            icon = Icons.Filled.Schedule,
+                            onClick = { timeOpen = true },
                         )
                     }
                 }
@@ -382,12 +387,60 @@ fun CreateEventSheet(
             Spacer(Modifier.height(16.dp))
         }
     }
+
+    // — D-114: TARİX KALENDARI (material3 DatePicker dialoqu) —
+    if (dateOpen) {
+        val dateState = rememberDatePickerState(
+            initialSelectedDateMillis = date.toEpochDay() * 86_400_000L,
+        )
+        DatePickerDialog(
+            onDismissRequest = { dateOpen = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    dateState.selectedDateMillis?.let { ms ->
+                        date = Instant.ofEpochMilli(ms).atZone(ZoneOffset.UTC).toLocalDate()
+                    }
+                    dateOpen = false
+                }) { Text("Təsdiqlə") }
+            },
+            dismissButton = {
+                TextButton(onClick = { dateOpen = false }) { Text("Ləğv et") }
+            },
+        ) {
+            DatePicker(state = dateState)
+        }
+    }
+
+    // — D-114: SAAT SEÇİCİSİ (24s TimePicker dialoqu) —
+    if (timeOpen) {
+        val parts = time.split(":")
+        val timeState = rememberTimePickerState(
+            initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 18,
+            initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0,
+            is24Hour = true,
+        )
+        AlertDialog(
+            onDismissRequest = { timeOpen = false },
+            title = { Text("Saatı seç", style = T.h3) },
+            text = { TimePicker(state = timeState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    time = "%02d:%02d".format(timeState.hour, timeState.minute)
+                    timeOpen = false
+                }) { Text("Təsdiqlə") }
+            },
+            dismissButton = {
+                TextButton(onClick = { timeOpen = false }) { Text("Ləğv et") }
+            },
+        )
+    }
 }
 
 private fun Modifier.androidxApprovalToggle(onClick: () -> Unit): Modifier =
     this.then(Modifier.clickable(onClick = onClick))
 
-/** UI-7 (D-098): əl ilə yazılan saat formatı — "H:MM" / "HH:MM" (0-23). */
+/** UI-7 (D-098 → D-114): saat PICKER-dən gəlir — format həmişə HH:MM;
+ * regex yalnız müdafiə qalıdır (xarici prefill üçün). */
 private val TIME_REGEX = Regex("^([01]?\\d|2[0-3]):[0-5]\\d$")
 
 /** Sadə forma sətri. */
@@ -399,6 +452,45 @@ private fun FormLine(label: String, content: @Composable () -> Unit) {
         content()
     }
 }
+
+/**
+ * D-114: tarix/saat sahəsi — DropdownLine görünüşü ilə eyni dil (ikon +
+ * dəyər + çevrilən chevron YOX — dialoq açılır), amma pick host-u YOX:
+ * klik material3 kalendar/saat dialoqu açır.
+ */
+@Composable
+private fun PickerFieldTrigger(
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .scaleTap(interaction)
+            .androidxPickerFieldTap(interaction, onClick)
+            .androidxDropdownBg()
+            .padding(horizontal = 12.dp, vertical = 13.dp),
+    ) {
+        Icon(icon, null, tint = Q.mutedFg, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(9.dp))
+        Text(value, style = T.input, modifier = Modifier.weight(1f))
+        Icon(
+            Icons.Filled.ExpandMore, "seç",
+            tint = Q.mutedFg,
+            modifier = Modifier.size(18.dp),
+        )
+    }
+}
+
+private fun Modifier.androidxPickerFieldTap(
+    interaction: MutableInteractionSource,
+    onClick: () -> Unit,
+): Modifier = this.then(
+    Modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick)
+)
 
 /** D-089: dropdown — üzərinə çıxan seçim paneli (PickHostOverlay
  * vasitəsilə, sheet-in kök Box-ında; əvvəlki 200dp scroll siyahısı

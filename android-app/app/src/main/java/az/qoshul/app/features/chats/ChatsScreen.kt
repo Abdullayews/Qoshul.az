@@ -229,15 +229,10 @@ private fun ChatList(
         ),
     ) {
         item { ViewHeading(title = "Söhbətlər", subtitle = "Görüşdən əvvəl tanış olaq.") }
-        if (joinedEvents.isEmpty() && friends.isEmpty()) {
-            item {
-                EmptyState(
-                    icon = androidx.compose.material.icons.Icons.Outlined.ChatBubble,
-                    text = "İlk söhbətin səni gözləyir.\nTədbirə qoşulanda onun qrup söhbəti, " +
-                        "dostluq qəbul edəndə isə şəxsi söhbət burada görünəcək.",
-                )
-            }
-        } else {
+        // D-115 (direktiv: „chat menyusunda yeni söhbətlər burda açılır
+        // yerini sil“): boş vəziyyət placeholder-i LƏĞV — siyahı boşdursa
+        // heç nə göstərilir (başlıq qalır).
+        if (joinedEvents.isNotEmpty() || friends.isNotEmpty()) {
             if (joinedEvents.isNotEmpty()) {
                 item {
                     SectionHeading(

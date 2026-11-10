@@ -100,7 +100,6 @@ fun ProfileScreen(
     onOpenChat: (QoshulEvent) -> Unit = {},
 ) {
     var tab by remember { mutableIntStateOf(0) }
-    var editOpen by remember { mutableStateOf(false) }
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
     val st by engine.state.collectAsStateWithLifecycle()
     val prog = remember(st.xp) { az.qoshul.app.core.model.XpRules.xpProgress(st.xp) }
@@ -115,10 +114,11 @@ fun ProfileScreen(
             start = 20.dp, end = 20.dp, top = 13.dp, bottom = 132.dp
         ),
     ) {
-        // redaktə / ayarlar
+        // redaktə / ayarlar — D-112: redaktə artıq DİALOQ deyil, ayrıca
+        // push-ekrandır (ad, soyad, profil şəkli seçimi — Route.ProfileEdit)
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = { editOpen = true }) {
+                IconButton(onClick = { nav.push(Route.ProfileEdit) }) {
                     // D-063: app-header ikonları ilə vahid 22dp (əvvəl 20)
                     Icon(Icons.Filled.Edit, "Profili redaktə et", modifier = Modifier.size(22.dp))
                 }
@@ -139,7 +139,8 @@ fun ProfileScreen(
                         .androidxAvatarRing(),
                 ) {
                     Image(
-                        painter = imagePaint("coffee"), contentDescription = st.profileName,
+                        // D-112: profil şəkli state-dən (redaktə ekranında seçilir)
+                        painter = imagePaint(st.avatar), contentDescription = st.profileName,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.size(84.dp).androidxAvatarClip(),
                     )
@@ -342,30 +343,6 @@ fun ProfileScreen(
             onDismiss = { detailEvent = null },
             onFinishActivity = onFinishActivity,
             onOpenChat = onOpenChat,
-        )
-    }
-
-    if (editOpen) {
-        var name by remember { mutableStateOf(st.profileName) }
-        AlertDialog(
-            onDismissRequest = { editOpen = false },
-            title = { Text("Profili redaktə et") },
-            text = {
-                Column {
-                    Text("Səni necə çağıraq?", style = T.subtitle)
-                    Spacer(Modifier.height(8.dp))
-                    QoshulTextField(value = name, onValueChange = { name = it })
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (name.isNotBlank()) engine.setProfileName(name.trim())
-                    editOpen = false
-                }) { Text("Yadda saxla", style = T.button) }
-            },
-            dismissButton = {
-                TextButton(onClick = { editOpen = false }) { Text("Ləğv et", style = T.button) }
-            },
         )
     }
 }

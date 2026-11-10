@@ -10,6 +10,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -40,9 +44,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Handshake
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
@@ -160,6 +164,9 @@ fun AppShell(
     var index by rememberSaveable { mutableStateOf(0) }
     var navHidden by rememberSaveable { mutableStateOf(false) }
     var wasChats by rememberSaveable { mutableStateOf(false) }
+    // D-111: Kəşf-in daxili görünüşü (1 = Tədbirlər) — AI FAB yalnız
+    // Tədbirlər görünüşündə görünür (direktiv: „eventlərdə görünsün“)
+    var feedEvents by rememberSaveable { mutableStateOf(false) }
 
     // "Yol göstər / Yol tap" → xəritə tabına keç (D-050)
     LaunchedEffect(focus.request) {
@@ -237,12 +244,23 @@ fun AppShell(
                 .fillMaxSize()
                 .statusBarsPadding()
         ) {
-            Header(
-                onPartners = { nav.push(Route.Partners) },
-                onAssistant = { nav.push(Route.Assistant) },
-                onBell = { nav.push(Route.Notifications) },
-                unread = st.unreadCount,
-            )
+            // D-115 (direktiv: „xəritə modunda qoşul.az headerini gizlət“
+            // + „yenə xəritədəki kimi qoşul.az barını gizlət“ — söhbətlərdə
+            // də): Xəritə (1) və Söhbətlər (2) tablarında baş bar GİZLİDİR —
+            // məzmun status barın altından başlayır (tam-ekran dili).
+            AnimatedVisibility(
+                visible = index != 1 && index != 2,
+                enter = fadeIn(tween(180, easing = Motion.ease)) +
+                    expandVertically(tween(180, easing = Motion.ease)),
+                exit = fadeOut(tween(140)) +
+                    shrinkVertically(tween(180, easing = Motion.ease)),
+            ) {
+                Header(
+                    onPartners = { nav.push(Route.Partners) },
+                    onBell = { nav.push(Route.Notifications) },
+                    unread = st.unreadCount,
+                )
+            }
             // D-102 + D-105: collapse/expand keçidi yalnız alt panel
             // rejimində qurulur (rail məzmunu örtmür — yığılma mənasızdır).
             // D-107: məzmun qutusu eyni zamanda glass-un geribesleme
@@ -253,26 +271,22 @@ fun AppShell(
                 else Modifier.weight(1f).nestedScroll(navScroll)
                     .layerBackdrop(appBackdrop)
             ) {
-                // D-088 keçid dili + D-102: slide artıq SPRİNG fizikasıdır
-                // (spatial = spring, alpha = tween qaydası)
+                // D-113 (direktiv: „tablar arası keçiş animasiyasını dəyişdir,
+                // xəritədən ana menyuya keçəndə xəritə bir neçə saniyəlik
+                // görünür“): spring-slide (~1s+ köhnə tab ekranda qalırdı,
+                // xəritə kanvası da çəkilməyə davam edirdi) əvəzinə SÜRƏTLİ
+                // FADE — köhnə tab 140ms-də yox olur, yeni 220ms-də girir.
                 AnimatedContent(
                     targetState = index,
                     transitionSpec = {
-                        val dir = if (targetState > initialState) 1 else -1
-                        (slideInHorizontally(
-                            spring(
-                                dampingRatio = Motion.spatialDamping,
-                                stiffness = Motion.spatialStiffness,
-                                visibilityThreshold = IntOffset(8, 8),
-                            )
-                        ) { it / 5 * dir } +
-                            fadeIn(tween(Motion.D2, easing = Motion.ease)))
-                            .togetherWith(fadeOut(tween(Motion.D2)))
+                        (fadeIn(tween(220, easing = Motion.ease)))
+                            .togetherWith(fadeOut(tween(140)))
                     },
                     label = "tabs",
                 ) { i ->
                     when (i) {
-                        0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat)
+                        0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat,
+                            onViewChange = { feedEvents = it == 1 })
                         1 -> MapScreen(engine, nav, focus)
                         2 -> ChatsScreen(engine, chatFocus)
                         else -> ProfileScreen(engine, nav, onFinishActivity, onOpenChat)
@@ -297,14 +311,81 @@ fun AppShell(
             )
         }
     }
+    // — D-111: AI FAB (direktiv: „ai düyməsini floating button kimi
+    // mesajların üstündə əlavə et, yuxarıdan sil … eventlərdə görünsün“) —
+    // sağ altda, nav pill zone-unun üstündə (sağ kənar çat dairəsinin
+    // üstü — „mesajların üstündə“); YALNIZ Kəşf→Tədbirlər görünüşündə:
+    // chat, xəritə, profil, ayarlar və digər push ekranlarda gizlidir.
+    Box(Modifier.fillMaxSize()) {
+        AiFab(
+            visible = index == 0 && feedEvents,
+            onClick = { nav.push(Route.Assistant) },
+            modifier = Modifier.align(Alignment.BottomEnd),
+        )
+    }
     } // CompositionLocalProvider (D-107 app backdrop)
 }
 
-/** .app-header — 67px, ağ, alt haşiyə (web-parity). */
+/**
+ * D-111: AI üzən düyməsi — marka qradiyentli (primary→primaryDeep) 54dp
+ * dairə, sağ altda nav zone üstündə; görünəndə pop (scale+fade),
+ * yox olanda yığılır. CreateFab (rail) ilə eyni vizual dili daşıyır.
+ */
+@Composable
+private fun AiFab(
+    visible: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = fadeIn(tween(160, easing = Motion.ease)) +
+            scaleIn(
+                initialScale = 0.55f,
+                animationSpec = spring(
+                    dampingRatio = Motion.dipDamping,
+                    stiffness = Motion.dipStiffness,
+                ),
+            ),
+        exit = fadeOut(tween(130)) +
+            scaleOut(targetScale = 0.6f, animationSpec = tween(130)),
+    ) {
+        Box(
+            Modifier
+                .padding(end = 16.dp)
+                .navigationBarsPadding()
+                // nav pill zone-unun üstü (pill + 10 + 24dp qədər)
+                .padding(bottom = 96.dp)
+                .scaleTap(interaction)
+                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .size(54.dp)
+                .shadow(
+                    9.dp, CircleShape,
+                    ambientColor = Q.primary.copy(alpha = 0.32f),
+                    spotColor = Q.primary.copy(alpha = 0.38f),
+                )
+                .background(
+                    Brush.linearGradient(listOf(Q.primary, Q.primaryDeep)),
+                    CircleShape,
+                )
+                .semantics { contentDescription = "AI köməkçi" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.SmartToy, null, tint = Q.primaryFg, modifier = Modifier.size(24.dp))
+        }
+    }
+}
+
+/** .app-header — 67px, ağ, alt haşiyə (web-parity).
+ *  D-111 (direktiv: „ai düyməsini yuxarıdan sil“): AI ikonu headerdən
+ *  çıxarıldı — üzən düymə (FAB) oldu, yalnız Tədbirlər görünüşündə.
+ *  D-115 (direktiv: „tərəfdaşlar ikonunu dəyişdir“): Handshake →
+ *  Storefront (tərəfdaş məkanlar dili). */
 @Composable
 private fun Header(
     onPartners: () -> Unit,
-    onAssistant: () -> Unit,
     onBell: () -> Unit,
     unread: Int,
 ) {
@@ -324,10 +405,7 @@ private fun Header(
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onPartners) {
                 // D-063: header ikonları vahid 22dp
-                Icon(Icons.Filled.Handshake, "Tərəfdaşlar", tint = Q.foreground, modifier = Modifier.size(22.dp))
-            }
-            IconButton(onClick = onAssistant) {
-                Icon(Icons.Filled.SmartToy, "AI köməkçi", tint = Q.foreground, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.Storefront, "Tərəfdaşlar", tint = Q.foreground, modifier = Modifier.size(22.dp))
             }
             Box {
                 IconButton(onClick = onBell) {
@@ -472,12 +550,17 @@ private fun FloatingNav(
                 // D-102: adaptiv test qarmağı + a11y — alt panel identikliyi
                 .semantics { contentDescription = "Alt naviqasiya paneli" },
         ) {
-            // — həb: Kəşf · Xəritə · Yarat (action) · Profil —
+            // — həb: Ana menyu · Xəritə · Yarat (action) · Profil · Söhbətlər —
+            // D-111 (direktiv: „ana menyu, xəritə, yarat, profil və chat
+            // düyməsi yan yana olsun, chat ayrıca yox“ + „kəşf adını
+            // dəyişdir“): Söhbətlər ARTIQ həb daxilində adi slotdur (5 tab
+            // yan-yana); standaloneTab yalnız YIĞILMIŞ halın sağ dairəsi
+            // üçün qalır (FloatingTabBar D-111 modu).
             // (D-107: pal — glass monoxrom / D-103 solid fallback)
             tab(
                 key = 0,
-                title = { NavLabel("Kəşf", index == 0, pal) },
-                icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Kəşf", pal) },
+                title = { NavLabel("Ana menyu", index == 0, pal) },
+                icon = { NavIcon(Icons.Outlined.Home, Icons.Rounded.Home, index == 0, "Ana menyu", pal) },
                 onClick = { onChanged(0) },
             )
             tab(
@@ -499,8 +582,15 @@ private fun FloatingNav(
                 icon = { NavIcon(Icons.Outlined.Person, Icons.Rounded.Person, index == 3, "Profil", pal) },
                 onClick = { onChanged(3) },
             )
-            // — standalone dairə: Söhbətlər — AÇIQ: həbin içində sağda
-            // (D-106 vahid pill); YIĞILMIŞ: sağ kənar düyməsi —
+            tab(
+                // D-111: chat — adi 5-ci slot (etiketli), sağ ucda
+                key = 2,
+                title = { NavLabel("Söhbətlər", index == 2, pal) },
+                icon = { NavIcon(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, index == 2, "Söhbətlər", pal) },
+                onClick = { onChanged(2) },
+            )
+            // — standalone dairə: YALNIZ yığılmış hal üçün (sağ kənar) —
+            // açıq halda Söhbətlər yuxarıdakı adi slotdur
             standaloneTab(
                 key = 2,
                 icon = {
@@ -579,9 +669,9 @@ private fun NavIcon(
  * naviqasiya dəmiryolu. D-105-dən sonra alt panel FloatingTabBar-dır —
  * rail şüşə nav dilinin (D-098/D-103: 0.35 intensity səth, rəng-seçim
  * dili — lentz kapsulu yoxdur, "Yarat" qradiyenti) yeganə daşıyıcısıdır;
- * slot sırası əvvəlki kimidir: Kəşf · Xəritə · [Yarat] · Söhbətlər ·
- * Profil. Planşet/qatlanan istifadəsində baş barmaq zonada qalır,
- * məzmun tam eni qazanır (alt panelin 82dp-i qaytarılır).
+ * D-111: slot sırası alt panel ilə eynidir: Ana menyu · Xəritə · [Yarat] ·
+ * Profil · Söhbətlər. Planşet/qatlanan istifadəsində baş barmaq zonada
+ * qalır, məzmun tam eni qazanır (alt panelin 82dp-i qaytarılır).
  *
  * Hündürlük: tam ekran (statusBar daxil — edge-to-edge D-031 dili);
  * en: 84dp (4 slot + FAB şaquli düzümdə rahat toxunma hədəfi 48dp+).
@@ -592,12 +682,14 @@ private fun LiquidRail(
     onChanged: (Int) -> Unit,
     onCreate: () -> Unit,
 ) {
-    data class Item(val icon: ImageVector, val activeIcon: ImageVector, val label: String)
+    // D-111: rail sırası alt panel ilə eynidir — Ana menyu · Xəritə ·
+    // [Yarat] · Profil · Söhbətlər (tab indeksləri qeyri-xətti: 0,1,3,2)
+    data class RailItem(val icon: ImageVector, val activeIcon: ImageVector, val label: String, val tab: Int)
     val items = listOf(
-        Item(Icons.Outlined.Home, Icons.Rounded.Home, "Kəşf"),
-        Item(Icons.Outlined.Map, Icons.Rounded.Map, "Xəritə"),
-        Item(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, "Söhbətlər"),
-        Item(Icons.Outlined.Person, Icons.Rounded.Person, "Profil"),
+        RailItem(Icons.Outlined.Home, Icons.Rounded.Home, "Ana menyu", 0),
+        RailItem(Icons.Outlined.Map, Icons.Rounded.Map, "Xəritə", 1),
+        RailItem(Icons.Outlined.Person, Icons.Rounded.Person, "Profil", 3),
+        RailItem(Icons.Outlined.ChatBubble, Icons.Rounded.ChatBubble, "Söhbətlər", 2),
     )
 
     LiquidGlassSurface(
@@ -617,7 +709,7 @@ private fun LiquidRail(
                 .navigationBarsPadding()
                 .padding(vertical = 14.dp),
         ) {
-            // — slotlar: Kəşf, Xəritə, [Yarat], Söhbətlər, Profil —
+            // — slotlar: Ana menyu, Xəritə, [Yarat], Profil, Söhbətlər —
             // (D-103: fon kapsulu yoxdur — yalnız rəng dili)
             items.forEachIndexed { i, item ->
                 if (i == 2) {
@@ -629,8 +721,8 @@ private fun LiquidRail(
                     icon = item.icon,
                     activeIcon = item.activeIcon,
                     label = item.label,
-                    active = index == i,
-                    onClick = { onChanged(i) },
+                    active = index == item.tab,
+                    onClick = { onChanged(item.tab) },
                     modifier = Modifier.width(64.dp),
                 )
             }

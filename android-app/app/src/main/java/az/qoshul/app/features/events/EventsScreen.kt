@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Memory
-import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.VolunteerActivism
@@ -85,7 +84,7 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.MapFocusState
-import az.qoshul.app.core.ui.MiniPickTrigger
+import az.qoshul.app.core.ui.SelectBoxTrigger
 import az.qoshul.app.core.ui.PickHostOverlay
 import az.qoshul.app.core.ui.PickOption
 import az.qoshul.app.core.ui.pickAnchor
@@ -125,14 +124,32 @@ fun EventsScreen(
     // D-089: kateqoriya pick host-u — root Box host, trigger anchor ölçür
     val pickHost = rememberPickHostState()
 
+    // D-110: kateqoriya ikonları + izahları (selector box panel sətirləri);
+    // direktiv „biznes ilə əlaəqli yerləri sil“ — „Biznes və karyera“ qrupu
+    // filterdən çıxarıldı (biznes məzmunu tərəfdaş/şirkət axınına aiddir,
+    // sosial kəşf axınında YOX — D-115)
     val groupIcons = linkedMapOf(
         "Hamısı" to Icons.Filled.Explore, "İdman" to Icons.Filled.SportsVolleyball,
         "Təbiət" to Icons.Filled.Terrain, "Mədəniyyət" to Icons.Filled.AccountBalance,
         "Musiqi" to Icons.Filled.MusicNote, "Yemək və içki" to Icons.Filled.LocalCafe,
         "Təhsil" to Icons.AutoMirrored.Filled.MenuBook, "Texnologiya" to Icons.Filled.Memory, // U4-4: MenuBook AutoMirrored
-        "Biznes və karyera" to Icons.Filled.BusinessCenter, "Oyunlar" to Icons.Filled.Casino,
+        "Oyunlar" to Icons.Filled.Casino,
         "İncəsənət" to Icons.Filled.Palette, "Könüllülük" to Icons.Filled.VolunteerActivism,
         "Səyahət və digər" to Icons.Filled.Flight,
+    )
+    val groupHints = mapOf(
+        "Hamısı" to "Bütün kateqoriyalarda axtarış",
+        "İdman" to "Futbol, voleybol, qaçış, fitnes",
+        "Təbiət" to "Yürüşlər, pikniklər, açıq hava",
+        "Mədəniyyət" to "Teatr, muzey, sərgilər",
+        "Musiqi" to "Canlı musiqi, konsertlər",
+        "Yemək və içki" to "Kafe, restoran, qəhvə görüşləri",
+        "Təhsil" to "Dil klubları, seminarlar, kurslar",
+        "Texnologiya" to "IT görüşlər, hackathonlar",
+        "Oyunlar" to "Stolüstü oyunlar, oyun gecələri",
+        "İncəsənət" to "Rəsm, foto, dizayn",
+        "Könüllülük" to "Xeyriyyə aksiyaları, təmizlik",
+        "Səyahət və digər" to "Səfərlər və digər tədbirlər",
     )
 
     Box(Modifier.fillMaxSize().pickHost(pickHost)) {
@@ -149,16 +166,19 @@ fun EventsScreen(
                 // — kateqoriya çipləri —
                 item {
                     StaggerIn(0) {
-                        // D-089: sürüşən çip zolağı əvəzinə MiniPickTrigger —
-                        // panel siyahının ÜZƏRİNƏ çıxır (PickHostOverlay)
-                        MiniPickTrigger(
-                            label = category,
+                        // D-110: selector box — etiket + cari dəyər qutusu; panel
+                        // siyahının ÜZƏRİNƏ çıxır (PickHostOverlay, vahid sütun)
+                        SelectBoxTrigger(
+                            fieldLabel = "Kateqoriya",
+                            value = category,
                             icon = groupIcons[category] ?: Icons.Filled.Explore,
                             open = pickHost.openReq?.key == "cat",
                             onClick = {
                                 pickHost.toggle(
                                     "cat",
-                                    groupIcons.map { PickOption(it.key, it.value) },
+                                    groupIcons.map {
+                                        PickOption(it.key, it.value, groupHints[it.key])
+                                    },
                                     category,
                                 ) { category = it }
                             },
@@ -278,17 +298,15 @@ fun EventsScreen(
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
-        // D-089: kateqoriya paneli — siyahının ÜZƏRİNƏ (root Box son qatı);
-        // pickAuto paneli avtomatik aşağı/yuxarı açır.
-        // columns=2: qrup adları UZUNDUR ("Biznes və karyera") — 3 sütunda
-        // ellipsis çox düşürdü (vizual QA); 2 sütunda tam oxunur.
+        // D-110: kateqoriya paneli — siyahının ÜZƏRİNƏ (root Box son qatı);
+        // pickAuto paneli avtomatik aşağı/yuxarı açır; sətirlər ikon +
+        // başlıq + izah ilə (vahid sütun — şəkil direktivi dili).
         PickHostOverlay(
             host = pickHost,
             panelModifier = Modifier.align(Alignment.TopStart)
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            columns = 2,
-            maxHeight = 340.dp,
+            maxHeight = 376.dp,
         )
         detailEvent?.let { ev ->
             EventDetailSheet(

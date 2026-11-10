@@ -154,7 +154,7 @@ class AdaptiveShellTest {
      */
     @Test
     @Config(sdk = [36], qualifiers = "w412dp-h915dp-420dpi")
-    fun `d106 yigilmis — home sol, sohbetler sag kenar`() {
+    fun `d111 yigilmis — ana menyu sol, sohbetler sag kenar`() {
         shell()
         // feed-i aşağı sürüşdür → NestedScrollConnection barı YIĞIR (inline)
         compose.onRoot().performTouchInput { swipeUp() }
@@ -167,10 +167,10 @@ class AdaptiveShellTest {
             val n = compose.onNodeWithContentDescription(cd).fetchSemanticsNode()
             return n.positionInRoot.x + n.size.width / 2f
         }
-        val homeCx = centerX("Kəşf")
+        val homeCx = centerX("Ana menyu")
         val chatCx = centerX("Söhbətlər")
         assertTrue(
-            "Kəşf həbi SOL kənarda olmalıdır (cx=$homeCx, hədd=${w * 0.25f})",
+            "Ana menyu həbi SOL kənarda olmalıdır (cx=$homeCx, hədd=${w * 0.25f})",
             homeCx < w * 0.25f,
         )
         assertTrue(

@@ -3,13 +3,10 @@ package az.qoshul.app.features.feed
 import androidx.activity.compose.BackHandler
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -82,7 +79,6 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.MapFocusState
 import az.qoshul.app.core.ui.NavState
-import az.qoshul.app.core.ui.RankBadge
 import az.qoshul.app.core.ui.Route
 import az.qoshul.app.core.ui.SearchBarField
 import az.qoshul.app.core.ui.SectionHeading
@@ -92,22 +88,17 @@ import az.qoshul.app.core.ui.VenueMiniCard
 import az.qoshul.app.core.ui.imagePaint
 import az.qoshul.app.core.ui.CommunityBanner
 import az.qoshul.app.core.ui.PersonMiniCard
-import az.qoshul.app.core.ui.XpTrack
 import az.qoshul.app.features.events.EventsScreen
 
 /**
  * Kəşf (ANA EKRAN) — Flutter feed_screen.dart portu (ROL TAB 1, D-034):
  * "Sənin üçün | Tədbirlər" daxili tabları; axtarış pinned (D-029).
- * D-050: bütün kart bağlantıları canlıdır (məkan → detal, insan → Match,
- * endirim → Kuponlar) — ölü onClick-lər aradan qaldırıldı.
- * D-054: "Aktiv tədbirlər" — bugünkü canlı tədbirlər birbaşa ana ekranda
- * üfüqi kart zolağı kimi (istifadəçi tələbi: aktiv tədbirlər ana ekranda
- * görünməlidir; "Bu axşam" mətn banneri əvəzinə real kartlar).
- * D-055: LiveEventCard artıq tədbir DETALINI açır (əvvəl siyahı açırdı);
- *        şəhər həqiqətən dəyişilə bilər (CityPill + CityPickerSheet).
- * D-056: "AI seçimi" bölməsi — engine.aiRecommendations canlıdır.
- * D-057: salamlaşma yenidən qurulub (badge addırda, şəhər həbı sağda),
- *        bölmə araları vahid 20dp ritmi, "N məkan" artıq saxta link deyil.
+ * D-115 (v0.41.0, direktiv 2026-11-09: „ana ekranda salam kimsə və xp
+ * kimi olan barı sil"): salamlaşma bloku („Salam, Kimsə!" + rütbə
+ * nişanı + alt yazı) və XP trekı LƏĞV — axın birbaşa aktiv
+ * tədbirlərlə açılır; şəhər həbi axtarış sətrinə keçir (funksiya
+ * itmir). [onViewChange] — daxili görünüş dəyişməsi AppShell-ə
+ * xəbər verir (AI FAB yalnız Tədbirlər görünüşündə görünür — D-111).
  */
 @Composable
 fun FeedScreen(
@@ -116,6 +107,7 @@ fun FeedScreen(
     focus: MapFocusState,
     onFinishActivity: (QoshulEvent) -> Unit = {},
     onOpenChat: (QoshulEvent) -> Unit = {},
+    onViewChange: (Int) -> Unit = {},
 ) {
     var view by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
@@ -125,29 +117,22 @@ fun FeedScreen(
     BackHandler(enabled = search.isNotEmpty()) { search = "" }
 
     Column(Modifier.fillMaxSize()) {
-        ViewTabs(active = view, onChanged = { view = it })
+        ViewTabs(active = view, onChanged = { view = it; onViewChange(it) })
         AnimatedContent(
             targetState = view,
             transitionSpec = {
-                // D-088: GD3/qfw səhifə keçidi — slide (istiqamətli) + fade
-                // (Ghost-Downloader-3 qfw_patch PopUpAniStackedWidget dili)
-                // D-102: slide tween → SPRİNG (spatial=spring, alpha=tween)
-                val dir = if (targetState > initialState) 1 else -1
-                (slideInHorizontally(
-                    spring(
-                        dampingRatio = Motion.spatialDamping,
-                        stiffness = Motion.spatialStiffness,
-                        visibilityThreshold = IntOffset(8, 8),
-                    )
-                ) { it / 5 * dir } +
-                    fadeIn(tween(Motion.D2, easing = Motion.ease)))
-                    .togetherWith(fadeOut(tween(Motion.D2)))
+                // D-113 (direktiv: „tablar arası keçiş animasiyasını
+                // dəyişdir“): spring-slide əvəzinə SÜRƏTLİ FADE — köhnə
+                // görüntü 150ms-də yox olur (yavaş spring-də köhnə səhifə
+                // gözlədirdi); GİRİŞ 220ms ease ilə yumşaq qalır.
+                (fadeIn(tween(220, easing = Motion.ease)))
+                    .togetherWith(fadeOut(tween(150)))
             },
             label = "feedTabs",
         ) { v ->
             if (v == 0) {
                 ForYouView(engine, nav, focus, search = search, onSearchChange = { search = it },
-                    onOpenEvents = { view = 1 }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
+                    onOpenEvents = { view = 1; onViewChange(1) }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
             } else {
                 EventsScreen(engine, nav, focus, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
             }
@@ -233,44 +218,26 @@ private fun ForYouView(
     }
 
     Column(Modifier.fillMaxSize()) {
-        // — sabit axtarış (D-029) —
-        Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp)) {
-            SearchBarField(
-                value = search, onValueChange = onSearchChange,
-                hint = "Məkan və ya insan axtar...",
-            )
+        // — sabit axtarış (D-029) + şəhər həbi (D-115: salamlaşma bloku
+        // ləğv olundu — şəhər seçimi axtarış sətirində qalır) —
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp),
+        ) {
+            Box(Modifier.weight(1f)) {
+                SearchBarField(
+                    value = search, onValueChange = onSearchChange,
+                    hint = "Məkan və ya insan axtar...",
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            CityPill(city = st.city, onClick = { cityOpen = true })
         }
         LazyColumn(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, bottom = 132.dp
+                start = 20.dp, end = 20.dp, top = 10.dp, bottom = 132.dp
             ),
         ) {
-            // salamlaşma (D-057: badge addırda — "ad + rütbə" bir vahid;
-            // sağda şəhər həbı — boş sahə problemi də həll olundu)
-            item {
-                StaggerIn(0) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Salam, ${st.firstName}!", maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis, style = T.h1)
-                                Spacer(Modifier.width(8.dp))
-                                RankBadge(label = st.rank)
-                            }
-                            Spacer(Modifier.height(4.dp))
-                            Text("Bu gün yeni bir hekayəyə qoşul.", style = T.subtitle)
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        CityPill(city = st.city, onClick = { cityOpen = true })
-                    }
-                }
-            }
-            item {
-                // D-063: salamlaşma→XP eyni qrup (12dp), XP→növbəti bölmə 16+4=20dp
-                Spacer(Modifier.height(12.dp))
-                StaggerIn(1) { XpTrack(xp = st.xp) }
-                Spacer(Modifier.height(16.dp))
-            }
             // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
             val active = engine.activeEvents
             if (active.isNotEmpty()) {

@@ -395,7 +395,6 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
         "İdman və Aktivlik" to Icons.Filled.SportsVolleyball,
         "Təbiət və Səyahət" to Icons.Filled.Terrain,
         "Mədəniyyət və İncəsənət" to Icons.Filled.Palette,
-        "Təhsil və Karyera" to Icons.Filled.BusinessCenter,
         "Oyun və Hobbi" to Icons.Filled.Casino,
         "Musiqi" to Icons.Filled.MusicNote,
         "Könüllülük və Sosial" to Icons.Filled.VolunteerActivism,

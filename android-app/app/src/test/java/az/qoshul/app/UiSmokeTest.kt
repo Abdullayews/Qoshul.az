@@ -73,7 +73,7 @@ class UiSmokeTest {
                 AppShell(engine = engine, nav = NavState(), onOpenCreate = {})
             }
         }
-        compose.onNodeWithText("Kəşf", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Ana menyu", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Xəritə", substring = true).assertIsDisplayed()
         // D-105: Söhbətlər artıq standalone dairədir (mətn yoxdur —
         // yığılmış halın sağ düyməsi) — contentDescription ilə tapılır
@@ -87,7 +87,7 @@ class UiSmokeTest {
 
     /**
      * UI-7 (D-098): Söhbətlər tabına girişdə nav gizlənir (hover
-     * animasiyası), sistem GERİ isə Kəşf-ə qaytarır və nav qayıdır.
+     * animasiyası), sistem GERİ isə Ana menyuya qaytarır və nav qayıdır.
      */
     @Test
     fun `söhbətlərdə nav gizlidir geri qayıdanda görünür`() {
@@ -99,17 +99,17 @@ class UiSmokeTest {
             }
         }
         // əvvəl nav görünür
-        compose.onNodeWithText("Kəşf", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Ana menyu", substring = true).assertIsDisplayed()
 
         // Söhbətlər tabına keç (D-105: dairə — contentDescription) → nav gizlənir
         compose.onNodeWithContentDescription("Söhbətlər").performClick()
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(600)
         compose.waitForIdle()
-        compose.onNodeWithText("Kəşf", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Ana menyu", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Profil", substring = true).assertDoesNotExist()
 
-        // sistem GERİ (BackHandler) → Kəşf tabı + nav qayıdır
+        // sistem GERİ (BackHandler) → Ana menyu tabı + nav qayıdır
         // (performPressBack bu ui-test versiyasında yoxdur — dispatcher
         // vasitəsilə, ChatsBackHandlerTest-in sübut olunmuş pattern-i)
         compose.runOnUiThread {
@@ -118,6 +118,6 @@ class UiSmokeTest {
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(600)
         compose.waitForIdle()
-        compose.onNodeWithText("Kəşf", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Ana menyu", substring = true).assertIsDisplayed()
     }
 }

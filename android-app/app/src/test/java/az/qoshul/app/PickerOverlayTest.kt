@@ -5,6 +5,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
 import az.qoshul.app.core.ui.MapFocusState
@@ -72,7 +73,9 @@ class PickerOverlayTest {
         compose.onNodeWithText("Səyahət və digər").assertExists()
 
         // seç: panel bağlanır, trigger yeni dəyəri göstərir
-        compose.onNodeWithText("Könüllülük").performClick()
+        // D-110: panel VAHİD SÜTUN siyahısıdır (12 sətir ~700dp > 376dp max)
+        // — seçiləcək variant əvvəlcə scroll ilə görünürə gətirilir
+        compose.onNodeWithText("Könüllülük").performScrollTo().performClick()
         settle()
         compose.onNodeWithText("Səyahət və digər").assertDoesNotExist()
         // trigger "Könüllülük" — bir dənə (panel bağlı)

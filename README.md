@@ -35,7 +35,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | 📍 **Match & xəritə** | Yaxınlıqdakı insanlar + canlı xəritə (OpenFreeMap) |
 | 💬 **Söhbətlər** | Canlı söhbət axınları (backend fazasında real vaxt rejimi) |
 | 🔔 **Bildirişlər** | Tədbir/XP/rezerv bildirişləri |
-| 📅 **Tədbirlər** | Kəşf, yaratma, iştirak, bitirmə (XP verir) |
+| 📅 **Tədbirlər** | Ana menyu, yaratma, iştirak, bitirmə (XP verir) |
 | 🏟️ **Obyektlər & partnyorlar** | Məkanlar, partnyor endirimləri, biznes rejimi |
 | 🎟️ **Kuponlar & rezervasiyalar** | QR kod ilə təsdiq (real, skan edilən QR) |
 | ⚡ **İkili XP** | Peşəkarlıq XP + obyektə-məxsus Endirim XP |
@@ -54,12 +54,12 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Nüvə (M2) | **Rust** (`rust-core/`: qoshul-core + qoshul-jni) — geo 0.33.1, proptest 1.12, jni 0.22.4 (D-080); JNI APK-da, JVM-də host .so pariteti |
 | Mikroservis (M4) | **axum 0.8.9** (`service/`): FCM HTTP v1, idempotent joblar (24s/2s), admin API — D-082; PLACEHOLDER konfiq → degrade |
 | Deploy (M5) | **Self-host Supabase — Oracle Always Free** (Ampere A1 ARM64, 2 OCPU/12 GB — yeni limitlər D-083): slim compose core+6 profil, Caddy TLS, 12/12 imaj arm64 (D-084..D-087) |
-| UI/UX (M6) | **Overlay pick sistemi** (mini-kateqoriya trigger → üzərinə çıxan panel, D-089) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088) + boz track ləğvi (D-090); vizual QA: Robolectric render + vizual audit + piksel (D-091); **adaptiv naviqasiya** — ≥600dp-də LiquidRail, telefon axını dəyişməz (D-102) + spring hərəkət dili başlanğıcı (spatial=spring, alpha=tween); nav lentz kapsulu ləğv — seçim yalnız rəng dili ilə (D-103); status/nav bar görünüşü işıq kimi sabit — sistem tünd rejimində ikonlar ərimir (D-104); **iOS 26 üslublu üzən nav — FloatingTabBar** (vendored Apache-2.0): yığılmış halda sol=Kəşf, sağ=Söhbətlər dairəsi (D-105); açıq halda vahid pill — hamısı eyni həbdə, yığılmışda home sol / söhbətlər sağ kənarlarda (D-106); **əsl liquid glass** — backdrop kitabxanası, Echo-Music „Apple-matched“ recipesi (D-107) |
+| UI/UX (M6) | **Overlay pick sistemi → D-110 SELECTOR BOX** (etiketli seçim qutusu + vahid-sütun siyahı paneli: ikon + başlıq + izah, seçili vurğulu) + **Ghost-Downloader-3 nav inteqrasiyası** (D-088); vizual QA: Robolectric render + vizual audit + piksel (D-091); **adaptiv naviqasiya** — ≥600dp-də LiquidRail (D-102); nav lentz kapsulu ləğvi (D-103); status/nav bar görünüşü işıq kimi sabit (D-104); **iOS 26 üslublu üzən nav — FloatingTabBar** (vendored Apache-2.0, D-105/106); **əsl liquid glass** — Echo-Music recipesi (D-107); **5-slot nav** — Ana menyu · Xəritə · Yarat · Profil · Söhbətlər yan-yana, yığılmada Ana menyu sol / Söhbətlər sağ dairələr, digərləri aşağı yox olur (D-111); **sürətli tab keçidi** — fade 140/220ms (D-113); xəritə/söhbət tablarında baş bar gizli, AI FAB yalnız Tədbirlərdə (D-115/D-111) |
 | Xəritə | **Google Maps SDK** (maps-compose 9.0.1 — ƏSAS backend, D-109; `MAPS_API_KEY` ilə) — açarsızda **MapLibre + OpenFreeMap** avtomatik fallback (D-048) |
-| Naviqasiya barı | **FloatingTabBar** (iOS 26, D-105/106) + **əsl liquid glass** — Kyant0/backdrop, Echo-Music recipesi (D-107; API 31+) |
+| Naviqasiya barı | **FloatingTabBar** (iOS 26, D-105/106) + **əsl liquid glass** — Kyant0/backdrop, Echo-Music recipesi (D-107; API 31+); **5 slot yan-yana** — Ana menyu · Xəritə · Yarat · Profil · Söhbətlər; yığılmada iki dairə kənarlarda (D-111) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
 | Test | **210 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) + glass recipe/backend seam + keçid (D-107/D-108/D-109) |
-| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) · təmiz nav + sabit işıq status bar (D-103/D-104) · iOS 26 FloatingNav — vahid pill + kənar yığılma (D-105/D-106) + əsl liquid glass (D-107) · Google Maps əsas backend (D-109) |
+| APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) · təmiz nav + sabit işıq status bar (D-103/D-104) · iOS 26 FloatingNav + əsl liquid glass + 5-slot (D-105/106/107/111) · Google Maps əsas backend (D-109) · **İNDİQO palitra** (D-116) · selector box (D-110) · profil redaktə ekranı (D-112) · kalendar/saat pickers (D-114) |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
 ## 📁 Depo strukturu

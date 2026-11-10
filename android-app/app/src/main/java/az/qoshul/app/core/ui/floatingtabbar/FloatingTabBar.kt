@@ -38,6 +38,22 @@
  * - ExpandedBar: standalone dairə ayrıca üzgü element DEYİL — HƏBİN
  *   DAXİLİNDƏ, slotların sağında (vahid pill; ExpandedTabs Row-unun
  *   sonuncu uşağı kimi).
+ *
+ * Qoshul.az modifications (D-111, 2026-11-09 — istifadəçi direktivi:
+ * „navigation bar adi halda ana menyu, xəritə, yarat, profil və chat
+ * düyməsi yan yana olsun, chat ayrıca yox; aşağı sürüşdürmə
+ * animasiyasında həm ana menyu həm də mesajlar dairəviləşib sağa və
+ * sola sürüşsün, digərləri isə aşağıya doğru gedib yox olsun“):
+ * - AÇIQ HAL: chat artıq standalone DAİRƏ deyil — adi 5-ci slotdur
+ *   (etiketli, weight(1f) — AppShell həm tab() həm standaloneTab()
+ *   qeydiyyat edir: tab açıq halın slotu, standalone yığılmış halın
+ *   sağ dairəsidir). ExpandedTabs-dəki in-pill standalone render LƏĞV.
+ * - Chat slotunun İKONU „standaloneTab“ sharedElement-i daşıyır —
+ *   yığılmada sağ dairəyə morf edir (birinci tab „tabGroup“+ikon morfu
+ *   ilə sola dairəyə keçir — əvvəlki kimi).
+ * - animateEnterExitTab: yığılmada qeyri-anker slotlar (xəritə, yarat,
+ *   profil + bütün etiketlər) AŞAĞI sürüşüb fade+blur ilə yox olur
+ *   (əvvəl yalnız alpha+blur idi — hərəkət əvəzinə AŞAĞI keçid direktivi).
  */
 
 package az.qoshul.app.core.ui.floatingtabbar
@@ -815,6 +831,14 @@ private fun SharedTransitionScope.ExpandedTabs(
                     animatedVisibilityScope = animatedVisibilityScope,
                     zIndexInOverlay = 1f
                   )
+                } else if (tab.key == scope.standaloneTab?.key) {
+                  // Qoshul (D-111): chat slotu — yığılmış sağ dairə ilə morf
+                  // („standaloneTab“ sharedElement-i: icon-box ↔ dairə)
+                  Modifier.sharedElement(
+                    sharedContentState = rememberSharedContentState("standaloneTab"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    zIndexInOverlay = 1f
+                  )
                 } else {
                   Modifier.animateEnterExitTab(
                     sharedTransitionScope = this@ExpandedTabs,
@@ -860,22 +884,10 @@ private fun SharedTransitionScope.ExpandedTabs(
         )
       }
 
-      // Qoshul (D-106, istifadəçi direktivi 2026-11-09: „açıq halda hamsı
-      // eyni pill içində olmalıdır“): standalone dairə slotların sağında,
-      // HƏBİN DAXİLİNDƏ — ExpandedStandaloneTab olduğu KİMİ (dairə + öz fonu,
-      // „standaloneTab“ sharedElement-i dəyişməz — yığılmış sağ kənar dairəsi
-      // ilə morf qorunur), yalnız yerləşmə dəyişir: ayrı element → pill içi.
-      scope.standaloneTab?.let { standaloneTab ->
-        ExpandedStandaloneTab(
-          standaloneTab = standaloneTab,
-          shapes = shapes,
-          colors = colors,
-          elevations = elevations,
-          animatedVisibilityScope = animatedVisibilityScope,
-          tabBarContentModifier = tabBarContentModifier,
-          modifier = Modifier.fillMaxHeight().aspectRatio(1f)
-        )
-      }
+      // Qoshul (D-111): in-pill standalone render LƏĞV — chat (standalone
+      // qeydiyyatlı tab) artıq yuxarıdakı Row-da ADİ 5-ci slotdur; upstream
+      // ExpandedStandaloneTab yalnız „tablar ümumiyyətlə yoxdur“ fallback-ində
+      // qalır (ExpandedBar-ın else-budağı).
     }
   }
 }
@@ -992,7 +1004,10 @@ private fun Modifier.animateEnterExitAccessory(
     }
   }
 
-/** A custom modifier that provides smooth enter/exit animations with fade and blur effects. */
+/** A custom modifier that provides smooth enter/exit animations with fade, slide-DOWN and blur effects.
+ *  Qoshul (D-111): qeyri-anker slotlar yığılmada AŞAĞI sürüşür (direktiv:
+ *  „digərləri isə aşağıya doğru gedib yox olsun“) — 0→26dp translationY
+ *  alpha və blur ilə birlikdə. */
 @Composable
 private fun Modifier.animateEnterExitTab(
   sharedTransitionScope: SharedTransitionScope,
@@ -1023,6 +1038,14 @@ private fun Modifier.animateEnterExitTab(
         }
 
       val blurRadius = with(LocalDensity.current) { 50.dp.toPx() }
+      // Qoshul (D-111): görünən = 0, çıxan/girən = 1 (aşağı ofset çarpanı)
+      val animatedShift by
+        transition.animateFloat { targetState ->
+          when (targetState) {
+            EnterExitState.Visible -> 0f
+            else -> 1f
+          }
+        }
       val animatedBlur by
         transition.animateFloat(
           transitionSpec = {
@@ -1043,6 +1066,7 @@ private fun Modifier.animateEnterExitTab(
 
       graphicsLayer {
         alpha = animatedAlpha
+        translationY = 26.dp.toPx() * animatedShift
         // Qoshul (D-105): renderEffect yalnız keçiddə — istirahətdə null
         // (Robolectric RNG + perf təhlükəsizliyi)
         if (animatedBlur > 0.5f) {

@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,7 +59,6 @@ import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.T
-import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 /**
@@ -69,8 +67,15 @@ import kotlin.math.roundToInt
  * menyuları sürüşdürmək yerinə onların üzərinə çıxıb seçilə bilən
  * kategoriyalar formatına keçirt".
  *
+ * D-110 (v0.41.0, direktiv 2026-11-09: „şəkildəki stildə selector box
+ * əlavə et“): trigger SELECTOR BOX dilinə keçir — yuxarıda sahə etiketi,
+ * altda cari dəyər qutusu (ikon + dəyər + chevron); panel VAHİD
+ * SÜTUNLU SİYAHIDIR — hər sətir [konteynerdə ikon] + [başlıq + izah] +
+ * [seçilib check], seçili sətir secondary fon + primary mətn ilə
+ * vurğulanır (referans şəklin „Share with“ selektoru dili).
+ *
  * Sistem (3 hissə):
- *  1) MiniPickTrigger — kiçik "kateqoriya mini" həbi (cari dəyər + çevrilən
+ *  1) SelectBoxTrigger — etiketli seçim qutusu (cari dəyər + çevrilən
  *     chevron; açıqda secondary fon + primary kontur);
  *  2) PickHostState — bir "host" (ekran / sheet) üçün pick vəziyyəti:
  *     açıq sorğu (DropReq), anchor koordinatları (window məkanında),
@@ -94,8 +99,12 @@ import kotlin.math.roundToInt
 // Dəyər tipləri
 // ═══════════════════════════════════════════════════════════════════
 
-/** Panel seçimi: etiket + (istəyə bağlı) ikon. */
-data class PickOption(val label: String, val icon: ImageVector? = null)
+/** Panel seçimi: etiket + (istəyə bağlı) ikon + (istəyə bağlı) izah sətri. */
+data class PickOption(
+    val label: String,
+    val icon: ImageVector? = null,
+    val description: String? = null,
+)
 
 /** Açıq sorğu — hansı sahə, variantları, cari dəyəri və seçim callback-i. */
 class DropReq(
@@ -156,10 +165,14 @@ fun Modifier.pickAnchor(host: PickHostState, key: String): Modifier =
         host.anchors[key] = AnchorPos(p.y, p.y + c.size.height)
     }
 
-/** Panelin təxmini hündürlüyü (auto istiqamət qərarı üçün). */
-fun estimatePanelHeight(optionCount: Int, columns: Int = 3, max: Dp = 320.dp): Dp {
-    val rows = ceil(optionCount / columns.toFloat()).coerceAtLeast(1f).toInt()
-    val h = 20.dp + 40.dp * rows + 8.dp * (rows - 1)
+/**
+ * Panelin təxmini hündürlüyü (auto istiqamət qərarı üçün) — D-110
+ * vahid-sütun siyahısı: hər sətir ~56dp (36dp ikon konteyneri + padding)
+ * + 4dp aralıq; izahlı sətirlər bir az hündürdür — max hədd kəsir.
+ */
+fun estimatePanelHeight(optionCount: Int, max: Dp = 360.dp): Dp {
+    val n = optionCount.coerceAtLeast(1)
+    val h = 16.dp + 56.dp * n + 4.dp * (n - 1)
     return h.coerceAtMost(max)
 }
 
@@ -184,17 +197,21 @@ fun Modifier.pickAuto(host: PickHostState, key: String, panelHeight: Dp, gap: Dp
     }
 
 // ═══════════════════════════════════════════════════════════════════
-// Trigger (mini kateqoriya həbi)
+// Trigger — D-110 selector box (etiket + dəyər qutusu)
 // ═══════════════════════════════════════════════════════════════════
 
 /**
- * MiniPickTrigger — "kateqoriya mini": cari dəyər + chevron.
+ * SelectBoxTrigger — D-110 (direktiv: „şəkildəki stildə selector box
+ * əlavə et, rəngi proqrama uyğun et“): yuxarıda sahə etiketi (T.label),
+ * altda cari dəyəri göstərən QUTU — ikon + dəyər + çevrilən chevron.
  * Bağlı: card fon + border; açıq: secondary fon + primary kontur,
- * chevron 180° çevrilir (150ms), 1.03 pop.
+ * chevron 180° çevrilir (150ms), 1.02 pop. A11y: etiket + dəyər birgə
+ * oxunur (Kateqoriya: Hamısı mənası — trigger özü seç/bağla deyir).
  */
 @Composable
-fun MiniPickTrigger(
-    label: String,
+fun SelectBoxTrigger(
+    fieldLabel: String,
+    value: String,
     icon: ImageVector?,
     open: Boolean,
     onClick: () -> Unit,
@@ -207,47 +224,54 @@ fun MiniPickTrigger(
         label = "pickChev",
     )
     val pop by animateFloatAsState(
-        targetValue = if (open) 1.03f else 1f,
+        targetValue = if (open) 1.02f else 1f,
         animationSpec = tween(Motion.D1, easing = Motion.ease),
         label = "pickPop",
     )
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .scaleTap(interaction)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .graphicsLayer { scaleX = pop; scaleY = pop }
-            .height(36.dp)
-            .background(if (open) Q.secondary else Q.card, RoundedCornerShape(Q.rPill))
-            .border(
-                if (open) 1.2.dp else 1.dp,
-                if (open) Q.primary else Q.border,
-                RoundedCornerShape(Q.rPill),
+    Column(modifier) {
+        Text(fieldLabel, style = T.label)
+        Spacer(Modifier.height(6.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .scaleTap(interaction)
+                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .graphicsLayer { scaleX = pop; scaleY = pop }
+                .background(if (open) Q.secondary else Q.card, RoundedCornerShape(Q.rMd.dp))
+                .border(
+                    if (open) 1.2.dp else 1.dp,
+                    if (open) Q.primary else Q.border,
+                    RoundedCornerShape(Q.rMd.dp),
+                )
+                .padding(horizontal = 13.dp, vertical = 12.dp),
+        ) {
+            if (icon != null) {
+                Icon2(
+                    icon, null,
+                    tint = if (open) Q.primary else Q.mutedFg,
+                    size = 16.dp,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                value,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = T.input.copy(
+                    color = if (open) Q.primary else Q.foreground,
+                    fontWeight = if (open) FontWeight.W700 else FontWeight.W600,
+                ),
+                modifier = Modifier.weight(1f),
             )
-            .padding(horizontal = 13.dp),
-    ) {
-        if (icon != null) {
+            Spacer(Modifier.width(4.dp))
             Icon2(
-                icon, null,
+                Icons.Filled.ExpandMore, if (open) "bağla" else "seç",
                 tint = if (open) Q.primary else Q.mutedFg,
-                size = 14.5.dp,
+                size = 18.dp,
+                rotation = chev,
             )
-            Spacer(Modifier.width(6.dp))
         }
-        Text(
-            label,
-            style = T.chip.copy(
-                color = if (open) Q.primary else Q.foreground,
-                fontWeight = if (open) FontWeight.W700 else FontWeight.W600,
-            ),
-        )
-        Spacer(Modifier.width(3.dp))
-        Icon2(
-            Icons.Filled.ExpandMore, if (open) "bağla" else "seç",
-            tint = if (open) Q.primary else Q.mutedFg,
-            size = 17.dp,
-            rotation = chev,
-        )
     }
 }
 
@@ -289,8 +313,7 @@ private fun Icon2(
 fun BoxScope.PickHostOverlay(
     host: PickHostState,
     panelModifier: Modifier,
-    columns: Int = 3,
-    maxHeight: Dp = 320.dp,
+    maxHeight: Dp = 360.dp,
     gap: Dp = 8.dp,
     placement: PickPlacement = PickPlacement.ANCHOR_AUTO,
 ) {
@@ -299,7 +322,7 @@ fun BoxScope.PickHostOverlay(
     BackHandler(onBack = { host.openReq = null })
     PickerScrim(onDismiss = { host.openReq = null })
 
-    val panelH = estimatePanelHeight(req.options.size, columns, maxHeight)
+    val panelH = estimatePanelHeight(req.options.size, maxHeight)
     val placed = when (placement) {
         PickPlacement.ANCHOR_AUTO ->
             panelModifier.pickAuto(host, req.key, panelH, gap)
@@ -316,7 +339,6 @@ fun BoxScope.PickHostOverlay(
             host.openReq = null
         },
         modifier = placed,
-        columns = columns,
         maxHeight = maxHeight,
     )
 }
@@ -345,14 +367,14 @@ private fun PickerScrim(onDismiss: () -> Unit) {
 }
 
 /**
- * PickerPanel — üzərindən çıxan seçim paneli (UI-7 D-098 restayl,
- * direktiv "kategoriyalar yerindəki seçim stilini yaxşılaşdır"):
- * seçilməmiş variantlar zəif Q.muted həblər (ağ-üstünə-ağ kontrast
- * problemi bitdi); seçili variant yaşıl kapsul — ikon BAŞDA qalır, check
- * SONDA görünür (əvvəl ikon check ilə əvəz olunurdu). Həblər 40→44dp,
- * radius 12→16dp (D-098 dairəviləşdirmə), panel 24dp radius + dərin
- * kölgə. Daxili scroll (D-062: heightIn SRİFDLİ, scroll DAXİLDİ),
- * giriş hərəkəti fade+slide+scale (220ms).
+ * PickerPanel — üzərindən çıxan seçim siyahısı. D-110 (direktiv: „şəkildəki
+ * stildə selector box əlavə et“): VAHİD SÜTUN — hər sətir referans şəklin
+ * dili ilə: [yumru kvadratda ikon] + [başlıq + izah sətri] + [seçilib
+ * check]. Seçili sətir: secondary fon + primary kontur/mətn; ikon
+ * konteyneri seçilidə primary dolu, qalanında muted. İkonsuz variantlarda
+ * (məs. şəhər siyahısı) konteyner yoxdur — başlıq birbaşa. Daxili scroll
+ * (D-062: heightIn SRİFDLİ, scroll DAXİLDİ), giriş hərəkəti fade+slide+
+ * scale (220ms). Panel: Q.card fon, Q.rXl radius, dərin kölgə.
  */
 @Composable
 fun PickerPanel(
@@ -360,8 +382,7 @@ fun PickerPanel(
     selected: String,
     onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    columns: Int = 3,
-    maxHeight: Dp = 320.dp,
+    maxHeight: Dp = 360.dp,
 ) {
     val animationsOn = rememberAnimationsOn()
     val p = remember { Animatable(0f) }
@@ -369,9 +390,6 @@ fun PickerPanel(
         if (animationsOn) p.animateTo(1f, tween(220, easing = Motion.ease))
         else p.snapTo(1f)
     }
-    // QEYD (D-089, M6): "açılışda seçiliyə snap-scroll" SINAQDA
-    // (Robolectric waitForIdle) sonsuz dövrə salırdı — ləğv edilib;
-    // uzun siyahıda seçili element istifadəçi tərəfindən scroll olunur.
     Box(
         modifier
             .graphicsLayer {
@@ -382,75 +400,87 @@ fun PickerPanel(
             }
             .shadow(
                 elevation = 16.dp,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(Q.rXl.dp),
                 ambientColor = Q.overlayDark.copy(alpha = 0.12f),
                 spotColor = Q.overlayDark.copy(alpha = 0.18f),
             )
-            .background(Q.card, RoundedCornerShape(24.dp))
-            .border(1.dp, Q.border, RoundedCornerShape(24.dp))
+            .background(Q.card, RoundedCornerShape(Q.rXl.dp))
+            .border(1.dp, Q.border, RoundedCornerShape(Q.rXl.dp))
     ) {
         Column(
             Modifier
                 .heightIn(max = maxHeight)
                 .verticalScroll(rememberScrollState())
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(8.dp),
         ) {
-            options.chunked(columns).forEach { rowOpts ->
+            options.forEachIndexed { idx, opt ->
+                val sel = opt.label == selected
+                val interaction = remember { MutableInteractionSource() }
                 Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = interaction,
+                            indication = null,
+                        ) { onPick(opt.label) }
+                        .background(
+                            if (sel) Q.secondary else Color.Transparent,
+                            RoundedCornerShape(16.dp),
+                        )
+                        .then(
+                            if (sel) Modifier.border(1.2.dp, Q.primary, RoundedCornerShape(16.dp))
+                            else Modifier
+                        )
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
                 ) {
-                    rowOpts.forEach { opt ->
-                        val sel = opt.label == selected
-                        val interaction = remember { MutableInteractionSource() }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
+                    if (opt.icon != null) {
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .weight(1f)
-                                .height(44.dp)
-                                .clickable(
-                                    interactionSource = interaction,
-                                    indication = null,
-                                ) { onPick(opt.label) }
+                                .size(38.dp)
                                 .background(
-                                    if (sel) Q.secondary else Q.muted,
-                                    RoundedCornerShape(16.dp),
-                                )
-                                .border(
-                                    if (sel) 1.2.dp else 0.dp,
-                                    if (sel) Q.primary else Q.border,
-                                    RoundedCornerShape(16.dp),
-                                )
-                                .padding(horizontal = 6.dp),
+                                    if (sel) Q.primary else Q.muted,
+                                    RoundedCornerShape(13.dp),
+                                ),
                         ) {
-                            if (opt.icon != null) {
-                                Icon2(
-                                    opt.icon, null,
-                                    tint = if (sel) Q.primary else Q.mutedFg,
-                                    size = 15.dp,
-                                )
-                                Spacer(Modifier.width(4.dp))
-                            }
-                            Text(
-                                opt.label,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = T.metaBold.copy(fontWeight = if (sel) FontWeight.W700 else FontWeight.W600, color = if (sel) Q.primary else Q.foreground),
+                            Icon2(
+                                opt.icon, null,
+                                tint = if (sel) Q.primaryFg else Q.mutedFg,
+                                size = 19.dp,
                             )
-                            if (sel) {
-                                Spacer(Modifier.width(4.dp))
-                                Icon2(
-                                    Icons.Filled.Check, "seçilib", tint = Q.primary,
-                                    size = 14.dp,
-                                )
-                            }
+                        }
+                        Spacer(Modifier.width(11.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            opt.label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = T.metaBold.copy(
+                                fontWeight = if (sel) FontWeight.W700 else FontWeight.W600,
+                                color = if (sel) Q.primary else Q.foreground,
+                            ),
+                        )
+                        if (opt.description != null) {
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                opt.description,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                style = T.chipXs.copy(color = Q.mutedFg),
+                            )
                         }
                     }
-                    // sətir yarım qalıbsa — tor düz qalsın
-                    repeat(columns - rowOpts.size) { Spacer(Modifier.weight(1f)) }
+                    if (sel) {
+                        Spacer(Modifier.width(8.dp))
+                        Icon2(
+                            Icons.Filled.Check, "seçilib", tint = Q.primary,
+                            size = 18.dp,
+                        )
+                    }
                 }
+                if (idx < options.lastIndex) Spacer(Modifier.height(4.dp))
             }
         }
     }

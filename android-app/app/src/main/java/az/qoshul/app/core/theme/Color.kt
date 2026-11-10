@@ -4,17 +4,24 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Q dizayn tokenləri — Flutter `Q` sinifinin birebir portu (D-023/D-036).
- * Mənbə: web (Amin099015/qoshul) styles.css OKLCH → sRGB.
  * Yoxlanış: docs/audit-flutter-v0.7.0.md bölmə 3.1.
+ *
+ * D-116 (v0.41.0, direktiv 2026-11-09: „proqramın ümumi rəng palitrasını
+ * düzəlt, hələ də əsas rəng yaşıl qalır“): əsas rəng YAŞIL (#00A63E)
+ * → İNDİQO (#4F46E5). Sosial/tanışlıq brendlərinin dili (Discord,
+ * Telegram nəsli); narıncı aksent (Q.accent #FE9A00) indiqo ilə klassik
+ * tamamlayıcı cütlükdür. Törəmə tonlar (secondary/aiBoxBg/overlayDark/
+ * photoShade/tileFallback/avatarColors) eyni dəyişikliklə uyğunlaşdırıldı;
+ * neytrallar (background/card/foreground/muted/border) dəyişməz.
  */
 object Q {
     // :root tokenləri
     val background = Color(0xFFF8FAFC)
     val foreground = Color(0xFF0F172B)
     val card = Color(0xFFFFFFFF)
-    val primary = Color(0xFF00A63E)
+    val primary = Color(0xFF4F46E5)
     val primaryFg = Color(0xFFFFFFFF)
-    val secondary = Color(0xFFE6F7EA)
+    val secondary = Color(0xFFE7E9FB)
     val muted = Color(0xFFEEF2F5)
     // D-057: 4.5:1 AA həddinə yaxın idi — daha tünd (ağıllı günəş altında oxunaqlılıq)
     val mutedFg = Color(0xFF5A6474)
@@ -25,13 +32,13 @@ object Q {
 
     // törəmə rənglər
     val rankBadgeBg = Color(0xFFFEF2DE)
-    val overlayDark = Color(0xFF002211)
-    val photoShade = Color(0xFF00140E)
+    val overlayDark = Color(0xFF16123A)
+    val photoShade = Color(0xFF120E2E)
     val glass = Color(0x21000000)      // 13% qara
     val glassBorder = Color(0x2EFFFFFF) // 18% ağ
 
     // AiBox fonu (primary 6% + card)
-    val aiBoxBg = Color(0xFFF1FBF4)
+    val aiBoxBg = Color(0xFFF3F4FD)
 
     // rezerv status çipi (rol.dart ResvStatusChip — rejected/noShow)
     val resvRejectedBg = Color(0xFFFDE2E3)
@@ -47,18 +54,18 @@ object Q {
     val myLocation = Color(0xFF2D7FF9)
 
     // tile fallback fonu (offline/test)
-    val tileFallback = Color(0xFFEDF3EF)
+    val tileFallback = Color(0xFFEDEFF7)
 
-    // avatar stack dairələri (event_card)
+    // avatar stack dairələri (event_card) — D-116: indiqo ailəsi
     val avatarColors = listOf(
-        Color(0xFF8AD8A8),
-        Color(0xFF6FCB95),
-        Color(0xFFB7E4C7),
+        Color(0xFFA5B4FC),
+        Color(0xFF818CF8),
+        Color(0xFFC7D2FE),
     )
 
     // D-098 (UI-7): "Yarat" FAB qradiyentinin tünd ucu — primary-dən
-    // ~12% tünd yaşıl (marka dərinliyi, lens/FAB kölgələri ilə birlikdə)
-    val primaryDeep = Color(0xFF008A33)
+    // ~12% tünd indiqo (marka dərinliyi, lens/FAB kölgələri ilə birlikdə)
+    val primaryDeep = Color(0xFF4338CA)
 
     // shimmer rəngləri (motion.dart)
     val shimmerBase = Color(0xFFEEF2F5)

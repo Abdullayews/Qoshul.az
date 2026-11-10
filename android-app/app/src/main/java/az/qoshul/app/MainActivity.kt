@@ -38,6 +38,7 @@ import az.qoshul.app.features.notifications.NotificationsScreen
 import az.qoshul.app.features.onboarding.OnboardingScreen
 import az.qoshul.app.features.partners.PartnersScreen
 import az.qoshul.app.features.profile.PersonalityQuizScreen
+import az.qoshul.app.features.profile.ProfileEditScreen
 import az.qoshul.app.features.reservations.ReservationsScreen
 import az.qoshul.app.features.safety.SafetyScreen
 import az.qoshul.app.features.settings.SettingsScreen
@@ -203,6 +204,7 @@ private fun RouteScreen(
         Route.Settings -> SettingsScreen(engine, nav)
         Route.Safety -> SafetyScreen(nav)
         Route.Quiz -> PersonalityQuizScreen(engine, nav) // D-056
+        Route.ProfileEdit -> ProfileEditScreen(engine, nav) // D-112
         is Route.VenueDetail -> VenueDetailScreen(engine, nav, route.venueId, focus)
     }
 }

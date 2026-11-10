@@ -154,7 +154,7 @@ class ScreenshotTest {
         // nav çıxış animasiyası bitdi — tab düymələri kompozisiyadan silinib
         compose.mainClock.advanceTimeBy(600)
         compose.waitForIdle()
-        compose.onNodeWithText("Kəşf", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Ana menyu", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Xəritə", substring = true).assertDoesNotExist()
     }
 

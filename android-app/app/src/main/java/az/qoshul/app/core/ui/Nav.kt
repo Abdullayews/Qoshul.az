@@ -65,6 +65,8 @@ sealed interface Route {
     data object Safety : Route
     /** D-056: şəxsiyyət testi (10 sual → PersonalityResult). */
     data object Quiz : Route
+    /** D-112: profil redaktə ekranı (ad, soyad, profil şəkli seçimi). */
+    data object ProfileEdit : Route
     data class VenueDetail(val venueId: String) : Route
 }
 

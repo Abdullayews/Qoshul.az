@@ -447,9 +447,12 @@ object FakeQoshulDataSource : QoshulDataSource {
         "Kiçik stresslərdən asanlıqla özümü topluyam." to ("stability" to false),
     )
 
+    // D-115 (direktiv: „biznes ilə əlaəqli yerləri sil“): „Təhsil və Karyera“
+    // (networking/seminar — biznes çalarlı kateqoriya) maraq siyahısından
+    // çıxarıldı — maraqlar sosial/hobbi dəstində qalır (8 kateqoriya).
     override val rolCategories = listOf(
         "Əyləncə və Gecə həyatı", "Kafe və Yemək", "İdman və Aktivlik",
-        "Təbiət və Səyahət", "Mədəniyyət və İncəsənət", "Təhsil və Karyera",
+        "Təbiət və Səyahət", "Mədəniyyət və İncəsənət",
         "Oyun və Hobbi", "Musiqi", "Könüllülük və Sosial",
     )
 
@@ -459,7 +462,6 @@ object FakeQoshulDataSource : QoshulDataSource {
         "İdman və Aktivlik" to "futbol, tennis, qaçış, velosiped, fitnes",
         "Təbiət və Səyahət" to "hiking, kamp, Qəbələ, Şahdağ",
         "Mədəniyyət və İncəsənət" to "teatr, muzey, konsert, sərgi",
-        "Təhsil və Karyera" to "dil klubları, networking, seminar",
         "Oyun və Hobbi" to "stolüstü oyunlar, PlayStation, kitab klubu, foto",
         "Musiqi" to "canlı musiqi, jam session",
         "Könüllülük və Sosial" to "xeyriyyə, təmizlik aksiyaları",

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Description
@@ -80,6 +81,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     var showBlocked by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var showPhone by remember { mutableStateOf(false) }
+    // D-115: şirkət hesabı dialoqu
+    var showCompany by remember { mutableStateOf(false) }
     var cityOpen by remember { mutableStateOf(false) }
     var inviteOpen by remember { mutableStateOf(false) }
 
@@ -168,6 +171,23 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         subtitle = "Native (Compose) — ${AppConfig.modeLabel}")
                     DividerLine()
                     NavRow(Icons.Filled.Description, "Şərtlər və məxfilik", null)
+                }
+            }
+            item {
+                // D-115 (direktiv: „ayarların sonuna yaxın bir yerdə şirkət
+                // hesabına keç düyməsi olsun“): təhlükəsizlik kartından
+                // SONRA, hesab silmə/çıxış düymələrindən ƏVVƏL.
+                Spacer(Modifier.height(14.dp))
+                OutlinedButton(
+                    onClick = { showCompany = true },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.primary),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.primary),
+                ) {
+                    Icon(Icons.Filled.BusinessCenter, null, modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.padding(4.dp))
+                    Text("Şirkət hesabına keç", style = T.button)
                 }
             }
             item {
@@ -357,6 +377,29 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             },
             dismissButton = {
                 TextButton(onClick = { inviteOpen = false }) { Text("İmtina", style = T.button) }
+            },
+        )
+    }
+
+    // — D-115: şirkət hesabı dialoqu („ayarların sonuna yaxın bir yerdə
+    // şirkət hesabına keç düyməsi olsun“) — tərəfdaş/şirkət axınının
+    // giriş nöqtəsi; beta mərhələsində məlumatlandırma dialoqudur.
+    if (showCompany) {
+        AlertDialog(
+            onDismissRequest = { showCompany = false },
+            title = { Text("Şirkət hesabına keç") },
+            text = {
+                Text(
+                    "Şirkət hesabı tərəfdaş məkanlar üçündür: tədbir hostu, stol " +
+                        "rezervasiyaları, endirim kuponları və obyekt XP hesabatı " +
+                        "bir paneldən idarə olunur.\n\nTərəfdaş olmaq üçün: " +
+                        "qoshul.az/partners ünvanından müraciət et — komanda " +
+                        "obyektini təsdiqləyib hesabı aktivləşdirəcək.",
+                    style = T.subtitle.copy(lineHeight = 21.sp),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showCompany = false }) { Text("Bağla", style = T.button) }
             },
         )
     }

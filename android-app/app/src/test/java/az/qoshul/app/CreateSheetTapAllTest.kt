@@ -41,7 +41,7 @@ class CreateSheetTapAllTest {
         compose.onNodeWithText("Demo hesabı ilə davam et").performClick()
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
-                compose.onNodeWithText("Salam, Demo!").fetchSemanticsNode()
+                compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
                 true
             } catch (e: AssertionError) {
                 false
@@ -98,6 +98,6 @@ class CreateSheetTapAllTest {
         }
         compose.waitForIdle()
         // tətbiq yaşayır, ana shell qayıdır
-        compose.onNodeWithText("Salam, Demo!").assertExists()
+        compose.onNodeWithText("Sənin üçün").assertExists()
     }
 }

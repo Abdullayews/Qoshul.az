@@ -45,7 +45,7 @@ class CreateEventFlowTest {
         compose.onNodeWithText("Demo hesabı ilə davam et").performClick()
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
-                compose.onNodeWithText("Salam, Demo!").fetchSemanticsNode()
+                compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
                 true
             } catch (e: AssertionError) {
                 false
@@ -62,7 +62,7 @@ class CreateEventFlowTest {
 
         // 1) demo hesabı ilə daxil ol (vahid hardcoded hesab, D-050)
         signInDemoAndWait()
-        compose.onNodeWithText("Salam, Demo!").assertIsDisplayed()
+        compose.onNodeWithText("Sənin üçün").assertIsDisplayed()
 
         // 2) mərkəzi Yarat düyməsi → sheet açılır (əvvəl BURADA NPE)
         compose.onNodeWithContentDescription("Yarat").performClick()
@@ -140,7 +140,7 @@ class CreateEventFlowTest {
         compose.onNodeWithText("Tərəfdaşlar").assertExists()
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
-                compose.onNodeWithText("Salam, Demo!").fetchSemanticsNode()
+                compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
                 false
             } catch (e: AssertionError) {
                 true
@@ -157,7 +157,7 @@ class CreateEventFlowTest {
         // bitir və "Salam, Demo!" əsla görünməzdi)
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
-                compose.onNodeWithText("Salam, Demo!").fetchSemanticsNode()
+                compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
                 true
             } catch (e: AssertionError) {
                 false
