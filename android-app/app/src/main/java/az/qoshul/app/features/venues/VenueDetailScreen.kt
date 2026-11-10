@@ -170,7 +170,7 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
             ) {
                 InfoRow(Icons.Filled.Schedule, "${venue.hours} · " +
                     (if (openNow) "İndi açıqdır" else "Bağlıdır"),
-                    color = if (openNow) Q.primary else Q.mutedFg)
+                    color = if (openNow) Q.primaryText else Q.mutedFg)
                 androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 8.dp))
                 InfoRow(Icons.Filled.Payments, "Qiymət aralığı: ${venue.priceRange}")
                 androidx.compose.material3.HorizontalDivider(color = Q.border, modifier = Modifier.padding(vertical = 8.dp))
@@ -219,7 +219,7 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                         containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {
-                    Icon(Icons.Filled.NearMe, null, tint = Q.primary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.NearMe, null, tint = Q.primaryText, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Yol tap", style = T.button)
                 }
@@ -471,7 +471,7 @@ private fun SectionTitle(text: String) {
 @Composable
 private fun FactRow(text: String) {
     Row(Modifier.padding(vertical = 5.dp)) {
-        Icon(Icons.Filled.Check, null, tint = Q.primary, modifier = Modifier.size(13.dp))
+        Icon(Icons.Filled.Check, null, tint = Q.primaryText, modifier = Modifier.size(13.dp))
         Spacer(Modifier.width(8.dp))
         Text(text, style = T.bodySm)
     }
@@ -489,7 +489,7 @@ private fun CouponTile(code: String?, label: String, active: Boolean, onClick: (
     ) {
         Icon(
             if (active) Icons.Filled.CheckCircle else Icons.Filled.Percent, null,
-            tint = if (active) Q.primary else Q.mutedFg, modifier = Modifier.size(16.dp),
+            tint = if (active) Q.primaryText else Q.mutedFg, modifier = Modifier.size(16.dp),
         )
         Spacer(Modifier.width(10.dp))
         Text(label, style = T.bodyXs)
@@ -546,7 +546,7 @@ private fun Modifier.androidxCouponTile(active: Boolean, onClick: () -> Unit): M
 private fun Modifier.androidxCouponBorder(active: Boolean): Modifier = this.then(
     Modifier.border(
         1.4.dp.takeIf { active } ?: 1.dp,
-        if (active) Q.primary else Q.border,
+        if (active) Q.primaryText else Q.border,
         RoundedCornerShape(Q.rMd.dp),
     )
 )

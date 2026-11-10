@@ -147,6 +147,8 @@ fun navGlassPalette(): NavPalette {
     )
 }
 
-/** Glass BAĞLI fallback (D-103: aktiv primary, qeyri-aktiv mutedFg, kapsul secondary). */
+/** Glass BAĞLI fallback (D-103: aktiv primary, qeyri-aktiv mutedFg, kapsul secondary).
+ *  D-123: aktiv ton primaryText — səth üzərində brend MƏTN/İKON dili
+ *  (qızılı+ağ modda #EAC66C 1.6:1 oxunmaz idi; primaryText hər modda ≥4.5:1). */
 fun navFallbackPalette(): NavPalette =
-    NavPalette(selected = Q.primary, unselected = Q.mutedFg, indicator = Q.secondary)
+    NavPalette(selected = Q.primaryText, unselected = Q.mutedFg, indicator = Q.secondary)

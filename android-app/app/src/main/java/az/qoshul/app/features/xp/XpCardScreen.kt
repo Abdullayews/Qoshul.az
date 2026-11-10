@@ -94,11 +94,11 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
                             .padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Filled.WorkspacePremium, null, tint = Q.primary, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Filled.WorkspacePremium, null, tint = Q.primaryText, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text("Peşəkarlıq XP: ${st.xp} · ${st.rank}",
-                                style = T.metaBold.copy(color = Q.primary))
+                                style = T.metaBold.copy(color = Q.primaryText))
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 "Səviyyə üçün istifadə olunur — xərclənmir. " +
@@ -163,7 +163,7 @@ private fun AccountCard(
                     .size(38.dp)
                     .androidxAcctIconBg(),
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Filled.Storefront, null, tint = Q.primary, modifier = Modifier.size(19.dp)) }
+            ) { Icon(Icons.Filled.Storefront, null, tint = Q.primaryText, modifier = Modifier.size(19.dp)) }
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
                 Text(account.venueName, style = T.h3)
@@ -171,7 +171,7 @@ private fun AccountCard(
                 Text(account.config.describe(), style = T.chipXs.copy(color = Q.mutedFg))
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("$bal XP", style = T.titleLg.copy(color = Q.primary))
+                Text("$bal XP", style = T.titleLg.copy(color = Q.primaryText))
                 Text("Endirim XP", style = T.metaSm)
             }
         }
@@ -190,7 +190,7 @@ private fun AccountCard(
                     Row(Modifier.padding(bottom = 7.dp)) {
                         Icon(
                             if (e.grant) Icons.Filled.AddCircle else Icons.Filled.RemoveCircle, null,
-                            tint = if (e.grant) Q.primary else Q.destructive,
+                            tint = if (e.grant) Q.primaryText else Q.destructive,
                             modifier = Modifier.size(14.dp),
                         )
                         Spacer(Modifier.width(8.dp))
@@ -319,7 +319,7 @@ private fun Modifier.androidxAcctBg(expanded: Boolean): Modifier = this.then(
 
 private fun Modifier.androidxAcctBorder(expanded: Boolean): Modifier = this.then(
     Modifier.border(
-        1.dp, if (expanded) Q.primary else Q.border, RoundedCornerShape(Q.rLg.dp),
+        1.dp, if (expanded) Q.primaryText else Q.border, RoundedCornerShape(Q.rLg.dp),
     )
 )
 

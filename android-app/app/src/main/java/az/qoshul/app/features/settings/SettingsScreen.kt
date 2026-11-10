@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Contrast
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -125,14 +126,14 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     DividerLine()
                     RowItem(
                         Icons.Filled.Tune, "Məlumat rejimi", AppConfig.modeLabel,
-                        valueColor = if (AppConfig.isPlaceholder) Q.accentFg else Q.primary,
+                        valueColor = if (AppConfig.isPlaceholder) Q.accentFg else Q.primaryText,
                     )
                     DividerLine()
                     NavRow(
                         Icons.Filled.VerifiedUser, "Hesabı təsdiqlə (telefon)",
                         if (st.phoneVerified) "Təsdiqlənmiş (+${XpRules.PHONE_VERIFY_XP} XP)"
                         else "Təsdiq edilməyib",
-                        valueColor = if (st.phoneVerified) Q.primary else androidx.compose.ui.graphics.Color.Unspecified,
+                        valueColor = if (st.phoneVerified) Q.primaryText else androidx.compose.ui.graphics.Color.Unspecified,
                     ) { if (!st.phoneVerified) showPhone = true }
                 }
             }
@@ -179,7 +180,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     DividerLine()
                     NavRow(
                         Icons.Filled.DarkMode, "Mod", value = st.designMode.label,
-                        subtitle = "Ağ (default) və ya Qara üzlük",
+                        subtitle = "Ağ, Qara və ya Amoled (tam qara) üzlük",
                     ) { showDesignMode = true }
                 }
             }
@@ -219,8 +220,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     onClick = { showCompany = true },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(Q.rPill),
-                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.primary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.primary),
+                    colors = ButtonDefaults.outlinedButtonColors(containerColor = Q.card, contentColor = Q.primaryText),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.primaryText),
                 ) {
                     Icon(Icons.Filled.BusinessCenter, null, modifier = Modifier.height(16.dp))
                     Spacer(Modifier.padding(4.dp))
@@ -278,7 +279,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                             Icon(
                                 if (st.mapVisibility == v) Icons.Filled.RadioButtonChecked
                                 else Icons.Filled.RadioButtonUnchecked, null,
-                                tint = if (st.mapVisibility == v) Q.primary else Q.mutedFg,
+                                tint = if (st.mapVisibility == v) Q.primaryText else Q.mutedFg,
                                 modifier = Modifier.height(19.dp),
                             )
                             Spacer(Modifier.padding(6.dp))
@@ -316,7 +317,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                                 Modifier
                                     .size(20.dp)
                                     .background(c.swatch, CircleShape)
-                                    .border(1.5.dp, if (st.designColor == c) Q.primary else Q.border, CircleShape)
+                                    .border(1.5.dp, if (st.designColor == c) Q.primaryText else Q.border, CircleShape)
                             )
                             Spacer(Modifier.padding(8.dp))
                             Column(Modifier.weight(1f)) {
@@ -330,7 +331,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                             Icon(
                                 if (st.designColor == c) Icons.Filled.RadioButtonChecked
                                 else Icons.Filled.RadioButtonUnchecked, null,
-                                tint = if (st.designColor == c) Q.primary else Q.mutedFg,
+                                tint = if (st.designColor == c) Q.primaryText else Q.mutedFg,
                                 modifier = Modifier.height(19.dp),
                             )
                         }
@@ -356,24 +357,31 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                                 .padding(vertical = 10.dp, horizontal = 4.dp),
                         ) {
                             Icon(
-                                if (m == DesignMode.LIGHT) Icons.Filled.LightMode
-                                else Icons.Filled.DarkMode, null,
-                                tint = if (st.designMode == m) Q.primary else Q.mutedFg,
+                                // D-123: üç mod — Ağ / Qara / Amoled (tam qara, OLED)
+                                when (m) {
+                                    DesignMode.LIGHT -> Icons.Filled.LightMode
+                                    DesignMode.DARK -> Icons.Filled.DarkMode
+                                    DesignMode.AMOLED -> Icons.Filled.Contrast
+                                }, null,
+                                tint = if (st.designMode == m) Q.primaryText else Q.mutedFg,
                                 modifier = Modifier.height(19.dp),
                             )
                             Spacer(Modifier.padding(8.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(m.label, style = T.bodyBold)
                                 Text(
-                                    if (m == DesignMode.LIGHT) "Ağ fon, tünd mətn (default)"
-                                    else "Qara fon, işıq mətn — gecə gözləri üçün",
+                                    when (m) {
+                                        DesignMode.LIGHT -> "Ağ fon, tünd mətn (default)"
+                                        DesignMode.DARK -> "Qara fon, işıq mətn — gecə gözləri üçün"
+                                        DesignMode.AMOLED -> "Tam qara fon — AMOLED ekranda batareya qənaəti"
+                                    },
                                     style = T.chipXs.copy(color = Q.mutedFg),
                                 )
                             }
                             Icon(
                                 if (st.designMode == m) Icons.Filled.RadioButtonChecked
                                 else Icons.Filled.RadioButtonUnchecked, null,
-                                tint = if (st.designMode == m) Q.primary else Q.mutedFg,
+                                tint = if (st.designMode == m) Q.primaryText else Q.mutedFg,
                                 modifier = Modifier.height(19.dp),
                             )
                         }
@@ -606,7 +614,7 @@ private fun SwitchRow(icon: ImageVector, label: String, value: Boolean, onChange
             style = T.bodyXs)
         Switch(
             checked = value, onCheckedChange = onChanged,
-            colors = SwitchDefaults.colors(checkedTrackColor = Q.primary),
+            colors = SwitchDefaults.colors(checkedTrackColor = Q.primaryText),
         )
     }
 }

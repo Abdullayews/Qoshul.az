@@ -66,6 +66,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
@@ -116,35 +117,48 @@ fun FeedScreen(
     // (tab rejimində back app-i bağlayırdı — axtarış konteksti udulurdu).
     BackHandler(enabled = search.isNotEmpty()) { search = "" }
 
-    Column(Modifier.fillMaxSize()) {
-        ViewTabs(active = view, onChanged = { view = it; onViewChange(it) })
-        AnimatedContent(
-            targetState = view,
-            transitionSpec = {
-                // D-113 (direktiv: „tablar arası keçiş animasiyasını
-                // dəyişdir“): spring-slide əvəzinə SÜRƏTLİ FADE — köhnə
-                // görüntü 150ms-də yox olur (yavaş spring-də köhnə səhifə
-                // gözlədirdi); GİRİŞ 220ms ease ilə yumşaq qalır.
-                (fadeIn(tween(220, easing = Motion.ease)))
-                    .togetherWith(fadeOut(tween(150)))
-            },
-            label = "feedTabs",
-        ) { v ->
-            if (v == 0) {
-                ForYouView(engine, nav, focus, search = search, onSearchChange = { search = it },
-                    onOpenEvents = { view = 1; onViewChange(1) }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
-            } else {
-                EventsScreen(engine, nav, focus, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat)
-            }
+    // D-125 (direktiv: „ana menyuda şəhər və tabların olduğu yeri
+    // sürüşdürərkən sabit yox adi qalacağı moda gətir“): tab zolağı və
+    // axtarış+şəhər sətri SABİT deyil — hər görünüşün LazyColumn-unun İLK
+    // elementləridir, məzmunla birgə sürüşür (D-029 pinned-axtarış dili
+    // ləğv; tab keçidi eyni fade-through qalır — D-113).
+    AnimatedContent(
+        targetState = view,
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            // D-113 (direktiv: „tablar arası keçiş animasiyasını
+            // dəyişdir“): spring-slide əvəzinə SÜRƏTLİ FADE — köhnə
+            // görüntü 150ms-də yox olur (yavaş spring-də köhnə səhifə
+            // gözlədirdi); GİRİŞ 220ms ease ilə yumşaq qalır.
+            (fadeIn(tween(220, easing = Motion.ease)))
+                .togetherWith(fadeOut(tween(150)))
+        },
+        label = "feedTabs",
+    ) { v ->
+        val tabs: @Composable () -> Unit = {
+            ViewTabs(
+                active = v,
+                onChanged = { view = it; onViewChange(it) },
+                horizontal = 0.dp,
+            )
+        }
+        if (v == 0) {
+            ForYouView(engine, nav, focus, search = search, onSearchChange = { search = it },
+                onOpenEvents = { view = 1; onViewChange(1) }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat,
+                tabs = tabs)
+        } else {
+            EventsScreen(engine, nav, focus, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat,
+                tabs = tabs)
         }
     }
 }
 
 /** Daxili tab zolağı — "Sənin üçün | Tədbirlər" (Instagram-vari üst tablar).
  *  D-090: arxa boz track SİLİNDİ (100% şəffaf) — aktiv ağ kapsul qalır,
- *  pill-lərin arasındakı "boz qalıntı" artıq görünmür. */
+ *  pill-lərin arasındakı "boz qalıntı" artıq görünmür.
+ *  D-125: [horizontal] — LC contentPadding içində olduqda 0dp (ötürülür). */
 @Composable
-private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
+private fun ViewTabs(active: Int, onChanged: (Int) -> Unit, horizontal: Dp = 20.dp) {
     val tabs = listOf(
         Triple(Icons.Outlined.AutoAwesome, Icons.Rounded.AutoAwesome, "Sənin üçün"),
         Triple(Icons.Outlined.Event, Icons.Rounded.Event, "Tədbirlər"),
@@ -152,7 +166,7 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 6.dp)
+            .padding(start = horizontal, end = horizontal, top = 10.dp, bottom = 6.dp)
             .background(androidx.compose.ui.graphics.Color.Transparent, RoundedCornerShape(Q.rPill))
             .padding(4.dp)
     ) {
@@ -169,13 +183,13 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         if (isActive) activeIcon else icon, null,
-                        tint = if (isActive) Q.primary else Q.mutedFg,
+                        tint = if (isActive) Q.primaryText else Q.mutedFg,
                         modifier = Modifier.height(17.dp),
                     )
                     Spacer(Modifier.width(7.dp))
                     Text(
                         label, maxLines = 1,
-                        style = T.h3.copy(fontWeight = if (isActive) FontWeight.W800 else FontWeight.W500, color = if (isActive) Q.primary else Q.mutedFg),
+                        style = T.h3.copy(fontWeight = if (isActive) FontWeight.W800 else FontWeight.W500, color = if (isActive) Q.primaryText else Q.mutedFg),
                     )
                 }
             }
@@ -183,7 +197,8 @@ private fun ViewTabs(active: Int, onChanged: (Int) -> Unit) {
     }
 }
 
-/** "Sənin üçün" görünüşü — Instagram-paradigmalı axın. */
+/** "Sənin üçün" görünüşü — Instagram-paradigmalı axın.
+ *  D-125: [tabs] — üst tab zolağı məzmunla birgə sürüşür (pinned deyil). */
 @Composable
 private fun ForYouView(
     engine: AppEngine,
@@ -194,6 +209,7 @@ private fun ForYouView(
     onOpenEvents: () -> Unit,
     onFinishActivity: (QoshulEvent) -> Unit,
     onOpenChat: (QoshulEvent) -> Unit,
+    tabs: @Composable () -> Unit,
 ) {
     val st by engine.state.collectAsStateWithLifecycle()
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
@@ -217,27 +233,33 @@ private fun ForYouView(
         }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        // — sabit axtarış (D-029) + şəhər həbi (D-115: salamlaşma bloku
-        // ləğv olundu — şəhər seçimi axtarış sətirində qalır) —
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp),
-        ) {
-            Box(Modifier.weight(1f)) {
-                SearchBarField(
-                    value = search, onValueChange = onSearchChange,
-                    hint = "Məkan və ya insan axtar...",
-                )
+    // D-125: tablar + axtarış + şəhər həbi məzmunla BİRGƏ sürüşür — sabit
+    // başlıq bloku YOX (köhnə Column+pinned-Row ləğv; axtarışın üstündəki
+    // 6+10dp ritm axtarış sətrinin bottom-16dp-də qorunub).
+    LazyColumn(
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
+        ),
+    ) {
+        item(key = "feedTabs") { tabs() }
+        item(key = "feedSearch") {
+            // — axtarış + şəhər həbi (D-115: şəhər seçimi axtarış sətirində) —
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 16.dp),
+            ) {
+                Box(Modifier.weight(1f)) {
+                    SearchBarField(
+                        value = search, onValueChange = onSearchChange,
+                        hint = "Məkan və ya insan axtar...",
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                CityPill(city = st.city, onClick = { cityOpen = true })
             }
-            Spacer(Modifier.width(10.dp))
-            CityPill(city = st.city, onClick = { cityOpen = true })
         }
-        LazyColumn(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, top = 10.dp, bottom = 132.dp
-            ),
-        ) {
             // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
             val active = engine.activeEvents
             if (active.isNotEmpty()) {
@@ -389,12 +411,11 @@ private fun ForYouView(
                     title = "Eyni maraqlar, yeni tanışlıqlar",
                     subtitle = "Sevdiyin məkanlarda görüş, əlavə XP qazan.",
                     onClick = { nav.push(Route.Partners) },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
             }
             item { SafetyNote() }
         }
-    }
 
     // — modal sheet-lər (D-055/D-056) —
     if (cityOpen) {
@@ -428,7 +449,7 @@ private fun CityPill(city: String, onClick: () -> Unit) {
             .border(1.dp, Q.border, RoundedCornerShape(Q.rPill))
             .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
-        Icon(Icons.Filled.LocationOn, null, tint = Q.primary, modifier = Modifier.height(13.dp))
+        Icon(Icons.Filled.LocationOn, null, tint = Q.primaryText, modifier = Modifier.height(13.dp))
         Spacer(Modifier.width(5.dp))
         Text(city, style = T.metaBold)
         Icon(Icons.Filled.KeyboardArrowDown, null, tint = Q.mutedFg, modifier = Modifier.height(16.dp))
@@ -451,9 +472,9 @@ private fun AiPickCard(event: QoshulEvent, reason: String, joined: Boolean, onCl
             .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(14.dp))
+            Icon(Icons.Rounded.AutoAwesome, null, tint = Q.primaryText, modifier = Modifier.height(14.dp))
             Spacer(Modifier.width(6.dp))
-            Text("AI tövsiyəsi", style = T.badge.copy(fontWeight = FontWeight.W800, color = Q.primary))
+            Text("AI tövsiyəsi", style = T.badge.copy(fontWeight = FontWeight.W800, color = Q.primaryText))
         }
         Spacer(Modifier.height(8.dp))
         // D-057: 14.5sp — 232dp kartda 2 sətirə rahat yerləşir (16sp-də
@@ -467,12 +488,12 @@ private fun AiPickCard(event: QoshulEvent, reason: String, joined: Boolean, onCl
             style = T.meta.copy(lineHeight = 17.sp))
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.Schedule, null, tint = if (joined) Q.primary else Q.mutedFg, modifier = Modifier.size(13.5.dp))
+            Icon(Icons.Filled.Schedule, null, tint = if (joined) Q.primaryText else Q.mutedFg, modifier = Modifier.size(13.5.dp))
             Spacer(Modifier.width(6.dp))
             Text(
                 if (joined) "Qoşulsan · ${event.time}" else "${event.date} · ${event.time}",
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = T.metaSm.copy(fontWeight = FontWeight.W500, color = if (joined) Q.primary else Q.mutedFg),
+                style = T.metaSm.copy(fontWeight = FontWeight.W500, color = if (joined) Q.primaryText else Q.mutedFg),
             )
         }
     }
@@ -529,7 +550,7 @@ private fun LiveEventCard(event: QoshulEvent, joined: Boolean, pending: Boolean,
                         else -> "Bu gün · ${event.time} · ${event.spotsLeft} yer qalıb"
                     },
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = T.metaSm.copy(fontWeight = if (joined) FontWeight.W700 else FontWeight.W500, color = if (joined) Q.primary else Q.mutedFg),
+                    style = T.metaSm.copy(fontWeight = if (joined) FontWeight.W700 else FontWeight.W500, color = if (joined) Q.primaryText else Q.mutedFg),
                 )
             }
         }

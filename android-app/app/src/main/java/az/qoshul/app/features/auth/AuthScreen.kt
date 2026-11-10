@@ -393,7 +393,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     }
 }
 
-private fun qTextButton() = T.bodyXs.copy(color = Q.primary)
+private fun qTextButton() = T.bodyXs.copy(color = Q.primaryText)
 
 /** Vahid mətn sahəsi (theme inputDecorationTheme portu). */
 @Composable
@@ -429,7 +429,7 @@ fun QoshulTextField(
 fun qoshulTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = Q.card,
     unfocusedContainerColor = Q.card,
-    focusedBorderColor = Q.primary,
+    focusedBorderColor = Q.primaryText,
     unfocusedBorderColor = Q.border,
     focusedTextColor = Q.foreground,
     unfocusedTextColor = Q.foreground,

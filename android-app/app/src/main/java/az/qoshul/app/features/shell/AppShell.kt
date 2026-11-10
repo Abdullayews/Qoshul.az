@@ -820,7 +820,7 @@ private fun LiquidNavItem(
         label = "navIconDip",
     )
     val tint by androidx.compose.animation.animateColorAsState(
-        targetValue = if (active) Q.primary else Q.mutedFg,
+        targetValue = if (active) Q.primaryText else Q.mutedFg,
         animationSpec = tween(Motion.D2), label = "navColor",
     )
     Column(
@@ -840,7 +840,7 @@ private fun LiquidNavItem(
             label,
             style = T.metaSm.copy(
                 fontWeight = if (active) FontWeight.W700 else FontWeight.W500,
-                color = if (active) Q.primary else Q.mutedFg,
+                color = if (active) Q.primaryText else Q.mutedFg,
             ),
         )
     }

@@ -94,7 +94,7 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             .padding(horizontal = 12.dp, vertical = 12.dp),
                         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
                     ) {
-                        Text(c.name, style = T.personName.copy(fontWeight = if (active) FontWeight.W700 else FontWeight.W400, color = if (active) Q.primary else Q.foreground))
+                        Text(c.name, style = T.personName.copy(fontWeight = if (active) FontWeight.W700 else FontWeight.W400, color = if (active) Q.primaryText else Q.foreground))
                         Text(c.region, style = T.meta)
                     }
                 }

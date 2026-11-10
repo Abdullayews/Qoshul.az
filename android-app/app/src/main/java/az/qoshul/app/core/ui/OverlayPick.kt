@@ -241,7 +241,7 @@ fun SelectBoxTrigger(
                 .background(if (open) Q.secondary else Q.card, RoundedCornerShape(Q.rMd.dp))
                 .border(
                     if (open) 1.2.dp else 1.dp,
-                    if (open) Q.primary else Q.border,
+                    if (open) Q.primaryText else Q.border,
                     RoundedCornerShape(Q.rMd.dp),
                 )
                 .padding(horizontal = 13.dp, vertical = 12.dp),
@@ -249,7 +249,7 @@ fun SelectBoxTrigger(
             if (icon != null) {
                 Icon2(
                     icon, null,
-                    tint = if (open) Q.primary else Q.mutedFg,
+                    tint = if (open) Q.primaryText else Q.mutedFg,
                     size = 16.dp,
                 )
                 Spacer(Modifier.width(8.dp))
@@ -259,7 +259,7 @@ fun SelectBoxTrigger(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = T.input.copy(
-                    color = if (open) Q.primary else Q.foreground,
+                    color = if (open) Q.primaryText else Q.foreground,
                     fontWeight = if (open) FontWeight.W700 else FontWeight.W600,
                 ),
                 modifier = Modifier.weight(1f),
@@ -267,7 +267,7 @@ fun SelectBoxTrigger(
             Spacer(Modifier.width(4.dp))
             Icon2(
                 Icons.Filled.ExpandMore, if (open) "bağla" else "seç",
-                tint = if (open) Q.primary else Q.mutedFg,
+                tint = if (open) Q.primaryText else Q.mutedFg,
                 size = 18.dp,
                 rotation = chev,
             )
@@ -429,7 +429,7 @@ fun PickerPanel(
                             RoundedCornerShape(16.dp),
                         )
                         .then(
-                            if (sel) Modifier.border(1.2.dp, Q.primary, RoundedCornerShape(16.dp))
+                            if (sel) Modifier.border(1.2.dp, Q.primaryText, RoundedCornerShape(16.dp))
                             else Modifier
                         )
                         .padding(horizontal = 8.dp, vertical = 8.dp),
@@ -459,7 +459,7 @@ fun PickerPanel(
                             overflow = TextOverflow.Ellipsis,
                             style = T.metaBold.copy(
                                 fontWeight = if (sel) FontWeight.W700 else FontWeight.W600,
-                                color = if (sel) Q.primary else Q.foreground,
+                                color = if (sel) Q.primaryText else Q.foreground,
                             ),
                         )
                         if (opt.description != null) {
@@ -475,7 +475,7 @@ fun PickerPanel(
                     if (sel) {
                         Spacer(Modifier.width(8.dp))
                         Icon2(
-                            Icons.Filled.Check, "seçilib", tint = Q.primary,
+                            Icons.Filled.Check, "seçilib", tint = Q.primaryText,
                             size = 18.dp,
                         )
                     }

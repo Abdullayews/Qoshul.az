@@ -159,9 +159,9 @@ fun ProfileScreen(
                                 .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 9.dp, vertical = 6.dp),
                         ) {
-                            Icon(Icons.Filled.Verified, null, tint = Q.primary, modifier = Modifier.size(12.dp))
+                            Icon(Icons.Filled.Verified, null, tint = Q.primaryText, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Təsdiqlənmiş", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.primary))
+                            Text("Təsdiqlənmiş", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.primaryText))
                         }
                     }
                 }
@@ -184,7 +184,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     st.interests.forEach { i ->
-                        Text(i, style = T.chipXs.copy(color = Q.primary),
+                        Text(i, style = T.chipXs.copy(color = Q.primaryText),
                             modifier = Modifier
                                 .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 11.dp, vertical = 7.dp))
@@ -202,7 +202,7 @@ fun ProfileScreen(
                     title = "Şəxsiyyət testi",
                     subtitle = "10 sual · 2 dəqiqə. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 XP.",
                     onClick = { nav.push(Route.Quiz) },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
             }
         } else {
@@ -310,7 +310,7 @@ fun ProfileScreen(
                 Row(Modifier.padding(bottom = 8.dp)) {
                     Icon(
                         if (earned) Icons.Filled.CheckCircle else Icons.Outlined.Circle, null,
-                        tint = if (earned) Q.primary else Q.mutedFg, modifier = Modifier.size(14.dp),
+                        tint = if (earned) Q.primaryText else Q.mutedFg, modifier = Modifier.size(14.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text("${b.name} — ${b.description}",
@@ -379,7 +379,7 @@ private fun QuickCard(
             .pressable(onClick = onClick)
             .padding(13.dp),
     ) {
-        Icon(icon, null, tint = Q.primary, modifier = Modifier.size(19.dp))
+        Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(19.dp))
         Spacer(Modifier.width(10.dp))
         Column {
             Text(title, style = T.metaBold)
@@ -415,7 +415,7 @@ private fun Modifier.androidxAvatarRing(): Modifier = this.then(
 )
 
 private fun Modifier.androidxGreenRing(): Modifier = this.then(
-    Modifier.border(2.dp, Q.primary, CircleShape)
+    Modifier.border(2.dp, Q.primaryText, CircleShape)
 )
 
 private fun Modifier.androidxAvatarClip(): Modifier =

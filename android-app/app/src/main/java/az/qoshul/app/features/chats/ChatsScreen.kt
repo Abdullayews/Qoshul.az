@@ -190,7 +190,7 @@ fun ChatsScreen(engine: AppEngine, chatFocus: ChatFocusState? = null) {
                         ) {
                             RadioButton(
                                 selected = reason == r, onClick = { reason = r },
-                                colors = RadioButtonDefaults.colors(selectedColor = Q.primary),
+                                colors = RadioButtonDefaults.colors(selectedColor = Q.primaryText),
                             )
                             Text(r, style = T.bodyXs)
                         }
@@ -366,7 +366,7 @@ private fun ChatView(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Geri", tint = Q.primary, modifier = Modifier.size(22.dp))
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Geri", tint = Q.primaryText, modifier = Modifier.size(22.dp))
             }
             Image(
                 painter = imagePaint(imageKey), contentDescription = title,
@@ -380,9 +380,9 @@ private fun ChatView(
                 Text(subtitle, style = T.metaSm)
                 if (typing) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TypingDots(color = Q.primary, size = 4f)
+                        TypingDots(color = Q.primaryText, size = 4f)
                         Spacer(Modifier.width(5.dp))
-                        Text("yazır...", style = T.metaSm.copy(color = Q.primary))
+                        Text("yazır...", style = T.metaSm.copy(color = Q.primaryText))
                     }
                 }
             }
@@ -465,7 +465,7 @@ private fun ChatView(
                     quickReplies.forEach { qr ->
                         Text(
                             qr,
-                            style = T.label.copy(color = Q.primary),
+                            style = T.label.copy(color = Q.primaryText),
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .androidxChatTap { sendAction(qr) }
@@ -515,13 +515,13 @@ private fun ComposerField(
         onValueChange = onValueChange,
         singleLine = true,
         textStyle = T.input.copy(color = Q.foreground),
-        cursorBrush = SolidColor(Q.primary),
+        cursorBrush = SolidColor(Q.primaryText),
         modifier = modifier
             .onFocusChanged { focused = it.isFocused }
             .background(if (focused) Q.card else Q.muted, RoundedCornerShape(Q.rPill))
             .border(
                 if (focused) 1.4.dp else 1.dp,
-                if (focused) Q.primary else Color.Transparent,
+                if (focused) Q.primaryText else Color.Transparent,
                 RoundedCornerShape(Q.rPill),
             ),
         decorationBox = { inner ->
@@ -552,7 +552,7 @@ private fun ComposerField(
 private fun SendFab(enabled: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val bg by animateColorAsState(
-        targetValue = if (enabled) Q.primary else Q.muted,
+        targetValue = if (enabled) Q.primaryText else Q.muted,
         animationSpec = tween(Motion.D2), label = "sendBg",
     )
     val fg by animateColorAsState(

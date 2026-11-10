@@ -94,7 +94,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                         .size(96.dp)
                         .background(Q.card, CircleShape)
                         .border(4.dp, Q.card, CircleShape)
-                        .border(2.dp, Q.primary, CircleShape),
+                        .border(2.dp, Q.primaryText, CircleShape),
                 ) {
                     Image(
                         painter = imagePaint(avatar),
@@ -132,7 +132,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                                 .size(52.dp)
                                 .clip(CircleShape)
                                 .then(
-                                    if (sel) Modifier.border(2.dp, Q.primary, CircleShape)
+                                    if (sel) Modifier.border(2.dp, Q.primaryText, CircleShape)
                                     else Modifier
                                 ),
                         )
@@ -141,7 +141,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                             if (sel) {
                                 Icon(
                                     Icons.Filled.CheckCircle, null,
-                                    tint = Q.primary, modifier = Modifier.size(13.dp),
+                                    tint = Q.primaryText, modifier = Modifier.size(13.dp),
                                 )
                                 Spacer(Modifier.width(3.dp))
                             }
@@ -149,7 +149,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                                 label,
                                 style = T.chipXs.copy(
                                     fontWeight = if (sel) FontWeight.W700 else FontWeight.W500,
-                                    color = if (sel) Q.primary else Q.mutedFg,
+                                    color = if (sel) Q.primaryText else Q.mutedFg,
                                 ),
                             )
                         }
@@ -211,7 +211,7 @@ private fun Modifier.androidxAvatarPick(
         )
         .border(
             if (selected) 1.2.dp else 1.dp,
-            if (selected) Q.primary else Q.border,
+            if (selected) Q.primaryText else Q.border,
             RoundedCornerShape(Q.rLg.dp),
         )
 )

@@ -110,7 +110,7 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                         title = "Görüş təşkil et — XP qazan",
                         subtitle = "Tərəfdaş məkanda tədbir yarat: qoşulma +10, check-in +40 XP.",
                         onClick = { onOpenCreateAtVenue(firstVenue) },
-                        trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                        trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                     )
                 }
             }
@@ -121,7 +121,7 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     title = "Öz məkanını əlavə et",
                     subtitle = "Biznes kimi qeydiyyatdan keç, yeni müştərilər qazan.",
                     onClick = { partnerInfoOpen = true },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
             }
             item {
@@ -130,7 +130,7 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                     title = "Biznes rejimi — XP endirimi ver",
                     subtitle = "İşçi modu: müştəri XP kodunu oxu, hesabı yaz, endirim ver.",
                     onClick = { businessOpen = true },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
             }
             // D-061: server rejimində siyahı boş ola bilər — placeholder
@@ -190,9 +190,9 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
         )
         Column(Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Storefront, null, tint = Q.primary, modifier = Modifier.size(11.dp))
+                Icon(Icons.Filled.Storefront, null, tint = Q.primaryText, modifier = Modifier.size(11.dp))
                 Spacer(Modifier.width(4.dp))
-                Text(p.category, style = T.metaSm.copy(fontWeight = FontWeight.W700, color = Q.primary))
+                Text(p.category, style = T.metaSm.copy(fontWeight = FontWeight.W700, color = Q.primaryText))
             }
             Spacer(Modifier.height(8.dp))
             Text(p.name, style = T.h2)
@@ -210,8 +210,8 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(deal, style = T.bodySmW.copy(color = Q.primary))
-                    Text(p.hours, style = T.bodySm.copy(color = Q.primary))
+                    Text(deal, style = T.bodySmW.copy(color = Q.primaryText))
+                    Text(p.hours, style = T.bodySm.copy(color = Q.primaryText))
                 }
             }
             Spacer(Modifier.height(16.dp))
@@ -271,7 +271,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                                 val sel = venueId == v.id
                                 Text(
                                     v.name,
-                                    style = T.bodySmBold.copy(fontWeight = if (sel) FontWeight.W700 else FontWeight.W400, color = if (sel) Q.primary else Q.foreground),
+                                    style = T.bodySmBold.copy(fontWeight = if (sel) FontWeight.W700 else FontWeight.W400, color = if (sel) Q.primaryText else Q.foreground),
                                     modifier = Modifier
                                         .padding(end = 8.dp, bottom = 8.dp)
                                         .androidxVenueChip(sel) { venueId = v.id; scanFailed = false }
@@ -338,7 +338,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             }
                             val bal = countUpAsState(acct.balance)
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("$bal XP", style = T.titleLg.copy(color = Q.primary))
+                                Text("$bal XP", style = T.titleLg.copy(color = Q.primaryText))
                                 Text("balans", style = T.metaSm)
                             }
                         }
@@ -398,7 +398,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             Text("Endirim", style = T.bodySmBold)
                             Text(
                                 if (p.ok) "− ${String.format("%.2f", p.discount)} ₼" else "—",
-                                style = T.personName.copy(fontWeight = FontWeight.W800, color = if (p.ok) Q.primary else Q.destructive),
+                                style = T.personName.copy(fontWeight = FontWeight.W800, color = if (p.ok) Q.primaryText else Q.destructive),
                             )
                         }
                         Spacer(Modifier.height(5.dp))
@@ -529,7 +529,7 @@ private fun Modifier.androidxChipClick(onClick: () -> Unit): Modifier =
 private fun Modifier.androidxVenueChipBorder(sel: Boolean): Modifier = this.then(
     Modifier.border(
         1.4.dp.takeIf { sel } ?: 1.dp,
-        if (sel) Q.primary else Q.border,
+        if (sel) Q.primaryText else Q.border,
         RoundedCornerShape(Q.rMd.dp),
     )
 )

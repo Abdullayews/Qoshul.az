@@ -294,7 +294,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     Icon(
                         if (st.mapVisibility == MapVisibility.FRIENDS) Icons.Filled.Group
                         else Icons.Filled.VisibilityOff, null,
-                        tint = Q.primary, modifier = Modifier.size(12.dp),
+                        tint = Q.primaryText, modifier = Modifier.size(12.dp),
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
@@ -426,7 +426,7 @@ private fun BottomCardButton(
 ) {
     // D-121: pressable dili — pressScale + haptik + indication=null
     val interaction = remember { MutableInteractionSource() }
-    val bg = if (primary) Q.primary else Q.mapPin.copy(alpha = 0.5f)
+    val bg = if (primary) Q.primaryText else Q.mapPin.copy(alpha = 0.5f)
     val fg = if (primary) Q.primaryFg else Q.foreground
     val line = if (fill) Modifier.fillMaxWidth() else Modifier.fillMaxWidth(0.42f)
     Box(
@@ -461,7 +461,7 @@ private fun Modifier.androidxChipBg(active: Boolean): Modifier = this.then(
         .background(if (active) Q.primary.copy(alpha = 0.88f) else Q.mapPin.copy(alpha = 0.42f), RoundedCornerShape(Q.rMd.dp))
         .border(
             if (active) 1.2.dp else 1.dp,
-            if (active) Q.primary else Q.mapPin.copy(alpha = 0.6f),
+            if (active) Q.primaryText else Q.mapPin.copy(alpha = 0.6f),
             RoundedCornerShape(Q.rMd.dp),
         )
 )

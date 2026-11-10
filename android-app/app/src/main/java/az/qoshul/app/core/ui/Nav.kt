@@ -155,7 +155,7 @@ fun PushScreenScaffold(
             IconButton(onClick = onBack) {
                 Icon(
                     Icons.Filled.ChevronLeft, contentDescription = "Geri",
-                    tint = Q.primary,
+                    tint = Q.primaryText,
                 )
             }
             Text(

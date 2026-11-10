@@ -208,7 +208,7 @@ fun CreateEventSheet(
                         style = T.bodySmSemi)
                     Spacer(Modifier.height(7.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.AutoFixHigh, null, tint = Q.primary, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Filled.AutoFixHigh, null, tint = Q.primaryText, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(6.dp))
                         Box(Modifier.weight(1f)) {
                             QoshulTextField(value = idea, onValueChange = { idea = it },
@@ -224,7 +224,7 @@ fun CreateEventSheet(
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(Q.rPill),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Q.secondary, contentColor = Q.primary,
+                            containerColor = Q.secondary, contentColor = Q.primaryText,
                             disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
                     ) {
                         if (aiBusy) {
@@ -348,8 +348,8 @@ fun CreateEventSheet(
                 Box(
                     Modifier
                         .size(20.dp)
-                        .background(if (approval) Q.primary else Q.card, RoundedCornerShape(Q.rSm.dp))
-                        .border(1.4.dp, if (approval) Q.primary else Q.border, RoundedCornerShape(Q.rSm.dp)),
+                        .background(if (approval) Q.primaryText else Q.card, RoundedCornerShape(Q.rSm.dp))
+                        .border(1.4.dp, if (approval) Q.primaryText else Q.border, RoundedCornerShape(Q.rSm.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (approval) Icon(Icons.Filled.CheckCircle, null, tint = Q.primaryFg, modifier = Modifier.size(14.dp))
@@ -532,7 +532,7 @@ fun DropdownLine(
             )
             Icon(
                 Icons.Filled.ExpandMore, if (open) "bağla" else "seç",
-                tint = if (open) Q.primary else Q.mutedFg,
+                tint = if (open) Q.primaryText else Q.mutedFg,
                 modifier = Modifier.size(18.dp).rotate(chev),
             )
         }
@@ -644,7 +644,7 @@ fun FinishActivitySheet(
                                     .androidxPhotoTile(sel) { sharedPhotos.value = if (sel) sharedPhotos.value - i else sharedPhotos.value + i },
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (sel) Icon(Icons.Filled.CheckCircle, null, tint = Q.primary, modifier = Modifier.size(30.dp))
+                                if (sel) Icon(Icons.Filled.CheckCircle, null, tint = Q.primaryText, modifier = Modifier.size(30.dp))
                                 else Icon(Icons.Filled.AddPhotoAlternate, null,
                                     tint = Q.mutedFg.copy(alpha = 0.7f), modifier = Modifier.size(26.dp))
                             }
@@ -704,7 +704,7 @@ fun FinishActivitySheet(
                             }
                             Icon(
                                 if (sel) Icons.Filled.CheckCircle else Icons.Outlined.Circle, null,
-                                tint = if (sel) Q.primary else Q.mutedFg, modifier = Modifier.size(21.dp),
+                                tint = if (sel) Q.primaryText else Q.mutedFg, modifier = Modifier.size(21.dp),
                             )
                         }
                     }
@@ -803,10 +803,10 @@ fun FinishActivitySheet(
 @Composable
 private fun XpRow(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = Q.primary, modifier = Modifier.size(14.dp))
+        Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(8.dp))
         Text(label, style = T.bodySm.copy(color = Q.mutedFg), modifier = Modifier.weight(1f))
-        Text(value, style = T.metaBold.copy(color = Q.primary))
+        Text(value, style = T.metaBold.copy(color = Q.primaryText))
     }
 }
 
@@ -817,7 +817,7 @@ private fun KvRow(k: String, v: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(k, style = T.bodySm.copy(color = Q.mutedFg))
-        Text(v, style = T.bodySmBold.copy(color = Q.primary))
+        Text(v, style = T.bodySmBold.copy(color = Q.primaryText))
     }
 }
 
@@ -827,7 +827,7 @@ private fun Modifier.androidxPhotoTile(sel: Boolean, onClick: () -> Unit): Modif
         .background(if (sel) Q.secondary else Q.muted, RoundedCornerShape(Q.rMd.dp))
         .border(
             if (sel) 2.dp else 1.dp,
-            if (sel) Q.primary else Q.border,
+            if (sel) Q.primaryText else Q.border,
             RoundedCornerShape(Q.rMd.dp),
         )
 )
@@ -838,7 +838,7 @@ private fun Modifier.androidxTagRow(sel: Boolean, onClick: () -> Unit): Modifier
         .background(if (sel) Q.secondary else Q.card, RoundedCornerShape(Q.rMd.dp))
         .border(
             if (sel) 2.dp else 1.dp,
-            if (sel) Q.primary else Q.border,
+            if (sel) Q.primaryText else Q.border,
             RoundedCornerShape(Q.rMd.dp),
         )
 )

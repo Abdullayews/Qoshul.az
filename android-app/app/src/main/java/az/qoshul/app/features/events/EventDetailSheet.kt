@@ -121,7 +121,7 @@ fun EventDetailSheet(
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp),
                 ) {
                     event.tags.forEach { tag ->
-                        Text(tag, style = T.metaSm.copy(color = Q.primary),
+                        Text(tag, style = T.metaSm.copy(color = Q.primaryText),
                             modifier = Modifier
                                 .background(Q.secondary, RoundedCornerShape(Q.rPill))
                                 .padding(horizontal = 10.dp, vertical = 6.dp))
@@ -194,7 +194,7 @@ fun EventDetailSheet(
                     (1..5).forEach { n ->
                         Icon(
                             Icons.Filled.Star, null,
-                            tint = if (n <= rating) Q.primary else Q.mutedFg,
+                            tint = if (n <= rating) Q.primaryText else Q.mutedFg,
                             modifier = Modifier
                                 .size(28.dp)
                                 .androidxTapStar { rating = n }
@@ -215,7 +215,7 @@ fun EventDetailSheet(
             if (reviewSent) {
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Check, null, tint = Q.primary, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Filled.Check, null, tint = Q.primaryText, modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("Rəyin üçün təşəkkürlər! (+${XpRules.REVIEW_XP} XP)",
                         style = T.bodySm.copy(color = Q.mutedFg))
@@ -233,7 +233,7 @@ fun EventDetailSheet(
                         containerColor = Q.card, contentColor = Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
                 ) {
-                    Icon(Icons.Filled.LocationOn, null, tint = Q.primary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.LocationOn, null, tint = Q.primaryText, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Yol göstər (${event.distance} km)", style = T.button)
                 }
@@ -250,13 +250,13 @@ fun EventDetailSheet(
                     shape = RoundedCornerShape(Q.rPill),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = if (reminded) Q.secondary else Q.card,
-                        contentColor = if (reminded) Q.primary else Q.foreground),
+                        contentColor = if (reminded) Q.primaryText else Q.foreground),
                     border = androidx.compose.foundation.BorderStroke(
-                        1.dp, if (reminded) Q.primary else Q.border),
+                        1.dp, if (reminded) Q.primaryText else Q.border),
                 ) {
                     Icon(
                         if (reminded) Icons.Filled.CheckCircle else Icons.Filled.NotificationsActive,
-                        null, tint = Q.primary, modifier = Modifier.size(16.dp),
+                        null, tint = Q.primaryText, modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(

@@ -189,7 +189,7 @@ fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit =
                         Box(
                             Modifier.size(68.dp).background(Q.secondary, androidx.compose.foundation.shape.CircleShape),
                             contentAlignment = Alignment.Center,
-                        ) { Icon(Icons.Filled.Favorite, null, tint = Q.primary, modifier = Modifier.size(32.dp)) }
+                        ) { Icon(Icons.Filled.Favorite, null, tint = Q.primaryText, modifier = Modifier.size(32.dp)) }
                     }
                     Spacer(Modifier.height(14.dp))
                     Text("Match!", style = T.statSm)
@@ -251,7 +251,7 @@ fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit =
                         ) {
                             RadioButton(
                                 selected = reason == r, onClick = { reason = r },
-                                colors = RadioButtonDefaults.colors(selectedColor = Q.primary),
+                                colors = RadioButtonDefaults.colors(selectedColor = Q.primaryText),
                             )
                             Text(r, style = T.bodyXs)
                         }
@@ -409,12 +409,12 @@ private fun CardFace(
         if (dragX > 12f) {
             Text(
                 "MARAQLIYAM",
-                style = T.h3.copy(color = Q.primary),
+                style = T.h3.copy(color = Q.primaryText),
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 18.dp, top = 34.dp)
                     .graphicsLayer { rotationZ = -10f }
-                    .androidxStampBorder(Q.primary)
+                    .androidxStampBorder(Q.primaryText)
                     .padding(horizontal = 10.dp, vertical = 5.dp),
             )
         } else if (dragX < -12f) {
@@ -500,7 +500,7 @@ private fun CardFace(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth().androidxPassTap(onInterested),
                         ) {
-                            Icon(Icons.Filled.Favorite, null, tint = Q.primary, modifier = Modifier.size(17.dp))
+                            Icon(Icons.Filled.Favorite, null, tint = Q.primaryText, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Maraqlıyam", style = T.glassText(size = 13))
                         }

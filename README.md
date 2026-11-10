@@ -58,7 +58,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Xəritə | **Google Maps SDK** (maps-compose 9.0.1 — ƏSAS backend, D-109; `MAPS_API_KEY` ilə) — açarsızda **MapLibre + OpenFreeMap** avtomatik fallback (D-048) |
 | Naviqasiya barı | **FloatingTabBar** (iOS 26, D-105/106) + **əsl liquid glass** — Kyant0/backdrop, Echo-Music recipesi (D-107; API 31+); **5 slot yan-yana** — Ana menyu · Xəritə · Yarat · Profil · Söhbətlər; yığılmada iki dairə kənarlarda (D-111) |
 | QR (M3) | **Rust qrcodegen 1.8.0** (Nayuki rəsmi Rust portu) JNI + quircs dekod sübutu (D-081) |
-| Test | **221 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) + glass recipe/backend seam + keçid (D-107/D-108/D-109) + dizayn sistemi (DesignSettingsTest, D-118/D-119) |
+| Test | **229 JVM (0 fail, 13 Rust-paritet skip — host .so lokalda) + 35 Rust** — məntiq + Robolectric UI + overlay pick (PickerOverlayTest, D-089) + sync güzgü + Rust pariteti + quircs QR sübutu (D-080/D-081) + şrift audit (D-100) + glass recipe/backend seam + keçid (D-107/D-108/D-109) + dizayn sistemi (DesignSettingsTest, D-118/D-119) + WCAG kontrast sübutu (PaletteContrastTest, D-123) |
 | APK | minSdk 24 · targetSdk 36 · R8 full + resource shrink · baseline profile · **Open Sans** şrifti (noto-set build + AZ qlifləri, subset 5 çəki — D-100) · adaptiv nav (D-102) · təmiz nav + sabit işıq status bar (D-103/D-104) · iOS 26 FloatingNav + əsl liquid glass + 5-slot (D-105/106/107/111) · Google Maps əsas backend (D-109) · **dinamik palitra — Yaşıl #008B2D / Qızılı × Ağ/Qara mod** (D-118/D-119) · selector box (D-110) · profil redaktə ekranı (D-112) · kalendar/saat pickers (D-114) · **istifadəçi ikonu (jxl → adaptive + legacy API 24/25)** (D-120) · xəritə overlay təmizliyi + Texture rejimi + düzləşdirmə həbi (D-117) · haptik + pressScale + indication=null (D-121) · 2 fazalı tab keçidi (D-122) |
 | CI | **GitHub Actions** — `native.yml`: SQL lint + testlər + release APK artifaktı |
 
@@ -72,7 +72,7 @@ Qoshul.az/
 │   │                       chats · coupons · events · feed · map · match ·
 │   │                       notifications · onboarding · partners · profile ·
 │   │                       reservations · safety · settings · shell · venues · xp)
-│   └── app/src/test/       221 JVM testi (Robolectric daxil)
+│   └── app/src/test/       229 JVM testi (Robolectric daxil)
 ├── supabase/               M1: sxem + RLS + server qaydaları (D-076/D-077)
 ├── rust-core/              M2-M3: qoshul-core (qaydalar+QR) + qoshul-jni (JNI) + qoshul-fonts (audit)
 ├── service/                M4: axum mikroservis — FCM, joblar, admin API (D-082)

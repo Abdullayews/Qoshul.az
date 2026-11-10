@@ -109,7 +109,7 @@ fun SectionHeading(
     ) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) {
-                Icon(icon, null, tint = Q.primary, modifier = Modifier.size(19.dp))
+                Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.width(7.dp))
             }
             Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = T.h2)
@@ -128,10 +128,10 @@ fun SectionLink(text: String, icon: ImageVector? = null, onClick: (() -> Unit)? 
             .clickable(interactionSource = interaction, indication = null) { onClick?.invoke() },
     ) {
         if (icon != null) {
-            Icon(icon, null, tint = Q.primary, modifier = Modifier.size(13.dp))
+            Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(13.dp))
             Spacer(Modifier.width(3.dp))
         }
-        Text(text, style = T.chipXs.copy(fontWeight = FontWeight.W600, color = Q.primary))
+        Text(text, style = T.chipXs.copy(fontWeight = FontWeight.W600, color = Q.primaryText))
     }
 }
 
@@ -223,7 +223,7 @@ fun Segmented(labels: List<String>, active: Int, onChanged: (Int) -> Unit) {
                     label, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = T.chipXs.copy(
                         fontWeight = if (isActive) FontWeight.W700 else FontWeight.W500,
-                        color = if (isActive) Q.primary else Q.mutedFg),
+                        color = if (isActive) Q.primaryText else Q.mutedFg),
                 )
             }
         }
@@ -245,7 +245,7 @@ fun SearchBarField(
         onValueChange = onValueChange,
         singleLine = true,
         textStyle = T.input.copy(color = Q.foreground),
-        cursorBrush = SolidColor(Q.primary),
+        cursorBrush = SolidColor(Q.primaryText),
         modifier = modifier
             .fillMaxWidth()
             .onFocusChanged { focused = it.isFocused },
@@ -258,14 +258,14 @@ fun SearchBarField(
                     .background(Q.card, RoundedCornerShape(16.dp))
                     .border(
                         1.4.dp.takeIf { focused } ?: 1.dp,
-                        if (focused) Q.primary else Q.border,
+                        if (focused) Q.primaryText else Q.border,
                         RoundedCornerShape(16.dp),
                     )
                     .padding(horizontal = 14.dp),
             ) {
                 Icon(
                     Icons.Filled.Search, null,
-                    tint = if (focused) Q.primary else Q.mutedFg,
+                    tint = if (focused) Q.primaryText else Q.mutedFg,
                     modifier = Modifier.size(19.dp),
                 )
                 Spacer(Modifier.width(10.dp))
@@ -307,7 +307,7 @@ fun CategoryChip(
                 RoundedCornerShape(Q.rPill),
             )
             .border(
-                1.dp, if (active) Q.primary else Q.border,
+                1.dp, if (active) Q.primaryText else Q.border,
                 RoundedCornerShape(Q.rPill),
             )
             .padding(horizontal = 14.dp),
@@ -356,7 +356,7 @@ fun CommunityBanner(
                 .background(Q.card, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, null, tint = Q.primary, modifier = Modifier.size(19.dp))
+            Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
@@ -377,7 +377,7 @@ fun AiBox(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .padding(vertical = 10.dp)
             .background(Q.aiBoxBg, RoundedCornerShape(Q.rAiBox.dp))
-            .border(1.dp, Q.primary, RoundedCornerShape(Q.rAiBox.dp))
+            .border(1.dp, Q.primaryText, RoundedCornerShape(Q.rAiBox.dp))
             .padding(12.dp)
     ) { content() }
 }
@@ -392,7 +392,7 @@ fun EmptyState(icon: ImageVector, text: String, action: (@Composable () -> Unit)
             .fillMaxWidth()
             .padding(horizontal = 10.dp, vertical = 45.dp),
     ) {
-        Icon(icon, null, tint = Q.primary, modifier = Modifier.size(38.dp))
+        Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(38.dp))
         Spacer(Modifier.height(14.dp))
         Text(
             text, textAlign = TextAlign.Center,
@@ -416,7 +416,7 @@ fun SafetyNote() {
             .fillMaxWidth()
             .padding(top = 22.dp),
     ) {
-        Icon(Icons.Filled.VerifiedUser, null, tint = Q.primary, modifier = Modifier.size(14.5.dp))
+        Icon(Icons.Filled.VerifiedUser, null, tint = Q.primaryText, modifier = Modifier.size(14.5.dp))
         Spacer(Modifier.width(6.dp))
         Text("Birlikdə daha güvənli, birlikdə daha gözəl.", style = T.chipXs.copy(color = Q.mutedFg))
     }
@@ -479,7 +479,7 @@ fun ChatBubble(sender: String, body: String, mine: Boolean, status: String? = nu
                 )
                 .padding(horizontal = 14.dp, vertical = 11.dp)
         ) {
-            Text(sender, style = T.metaSm.copy(fontWeight = FontWeight.W700, color = Q.primary))
+            Text(sender, style = T.metaSm.copy(fontWeight = FontWeight.W700, color = Q.primaryText))
             Spacer(Modifier.height(3.dp))
             Text(body, style = T.body)
             if (mine && status != null) {
@@ -488,7 +488,7 @@ fun ChatBubble(sender: String, body: String, mine: Boolean, status: String? = nu
                     Icon(
                         if (status == "oxundu") Icons.Filled.DoneAll else Icons.Filled.Done,
                         null,
-                        tint = if (status == "oxundu") Q.primary else Q.mutedFg,
+                        tint = if (status == "oxundu") Q.primaryText else Q.mutedFg,
                         modifier = Modifier.size(12.dp),
                     )
                     Spacer(Modifier.width(3.dp))
@@ -558,7 +558,7 @@ fun ShadedImage(assetKey: String, height: Dp, modifier: Modifier = Modifier) {
 fun ResvStatusChip(status: ResvStatus) {
     val (bg, fg) = when (status) {
         ResvStatus.PENDING -> Q.rankBadgeBg to Q.accentFg
-        ResvStatus.CONFIRMED -> Q.secondary to Q.primary
+        ResvStatus.CONFIRMED -> Q.secondary to Q.primaryText
         ResvStatus.USED, ResvStatus.CANCELLED -> Q.muted to Q.mutedFg
         ResvStatus.NO_SHOW, ResvStatus.REJECTED -> Q.resvRejectedBg to Q.destructive
     }
@@ -596,18 +596,18 @@ fun BadgeChip(badge: BadgeDef, earned: Boolean) {
                 RoundedCornerShape(Q.rPill),
             )
             .border(
-                1.dp, if (earned) Q.primary else Q.border,
+                1.dp, if (earned) Q.primaryText else Q.border,
                 RoundedCornerShape(Q.rPill),
             )
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         Icon(
             if (earned) Icons.Filled.MilitaryTech else Icons.Outlined.MilitaryTech,
-            null, tint = if (earned) Q.primary else Q.mutedFg,
+            null, tint = if (earned) Q.primaryText else Q.mutedFg,
             modifier = Modifier.size(15.5.dp),
         )
         Spacer(Modifier.width(6.dp))
-        Text(badge.name, style = T.chipXs.copy(fontWeight = FontWeight.W700, color = if (earned) Q.primary else Q.mutedFg))
+        Text(badge.name, style = T.chipXs.copy(fontWeight = FontWeight.W700, color = if (earned) Q.primaryText else Q.mutedFg))
     }
 }
 
@@ -789,13 +789,13 @@ fun LogoMark(size: Dp = 56.dp) {
 fun Wordmark(fontSize: Int = 25) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
-            Icons.Filled.Link, null, tint = Q.primary,
+            Icons.Filled.Link, null, tint = Q.primaryText,
             modifier = Modifier
                 .size((fontSize + 2).dp)
                 .androidxScaleRotate(),
         )
         Spacer(Modifier.width(7.dp))
-        Text("qoshul", style = T.brand(fontSize.toDouble(), Q.primary))
+        Text("qoshul", style = T.brand(fontSize.toDouble(), Q.primaryText))
         Text(".az", style = T.brand(fontSize.toDouble(), Q.foreground))
     }
 }

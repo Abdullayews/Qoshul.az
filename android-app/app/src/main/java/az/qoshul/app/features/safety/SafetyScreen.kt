@@ -61,7 +61,7 @@ fun SafetyScreen(nav: NavState) {
                         Modifier.size(34.dp).background(Q.secondary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("${i + 1}", style = T.h3.copy(color = Q.primary))
+                        Text("${i + 1}", style = T.h3.copy(color = Q.primaryText))
                     }
                     Spacer(Modifier.padding(6.dp))
                     Column {

@@ -26,7 +26,9 @@ private fun qoshulColors() = if (Q.isDark) {
         primary = Q.primary,
         onPrimary = Q.primaryFg,
         secondary = Q.secondary,
-        onSecondary = Q.primary,
+        // D-123: onSecondary = secondary konteynerindəki MƏTN — primaryText
+        // (mod-adaptiv oxunaqlı brend tonu), primary dolğusu yox.
+        onSecondary = Q.primaryText,
         surface = Q.card,
         onSurface = Q.foreground,
         surfaceContainerHighest = Q.muted,
@@ -43,7 +45,9 @@ private fun qoshulColors() = if (Q.isDark) {
         primary = Q.primary,
         onPrimary = Q.primaryFg,
         secondary = Q.secondary,
-        onSecondary = Q.primary,
+        // D-123: onSecondary = secondary konteynerindəki MƏTN — primaryText
+        // (mod-adaptiv oxunaqlı brend tonu), primary dolğusu yox.
+        onSecondary = Q.primaryText,
         surface = Q.card,
         onSurface = Q.foreground,
         surfaceContainerHighest = Q.muted,

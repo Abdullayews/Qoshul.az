@@ -83,12 +83,12 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Filled.Toll, null, tint = Q.primary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Toll, null, tint = Q.primaryText, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.padding(6.dp))
                         Text(
                             "Kuponlar obyektin Endirim XP balansından alınır — D-026 ayrı baza " +
                                 "qaydası (Xankəndi XP-si yalnız Xankəndidə işləyir)",
-                            style = T.bodySmSemi.copy(color = Q.primary),
+                            style = T.bodySmSemi.copy(color = Q.primaryText),
                         )
                     }
                     Spacer(Modifier.height(14.dp))
@@ -116,7 +116,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                     unlocked = o.unlockedFor(st.rankIndex),
                                     action = if (o.autoByLevel) {
                                         if (o.unlockedFor(st.rankIndex)) {
-                                            { Icon(Icons.Filled.CheckCircle, null, tint = Q.primary, modifier = Modifier.size(20.dp)) }
+                                            { Icon(Icons.Filled.CheckCircle, null, tint = Q.primaryText, modifier = Modifier.size(20.dp)) }
                                         } else null
                                     } else {
                                         {
@@ -248,7 +248,7 @@ private fun Modifier.androidxCouponCard(active: Boolean): Modifier = this.then(
 private fun Modifier.androidxCouponCardBorder(active: Boolean): Modifier = this.then(
     Modifier.border(
         1.2.dp.takeIf { active } ?: 1.dp,
-        if (active) Q.primary else Q.border,
+        if (active) Q.primaryText else Q.border,
         RoundedCornerShape(Q.rLg.dp),
     )
 )

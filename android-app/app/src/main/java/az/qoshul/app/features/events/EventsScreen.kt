@@ -115,6 +115,9 @@ fun EventsScreen(
     focus: MapFocusState,
     onFinishActivity: (QoshulEvent) -> Unit = {},
     onOpenChat: (QoshulEvent) -> Unit = {},
+    // D-125: üst tab zolağı (FeedScreen-dən) — opsional, LC-nin ilk elementi
+    // kimi məzmunla birgə sürüşür; birbaşa istifadədə (PickerOverlayTest) yoxdur.
+    tabs: (@Composable () -> Unit)? = null,
 ) {
     var tab by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
@@ -153,17 +156,30 @@ fun EventsScreen(
         "Səyahət və digər" to "Səfərlər və digər tədbirlər",
     )
 
+    // D-125 (direktiv: „ana menyuda şəhər və tabların olduğu yeri
+    // sürüşdürərkən sabit yox adi qalacağı moda gətir“): tablar (ötürüldükdə)
+    // və axtarış sətri LC-nin İLK elementləridir — sabit deyil, məzmunla
+    // sürüşür (köhnə Column+pinned-Box ləğv; axtarışın altındakı 6+4dp
+    // ritm bottom-10dp-də qorunub).
     Box(Modifier.fillMaxSize().pickHost(pickHost)) {
-        Column(Modifier.fillMaxSize()) {
-            Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 6.dp)) {
-                SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir axtar...")
+        val st by engine.state.collectAsStateWithLifecycle()
+        LazyColumn(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
+            ),
+        ) {
+            tabs?.let { t ->
+                item(key = "feedTabs") { t() }
             }
-            val st by engine.state.collectAsStateWithLifecycle()
-            LazyColumn(
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 20.dp, end = 20.dp, top = 4.dp, bottom = 132.dp
-                ),
-            ) {
+            item(key = "eventsSearch") {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 10.dp)
+                ) {
+                    SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir axtar...")
+                }
+            }
                 // — kateqoriya çipləri —
                 item {
                     StaggerIn(0) {
@@ -291,12 +307,11 @@ fun EventsScreen(
                             title = "Tədbir yoxdur? Məkan rezerv et",
                             subtitle = "Partnyor məkanlarda stol ayır, QR al və iştirakla XP qazan.",
                             onClick = { nav.push(Route.Partners) },
-                            trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primary, modifier = Modifier.height(20.dp)) },
+                            trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                         )
                     }
                 }
                 item { SafetyNote() }
-            }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(bottom = 120.dp))
         // D-110: kateqoriya paneli — siyahının ÜZƏRİNƏ (root Box son qatı);
@@ -384,7 +399,7 @@ fun EventCard(
                         ) {
                             Icon(
                                 if (saved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                                "Yadda saxla", tint = if (saved) Q.primary else Q.foreground,
+                                "Yadda saxla", tint = if (saved) Q.primaryText else Q.foreground,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -409,12 +424,12 @@ fun EventCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         if (event.category == "Qəhvə") Icons.Filled.LocalCafe else Icons.Filled.Groups,
-                        null, tint = if (event.category == "Qəhvə") Q.accentFg else Q.primary,
+                        null, tint = if (event.category == "Qəhvə") Q.accentFg else Q.primaryText,
                         modifier = Modifier.size(13.dp),
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(event.category, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        style = T.metaSm.copy(fontWeight = FontWeight.W700, color = if (event.category == "Qəhvə") Q.accentFg else Q.primary))
+                        style = T.metaSm.copy(fontWeight = FontWeight.W700, color = if (event.category == "Qəhvə") Q.accentFg else Q.primaryText))
                 }
                 Spacer(Modifier.height(7.dp))
                 Text(event.title, style = T.eventTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -483,7 +498,7 @@ private fun JoinButton(event: QoshulEvent, joined: Boolean, pending: Boolean, on
         shape = RoundedCornerShape(Q.rPill),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (b.secondary) Q.secondary else Q.primary,
-            contentColor = if (b.secondary) Q.primary else Q.primaryFg,
+            contentColor = if (b.secondary) Q.primaryText else Q.primaryFg,
             disabledContainerColor = Q.secondary,
             disabledContentColor = Q.primary,
         ),
@@ -505,9 +520,9 @@ private fun WhiteBadge(icon: ImageVector, label: String, modifier: Modifier = Mo
             .background(Q.card, RoundedCornerShape(9.dp))
             .padding(horizontal = 8.dp, vertical = 5.5.dp),
     ) {
-        Icon(icon, null, tint = Q.primary, modifier = Modifier.size(13.5.dp))
+        Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(13.5.dp))
         Spacer(Modifier.width(4.dp))
-        Text(label, style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.primary))
+        Text(label, style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.primaryText))
     }
 }
 

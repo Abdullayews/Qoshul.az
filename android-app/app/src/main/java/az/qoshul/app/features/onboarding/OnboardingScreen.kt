@@ -170,7 +170,7 @@ private fun WelcomeStep(onNext: () -> Unit) {
                         Modifier.size(84.dp).background(Q.secondary, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(icon, null, tint = Q.primary, modifier = Modifier.size(38.dp))
+                        Icon(icon, null, tint = Q.primaryText, modifier = Modifier.size(38.dp))
                     }
                     Spacer(Modifier.height(28.dp))
                     Text(title, style = T.hero)
@@ -197,7 +197,7 @@ private fun WelcomeStep(onNext: () -> Unit) {
                         .width(w)
                         .height(6.dp)
                         .background(
-                            if (active) Q.primary else Q.border,
+                            if (active) Q.primaryText else Q.border,
                             RoundedCornerShape(3.dp),
                         )
                 )
@@ -311,7 +311,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                             )
                             .border(
                                 1.4.dp.takeIf { i <= photos } ?: 1.dp,
-                                if (i <= photos) Q.primary else Q.border,
+                                if (i <= photos) Q.primaryText else Q.border,
                                 RoundedCornerShape(Q.rMd.dp),
                             )
                             .clickable { photos = i },
@@ -319,7 +319,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                     ) {
                         Icon(
                             if (i <= photos) Icons.Filled.Check else Icons.Filled.AddPhotoAlternate,
-                            null, tint = if (i <= photos) Q.primary else Q.mutedFg,
+                            null, tint = if (i <= photos) Q.primaryText else Q.mutedFg,
                             modifier = Modifier.size(19.dp),
                         )
                     }
@@ -375,7 +375,7 @@ private fun GenderChip(label: String, icon: ImageVector, active: Boolean, onClic
         modifier = Modifier
             .height(36.dp)
             .background(if (active) Q.primary else Q.card, RoundedCornerShape(Q.rMd.dp))
-            .border(1.dp, if (active) Q.primary else Q.border, RoundedCornerShape(Q.rMd.dp))
+            .border(1.dp, if (active) Q.primaryText else Q.border, RoundedCornerShape(Q.rMd.dp))
             .pressable(onClick = onClick)
             .padding(horizontal = 13.dp),
     ) {
@@ -444,7 +444,7 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
                     )
                     .border(
                         1.4.dp.takeIf { isSel } ?: 1.dp,
-                        if (isSel) Q.primary else Q.border,
+                        if (isSel) Q.primaryText else Q.border,
                         RoundedCornerShape(Q.rLg.dp),
                     )
                     .clickable {
@@ -454,14 +454,14 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
                     .padding(horizontal = 14.dp, vertical = 13.dp),
             ) {
                 Icon(icons[c] ?: Icons.Filled.Explore, null,
-                    tint = if (isSel) Q.primary else Q.mutedFg, modifier = Modifier.size(19.dp))
+                    tint = if (isSel) Q.primaryText else Q.mutedFg, modifier = Modifier.size(19.dp))
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(c, style = T.bodyBold)
                     Spacer(Modifier.height(2.dp))
                     Text(engine.dataSource.rolCategoryHints[c] ?: "", style = T.meta)
                 }
-                if (isSel) Icon(Icons.Filled.CheckCircle, null, tint = Q.primary, modifier = Modifier.size(19.dp))
+                if (isSel) Icon(Icons.Filled.CheckCircle, null, tint = Q.primaryText, modifier = Modifier.size(19.dp))
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -549,7 +549,7 @@ private fun PermCard(
             .background(Q.card, RoundedCornerShape(Q.rLg.dp))
             .border(
                 1.4.dp.takeIf { granted } ?: 1.dp,
-                if (granted) Q.primary else Q.border,
+                if (granted) Q.primaryText else Q.border,
                 RoundedCornerShape(Q.rLg.dp),
             )
             .padding(14.dp)
@@ -562,7 +562,7 @@ private fun PermCard(
                 ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, null, tint = if (granted) Q.primary else Q.mutedFg, modifier = Modifier.size(20.dp))
+                Icon(icon, null, tint = if (granted) Q.primaryText else Q.mutedFg, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
@@ -571,7 +571,7 @@ private fun PermCard(
                 Text(subtitle, style = T.chipXs.copy(color = Q.mutedFg))
             }
             if (granted) {
-                Icon(Icons.Filled.CheckCircle, null, tint = Q.primary, modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.CheckCircle, null, tint = Q.primaryText, modifier = Modifier.size(22.dp))
             } else {
                 TextButton(onClick = onAsk) { Text("İcazə ver", style = T.button) }
             }

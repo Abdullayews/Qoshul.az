@@ -88,7 +88,8 @@ class DesignSettingsTest {
         Q.apply(DesignColor.GREEN, DesignMode.DARK)
         assertTrue(Q.isDark)
         assertEquals(Color(0xFF0B100D), Q.background)
-        assertEquals(Color(0xFFECF3EE), Q.foreground)
+        // D-123: qara/AMOLED vahid işıq mətni #EDF4EF (qara modda #ECF3EE idi)
+        assertEquals(Color(0xFFEDF4EF), Q.foreground)
         assertEquals(Color(0xFF141B16), Q.card)
         // brend rəngi moddan asılı deyil (rəng seçimidir)
         assertEquals(Color(0xFF008B2D), Q.primary)
@@ -100,6 +101,32 @@ class DesignSettingsTest {
         assertTrue(Q.isDark)
         assertEquals(Color(0xFFEAC66C), Q.primary)
         assertEquals(Color(0xFF3A2B07), Q.primaryFg)
+    }
+
+    // D-123 (direktiv: „əlavə olaraq amoled modu əlavə et ağ və qara
+    // yanında“) — üçüncü mod: tam qara #000000 fon.
+    @Test
+    fun `apply GREEN AMOLED — tam qara fon, isDark, brend qalir`() {
+        Q.apply(DesignColor.GREEN, DesignMode.AMOLED)
+        assertTrue(Q.isDark)
+        assertEquals(Color(0xFF000000), Q.background)
+        assertEquals(Color(0xFF0D100E), Q.card)
+        assertEquals(Color(0xFF008B2D), Q.primary)
+        // D-123: mətn tonu qara modda işıq brend tonudur
+        assertEquals(Color(0xFF4EC97A), Q.primaryText)
+    }
+
+    // D-123: iki-səviyyəli brend dili — dolgu sabit, mətn tonu mod-adaptiv.
+    @Test
+    fun `apply GOLD LIGHT — primaryText tund kehriba (brend metn oxunaqlidir)`() {
+        Q.apply(DesignColor.GOLD, DesignMode.LIGHT)
+        // brend dolgu — istifadəçi sabitlənmisi (#EAC66C)
+        assertEquals(Color(0xFFEAC66C), Q.primary)
+        // mətn/ikon tonu — ağ fonda oxunaqlı tünd variant (brend özü 1.6:1)
+        assertEquals(Color(0xFF7E5812), Q.primaryText)
+        // yaşıl pariteti: eyni modda yaşıl mətn tonu #007428
+        Q.apply(DesignColor.GREEN, DesignMode.LIGHT)
+        assertEquals(Color(0xFF007428), Q.primaryText)
     }
 
     @Test
@@ -174,5 +201,28 @@ class DesignSettingsTest {
         assertEquals(DesignMode.DARK, engine.state.value.designMode)
         assertTrue(Q.isDark)
         assertEquals(Color(0xFF0B100D), Q.background)
+    }
+
+    // D-123 (direktiv: „əlavə olaraq amoled modu əlavə et ağ və qara
+    // yanında“) — dialoqda ÜÇ mod var, Amoled tam qara fon verir.
+    @Test
+    fun `ayarlar dizayn — mod dialoqu Amoled secer (D-123)`() {
+        val engine = newEngine()
+        compose.setContent {
+            QoshulTheme {
+                SettingsScreen(engine = engine, nav = NavState())
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Mod").performScrollTo()
+        compose.onNodeWithText("Mod").performClick()
+        compose.waitForIdle()
+        // üç seçim də dialoqda görünür (ağ/qara yanında)
+        compose.onNodeWithText("Amoled").assertExists()
+        compose.onNodeWithText("Amoled").performClick()
+        compose.waitForIdle()
+        assertEquals(DesignMode.AMOLED, engine.state.value.designMode)
+        assertTrue(Q.isDark)
+        assertEquals(Color(0xFF000000), Q.background)
     }
 }

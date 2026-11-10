@@ -91,7 +91,9 @@ class LiquidGlassNavTest {
         )
 
         val fallback = navFallbackPalette()
-        assertEquals("fallback aktiv = D-103 primary", Q.primary, fallback.selected)
+        // D-123: fallback aktiv ton = primaryText (səth üzərində brend MƏTN
+        // dili — qızılı+ağ modda #EAC66C 1.6:1 oxunmaz idi; hər modda ≥4.5:1)
+        assertEquals("fallback aktiv = D-103/D-123 primaryText", Q.primaryText, fallback.selected)
         assertEquals("fallback qeyri-aktiv = D-103 mutedFg", Q.mutedFg, fallback.unselected)
         assertEquals("fallback kapsul = D-103 secondary", Q.secondary, fallback.indicator)
     }

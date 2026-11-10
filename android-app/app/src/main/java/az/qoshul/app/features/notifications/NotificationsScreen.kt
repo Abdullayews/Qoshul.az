@@ -105,7 +105,7 @@ fun NotificationsScreen(engine: AppEngine, nav: NavState) {
                                 .padding(13.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(notifIcon(n.type), null, tint = Q.primary,
+                                Icon(notifIcon(n.type), null, tint = Q.primaryText,
                                     modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.padding(6.dp))
                                 Text(n.title, Modifier.weight(1f),
@@ -155,7 +155,7 @@ private fun PrefsView(engine: AppEngine, mod: Modifier) {
                 Switch(
                     checked = engine.notifPrefs.isEnabled(t),
                     onCheckedChange = { engine.toggleNotifPref(t, it) },
-                    colors = SwitchDefaults.colors(checkedTrackColor = Q.primary),
+                    colors = SwitchDefaults.colors(checkedTrackColor = Q.primaryText),
                 )
             }
         }
@@ -181,7 +181,7 @@ private fun Modifier.androidxNotifCard(read: Boolean): Modifier = this.then(
         .background(if (read) Q.card else Q.secondary, RoundedCornerShape(Q.rLg.dp))
         .border(
             1.2.dp.takeIf { !read } ?: 1.dp,
-            if (read) Q.border else Q.primary,
+            if (read) Q.border else Q.primaryText,
             RoundedCornerShape(Q.rLg.dp),
         )
 )

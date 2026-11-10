@@ -107,7 +107,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                                         .height(34.dp),
                                     shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.outlinedButtonColors(
-                                        containerColor = Q.secondary, contentColor = Q.primary),
+                                        containerColor = Q.secondary, contentColor = Q.primaryText),
                                 ) { Text(s, style = T.bodySm) }
                             }
                         }

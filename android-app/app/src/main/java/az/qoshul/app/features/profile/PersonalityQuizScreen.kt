@@ -131,7 +131,7 @@ private fun Intro(onStart: () -> Unit) {
                 Modifier.fillMaxWidth().padding(bottom = 90.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(Icons.Filled.Psychology, null, tint = Q.primary, modifier = Modifier.height(56.dp))
+                Icon(Icons.Filled.Psychology, null, tint = Q.primaryText, modifier = Modifier.height(56.dp))
                 Spacer(Modifier.height(20.dp))
                 Text("10 sual · 2 dəqiqə", style = T.h1.copy(textAlign = TextAlign.Center))
                 Spacer(Modifier.height(10.dp))
@@ -170,7 +170,7 @@ private fun QuestionStep(index: Int, total: Int, text: String, onAnswer: (Int) -
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 14.dp),
         ) {
-            Text("${index + 1}/$total", style = T.button.copy(color = Q.primary, fontWeight = FontWeight.W800))
+            Text("${index + 1}/$total", style = T.button.copy(color = Q.primaryText, fontWeight = FontWeight.W800))
             Spacer(Modifier.width(10.dp))
             Box(Modifier.weight(1f)) {
                 XpBar(progress = index.toFloat() / total, height = 5.dp)
@@ -219,7 +219,7 @@ private fun QuizResult(
         // D-063: nəticə də mərkəzdə; altdan 90dp — nav pill zonası nəzərə alınır
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(Modifier.fillMaxWidth().padding(bottom = 90.dp)) {
-                Icon(Icons.Filled.AutoAwesome, null, tint = Q.primary, modifier = Modifier.height(30.dp))
+                Icon(Icons.Filled.AutoAwesome, null, tint = Q.primaryText, modifier = Modifier.height(30.dp))
                 Spacer(Modifier.height(10.dp))
                 Text(result.type, style = T.h1)
                 Spacer(Modifier.height(8.dp))
@@ -230,7 +230,7 @@ private fun QuizResult(
                     Column(Modifier.padding(vertical = 7.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(traitLabels[trait] ?: trait, style = T.meta.copy(fontWeight = FontWeight.W700))
-                            Text("$pct%", style = T.meta.copy(color = Q.primary, fontWeight = FontWeight.W800))
+                            Text("$pct%", style = T.meta.copy(color = Q.primaryText, fontWeight = FontWeight.W800))
                         }
                         Spacer(Modifier.height(6.dp))
                         XpBar(progress = pct / 100f, height = 6.dp)

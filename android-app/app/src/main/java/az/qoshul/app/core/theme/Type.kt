@@ -40,7 +40,7 @@ object T {
     val metaSm: TextStyle
         get() = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, lineHeight = 16.sp, color = Q.mutedFg)
     val category: TextStyle
-        get() = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, fontWeight = FontWeight.W700, color = Q.primary)
+        get() = TextStyle(fontFamily = OpenSans, fontSize = 10.5.sp, fontWeight = FontWeight.W700, color = Q.primaryText)
     val chip: TextStyle
         get() = TextStyle(fontFamily = OpenSans, fontSize = 11.5.sp, fontWeight = FontWeight.W500, color = Q.mutedFg)
     val chipActive: TextStyle
