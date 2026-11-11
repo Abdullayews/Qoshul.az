@@ -39,7 +39,7 @@ object BackendConfig {
     /** Yekun qərar mətni (log/UI üçün). */
     fun describe(): String = when (mode) {
         BackendMode.MOCK ->
-            "MOCK (offline demo; SUPABASE_URL/ANON_KEY local.properties-də qurulanda " +
+            "MOCK (offline demo; SUPABASE_URL/ANON_KEY local.properties faylında qurulanda " +
                 "BACKEND_MODE=SUPABASE ilə server rejiminə keçir)"
         BackendMode.SUPABASE -> "SUPABASE (${supabaseUrl})"
     }

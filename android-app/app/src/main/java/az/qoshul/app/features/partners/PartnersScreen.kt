@@ -35,10 +35,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -55,7 +53,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.SpendError
 import az.qoshul.app.core.theme.Q
@@ -76,14 +73,19 @@ import az.qoshul.app.features.auth.QoshulTextField
 import az.qoshul.app.features.events.CreateEventSheet
 
 /**
- * Tərəfdaşlar — Flutter partners_screen.dart portu + Biznes rejimi
- * (business_mode_sheet.dart, D-026 L.4 işçi tərəfi: skan → balans →
- * hesab → endirim → receipt).
+ * Tərəfdaşlar — Flutter partners_screen.dart portu.
+ *
+ * D-131 (v0.44.0, direktiv 2026-11-11: „şəkildəki bölmədən biznes ilə
+ * əlaqəli yerləri çıxart, yalnız ayarlarda biznes hesabına keçiləndə olsun“):
+ * biznes CTA kartları (məkan qeydiyyatı təklifi + işçi/Endirim rejimi)
+ * LƏĞV — istifadəçi axını yalnız tərəfdaş MƏKANLAR + „Görüş təşkil et“
+ * (host üçün) buraxılır. Biznes tərəfi (işçi modu) ARTIQ yalnız
+ * Ayarlar → „Şirkət hesabına keç“ dialoqundan açılır (SettingsScreen).
+ * BusinessModeSheet (D-026 L.4: skan → balans → hesab → endirim →
+ * receipt) burada qalır — public, ayarlardan çağırılır.
  */
 @Composable
 fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qoshul.app.core.model.Partner) -> Unit) {
-    var businessOpen by remember { mutableStateOf(false) }
-    var partnerInfoOpen by remember { mutableStateOf(false) }
     // U2 (UI-43): donmuş remember → hər kompozisiyada yenidən hesablanır
     // (SERVER_ONLY-da partnyorlar gec yüklənəndə köhnə/null qalırdı).
     val firstVenue = engine.partners.firstOrNull()
@@ -99,10 +101,10 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                 ViewHeading(title = "Sevdiyin məkanlar",
                     subtitle = "Görüşlərə ev sahibliyi edən tərəfdaşlarımız.")
             }
-            // UI-7 (D-098): sıra dəyişdi — istifadəçi direktivi 2026-11-08:
-            // "görüş təşkil et və xp qazan" 1-ci, biznes kartları 2-3-cü sıra.
-            // D-055: saxta "+150 XP" iddiası (heç bir XP qaydasına uyğun deyildi)
-            // əvəzinə real hərəkət: tədbir yaratma sheeti partnyor məkanla açılır
+            // UI-7 (D-098): „görüş təşkil et və xp qazan“ 1-ci sıra (host
+            // axını — istifadəçi tərəfi, biznes DEYİL); D-055: saxta „+150 XP“
+            // iddiası əvəzinə real hərəkət — tədbir yaratma sheeti partnyor
+            // məkanla açılır. D-131: biznes kartları (2-3-cü sıralar) silindi.
             if (firstVenue != null) {
                 item {
                     CommunityBanner(
@@ -113,25 +115,6 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                         trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                     )
                 }
-            }
-            item {
-                // D-055: ölü banner → info dialoqu (tərəfdaşlıq prosesi)
-                CommunityBanner(
-                    icon = Icons.Filled.Storefront,
-                    title = "Öz məkanını əlavə et",
-                    subtitle = "Biznes kimi qeydiyyatdan keç, yeni müştərilər qazan.",
-                    onClick = { partnerInfoOpen = true },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
-                )
-            }
-            item {
-                CommunityBanner(
-                    icon = Icons.Filled.QrCodeScanner,
-                    title = "Biznes rejimi — XP endirimi ver",
-                    subtitle = "İşçi modu: müştəri XP kodunu oxu, hesabı yaz, endirim ver.",
-                    onClick = { businessOpen = true },
-                    trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
-                )
             }
             // D-061: server rejimində siyahı boş ola bilər — placeholder
             if (engine.partners.isEmpty()) {
@@ -149,30 +132,6 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                 }
             }
         }
-    }
-
-    if (businessOpen) {
-        BusinessModeSheet(engine, onDismiss = { businessOpen = false })
-    }
-
-    // D-055: tərəfdaşlıq info dialoqu (əvvəl banner ölü idi)
-    if (partnerInfoOpen) {
-        AlertDialog(
-            onDismissRequest = { partnerInfoOpen = false },
-            title = { Text("Öz məkanını əlavə et") },
-            text = {
-                Text(
-                    "Restoran, kafe və ya idman mərkəzi işlədirsən? Qoshul.az tərəfdaşı " +
-                        "ol — tədbirlər sənin məkanda keçirilsin, müştərilərin XP endirimi ilə " +
-                        "geri qayıtsın.\n\nMüraciət üçün: biznes@qoshul.az (demo). Bu demoda " +
-                        "Biznes rejimi ilə XP endirim axınını sınaya bilərsən.",
-                    style = T.subtitle.copy(lineHeight = 21.sp),
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { partnerInfoOpen = false }) { Text("Anladım", style = T.button) }
-            },
-        )
     }
 }
 
@@ -293,7 +252,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     "Kod oxunmadı: müştərinin XP kartı bu obyekt üçün etibarlı " +
-                                        "deyil və ya vaxtı bitib. Müştəçi \"Profil → XP kartım\"-dan " +
+                                        "deyil və ya vaxtı bitib. Müştəri „Profil → XP kartım“ səhifəsindən " +
                                         "bu obyekt üçün yeni kod almalıdır (60 saniyəlik, tək istifadəlik).",
                                     style = T.chipXs.copy(color = Q.destructive),
                                 )
@@ -463,7 +422,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             Text(
                                 if (last != null)
                                     "${acct.venueName} bazasından ${last.amount} XP xərcləndi. " +
-                                        "Hər iki tərəfə receipt göndərildi — əməliyyat ledger-də izlənilir."
+                                        "Hər iki tərəfə receipt göndərildi — əməliyyat ledger'də izlənilir."
                                 else
                                     "${acct.venueName} bazasından XP xərcləndi. " +
                                         "Hər iki tərəfə receipt göndərildi.",

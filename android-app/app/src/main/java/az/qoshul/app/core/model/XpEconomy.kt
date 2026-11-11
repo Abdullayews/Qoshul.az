@@ -10,9 +10,9 @@ import java.time.LocalDateTime
 
 /** Xəritə görünüşü — 3 seçim (D-027): Hamı / Yalnız dostlar / Gizli. */
 enum class MapVisibility(val label: String, val hint: String) {
-    EVERYONE("Hamı", "Yerin xəritədə və match-də hərkəsə görünür"),
+    EVERYONE("Hamı", "Yerin xəritədə və match'də hər kəsə görünür"),
     FRIENDS("Yalnız dostlar", "Yerin yalnız səninlə dost olan istifadəçilərə görünür"),
-    OFF("Gizli", "Xəritədə və match-də görünmürsən"),
+    OFF("Gizli", "Xəritədə və match'də görünmürsən"),
 }
 
 /** Obyekt başına XP tənzimləmələri — gələcəkdə `xp_config` cədvəli (L.3/L.4). */

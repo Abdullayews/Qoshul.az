@@ -27,6 +27,11 @@ class MapFocusState {
     var request: Target? by mutableStateOf(null)
         private set
 
+    // D-129: lokasiya icazəsi bu sessiyada istənilibmi? (MapScreen tərəfindən
+    // yazılır; sahib MainActivity-dir — tab keçidlərində yaşayır, xəritəyə
+    // hər qayıdışda təkrar-təkrar dialoq spam olunmasın deyə.)
+    var locationPermissionAsked: Boolean = false
+
     fun venue(venueId: String) {
         request = Target.Venue(venueId)
     }

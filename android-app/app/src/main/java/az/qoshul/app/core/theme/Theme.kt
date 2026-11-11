@@ -8,6 +8,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -75,6 +76,16 @@ fun QoshulTheme(content: @Composable () -> Unit) {
     if (!view.isInEditMode) {
         SideEffect {
             (view.context as? Activity)?.window?.let { w ->
+                // D-128 (direktiv 2026-11-11: „qara/AMOLED temalarda animasiyalar
+                // arasında ağ səhifə problemi həll olsun, temaya uyğun rəngli
+                // keçid animasiyası da əlavə et“): window-un ÖZ fonu da tema
+                // rənginə boyanır. themes.xml valideyni Material.Light-dır →
+                // default window fonu AĞ; app-in ilk kadrı öncəsi, keçid
+                // qatlarının yarı-şəffaf anlarında (D-134) və proses bərpasında
+                // ağ flaş görünürdü — qara/AMOLED modlarda çox narahat idi.
+                w.setBackgroundDrawable(
+                    android.graphics.drawable.ColorDrawable(Q.background.toArgb())
+                )
                 WindowCompat.getInsetsController(w, view).apply {
                     isAppearanceLightStatusBars = lightBars
                     isAppearanceLightNavigationBars = lightBars

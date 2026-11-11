@@ -298,7 +298,10 @@ fun CreateEventSheet(
                     }
                 }
             }
-            FormLine("İştirakçı sayı (2–500)") {
+            // D-132 (direktiv 2026-11-11: „iştirakçı sayı minimum 2 yazılsın,
+            // 2-500 yox“): etiket artıq yuxarı həddi göstərmir — yalnız
+            // minimumu (daxili clamp 2..500 qorunur — Rust core pariteti).
+            FormLine("İştirakçı sayı (minimum 2)") {
                 // D-053: yalnız rəqəm + max 3 rəqəm; dəyər submittə clamp olunur
                 QoshulTextField(
                     value = capacityText,
@@ -579,7 +582,7 @@ fun FinishActivitySheet(
 
     SheetScaffold(onDismiss = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp)) {
-            Text("Aktiviteyi bitir — \"${event.title}\"",
+            Text("Tədbiri bitir — „${event.title}“",
                 style = T.personName)
             Spacer(Modifier.height(4.dp))
             Text(
@@ -605,7 +608,7 @@ fun FinishActivitySheet(
                     Spacer(Modifier.height(12.dp))
                     Text(
                         "${acct.venueName} · obyektin statik QR-ı.\n" +
-                            "Kassada və ya çıxışda oxu — aktivite obyektlə əlaqələnir.",
+                            "Kassada və ya çıxışda oxu — tədbir obyektlə əlaqələnir.",
                         style = T.chipXs.copy(color = Q.mutedFg),
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,

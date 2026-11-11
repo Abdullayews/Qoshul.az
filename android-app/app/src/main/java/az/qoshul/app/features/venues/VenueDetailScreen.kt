@@ -380,7 +380,7 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                     if (myCoupons.isEmpty()) {
                         Text(
                             "Bu məkan üçün aktiv kuponun yoxdur. " +
-                                "\"Endirimlər\" bölməsindən XP ilə ala bilərsən.",
+                                "„Endirimlər“ bölməsindən XP ilə ala bilərsən.",
                             style = T.subtitle,
                         )
                     } else {
@@ -446,7 +446,7 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                                 else "Partnyor təsdiqi gözlənilir — GÖZLƏYİR",
                             )
                             FactRow("Xatırlatmalar: 24 saat və 2 saat əvvəl bildiriş")
-                            FactRow("Məkanda QR-i göstər — partnyor skan edəndə +${XpRules.RESERVATION_XP} XP")
+                            FactRow("Məkanda QR kodu göstər — partnyor skan edəndə +${XpRules.RESERVATION_XP} XP")
                         }
                         Spacer(Modifier.height(14.dp))
                         Button(

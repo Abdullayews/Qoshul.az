@@ -134,7 +134,7 @@ private fun PrefsView(engine: AppEngine, mod: Modifier) {
     ) {
         item {
             ViewHeading(
-                title = "Bildiriş tercihleri",
+                title = "Bildiriş seçimləri",
                 subtitle = "Hər tip ayrıca söndürülə bilər. Marketinq bildirişləri " +
                     "gecə 23:00-08:00 göndərilmir.",
             )

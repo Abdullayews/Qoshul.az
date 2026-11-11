@@ -114,6 +114,37 @@ data class Partner(
 
 data class City(val name: String, val region: String, val lat: Double, val lng: Double)
 
+/**
+ * D-126 (v0.44.0, direktiv 2026-11-11: „bütün Azərbaycan şəhərləri mütləq
+ * əlavə olunsun — event yaradılmasında və ana menyudakı axtarışda, A-Z
+ * sıralı“): Azərbaycan əlifbası müqayisəçisi. String.compareTo hərfləri
+ * Unicode kod nöqtəsinə görə sıralayır — əlifbamızın xüsusi hərfləri (ç, ə,
+ * ğ, ı, ö, ş, ü) yanlış yerə düşür (məs. „Ə“ latın „z“-dən SONRA, „Ç“ isə
+ * „C“-dən AYRI gəlir). Şəhər siyahıları A-Z göstəriləndə (CityPicker,
+ * Yarat → Şəhər, ana menyu axtarışı) bu comparator MƏCBURİDİR.
+ */
+object AzCollation {
+    // Azərbaycan əlifbası (32 hərf): a b c ç d e ə f g ğ h x ı i j k q
+    // l m n o ö p r s ş t u ü v y z
+    private const val ALPHABET = "abcçdeəfgğhxıijkqlmnoöprsştuüvyz"
+
+    private fun rank(ch: Char): Int {
+        val c = ch.lowercaseChar()
+        val idx = ALPHABET.indexOf(c)
+        return if (idx >= 0) idx else 100 + c.code
+    }
+
+    /** a < b → mənfi; Azərbaycan əlifba sırası ilə müqayisə. */
+    fun compare(a: String, b: String): Int {
+        val n = minOf(a.length, b.length)
+        for (i in 0 until n) {
+            val d = rank(a[i]) - rank(b[i])
+            if (d != 0) return d
+        }
+        return a.length - b.length
+    }
+}
+
 data class CategoryGroupData(val group: String, val items: List<String>)
 
 // ═════════════════════════ Söhbət ═════════════════════════

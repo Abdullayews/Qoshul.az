@@ -28,9 +28,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.LocalCafe
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.School
@@ -156,6 +156,17 @@ fun EventsScreen(
         "Səyahət və digər" to "Səfərlər və digər tədbirlər",
     )
 
+    // D-126: axtarışa uyğun şəhər nəticələri (üst 5, A-Z) — hesablama
+    // LazyColumn-dən ƏVVƏL (LazyListScope @Composable kontekst deyil);
+    // filtr yalnız axtarış mətnindən asılıdır, „selected“ işarəsi st.city
+    // dəyişəndə recompose ilə yenilənir.
+    val cityHits = remember(search) {
+        if (search.isBlank()) emptyList()
+        else engine.dataSource.cities.filter {
+            it.name.lowercase().contains(search.lowercase())
+        }.take(5)
+    }
+
     // D-125 (direktiv: „ana menyuda şəhər və tabların olduğu yeri
     // sürüşdürərkən sabit yox adi qalacağı moda gətir“): tablar (ötürüldükdə)
     // və axtarış sətri LC-nin İLK elementləridir — sabit deyil, məzmunla
@@ -177,8 +188,59 @@ fun EventsScreen(
                         .fillMaxWidth()
                         .padding(top = 4.dp, bottom = 10.dp)
                 ) {
-                    SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir axtar...")
+                    SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir və ya şəhər axtar...")
                 }
+            }
+            // — D-126: Şəhərlər bölməsi — Ana menyunun hər iki görünüşündə eyni
+            // axtarış dili (FeedScreen pariteti): şəhər adına tuş olanda üst 5
+            // nəticə; seçəndə şəhər dəyişir (tədbir siyahısı yeni şəhərə keçir),
+            // axtarış təmizlənir.
+            if (cityHits.isNotEmpty()) {
+                item(key = "cityHitsHeading") {
+                    SectionHeading(
+                        title = "Şəhərlər", icon = Icons.Filled.LocationOn,
+                        trailing = {
+                            Text("${cityHits.size} nəticə", style = T.chipXs.copy(fontWeight = FontWeight.W600, color = Q.mutedFg))
+                        },
+                    )
+                }
+                items(cityHits, key = { "city-${it.name}" }) { c ->
+                    val selected = st.city == c.name
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressable(onClick = {
+                                engine.setCity(c.name)
+                                search = ""
+                            })
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.LocationOn, null,
+                            tint = if (selected) Q.primaryText else Q.mutedFg,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            c.name,
+                            style = T.personName.copy(
+                                fontWeight = if (selected) FontWeight.W700 else FontWeight.W500,
+                                color = if (selected) Q.primaryText else Q.foreground,
+                            ),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            c.region,
+                            style = T.metaSm.copy(color = Q.mutedFg),
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (selected) {
+                            Icon(Icons.Filled.Check, null, tint = Q.primaryText, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+                item(key = "cityHitsSpace") { Spacer(Modifier.height(12.dp)) }
             }
                 // — kateqoriya çipləri —
                 item {
@@ -273,11 +335,11 @@ fun EventsScreen(
                             icon = if (tab == 2) Icons.Outlined.AddCircleOutline else Icons.Filled.Event,
                             text = if (tab == 0) {
                                 if (q.isEmpty()) "Hazırda yaxınlaşan tədbir yoxdur."
-                                else "\"$q\" üzrə tədbir tapılmadı."
+                                else "„$q“ üzrə tədbir tapılmadı."
                             } else if (tab == 1) {
-                                "Hələ heç bir tədbirə qoşulmamısan. \"Yaxınlaşan\" siyahısından birini seç."
+                                "Hələ heç bir tədbirə qoşulmamısan. „Yaxınlaşan“ siyahısından birini seç."
                             } else {
-                                "Heç bir tədbir yaratmamısan. Mərkəzdəki \"Yarat\" düyməsi ilə başla."
+                                "Heç bir tədbir yaratmamısan. Mərkəzdəki „Yarat“ düyməsi ilə başla."
                             },
                         )
                     }

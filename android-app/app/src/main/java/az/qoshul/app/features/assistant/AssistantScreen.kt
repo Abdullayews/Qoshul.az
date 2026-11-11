@@ -99,11 +99,30 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
             ) {
                 if (st.assistantMsgs.isEmpty()) {
                     item {
-                        Column {
+                        // D-132 (direktiv 2026-11-11: „boş chatda ilk mesajı
+                        // sən yaz bölməsini ortala — hazırda soldadır“):
+                        // təklif bloku soldan mərkəzə keçir + „İlk mesajı sən
+                        // yaz“ başlığı (bütün sütun mərkəzə düzülür).
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                "İlk mesajı sən yaz",
+                                style = T.h3.copy(color = Q.foreground),
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Köməkçi tədbir tapır, fikir verir və yaratma sheetini açır.",
+                                style = T.meta.copy(color = Q.mutedFg),
+                            )
+                            Spacer(Modifier.height(14.dp))
                             suggestions.forEach { s ->
                                 OutlinedButton(
                                     onClick = { engine.sendAssistant(s) },
-                                    modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                         .height(34.dp),
                                     shape = RoundedCornerShape(Q.rPill),
                                     colors = ButtonDefaults.outlinedButtonColors(

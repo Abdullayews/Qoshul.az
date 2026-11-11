@@ -3,6 +3,21 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- D-129 (direktiv 2026-11-11: „istifadəçidən lokasiya, şəkil, saxlama
+         icazələri al“): runtime icazələr —
+         - lokasiya: yaxınlıq axtarışı / xəritədə ətraf (coarse+fine);
+         - şəkil: qalereya (API 33+ READ_MEDIA_IMAGES);
+         - saxlama: API ≤32 üçün əvəzedici READ_EXTERNAL_STORAGE
+           (API 33-də qalereya icazəsi ilə əvəz olunur — maxSdkVersion=32);
+         - bildirişlər: push bildirişləri (API 33+ runtime). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".QoshulApplication"
         android:allowBackup="false"

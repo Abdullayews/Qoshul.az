@@ -1,6 +1,7 @@
 package az.qoshul.app.core.data
 
 import az.qoshul.app.core.model.AppNotification
+import az.qoshul.app.core.model.AzCollation
 import az.qoshul.app.core.model.CategoryGroupData
 import az.qoshul.app.core.model.ChatMessage
 import az.qoshul.app.core.model.City
@@ -87,34 +88,95 @@ object FakeQoshulDataSource : QoshulDataSource {
     // D-050-dən etibarən QoshulDataSource interfeysinin default-metodlarıdır
     // (taksonomiya = tətbiq məzmunu, hər iki rejimdə eyni).
 
-    // ── Şəhərlər — web cities.ts (birebir) ──
-    override val cities = listOf(
-        City("Bakı", "Abşeron-Xızı", 40.4093, 49.8671),
-        City("Sumqayıt", "Abşeron-Xızı", 40.5897, 49.6686),
-        City("Xırdalan", "Abşeron-Xızı", 40.4481, 49.7553),
-        City("Gəncə", "Gəncə-Daşkəsən", 40.6828, 46.3606),
-        City("Göygöl", "Gəncə-Daşkəsən", 40.5856, 46.3189),
-        City("Naftalan", "Gəncə-Daşkəsən", 40.5044, 46.8397),
-        City("Mingəçevir", "Mərkəzi Aran", 40.7703, 47.0489),
-        City("Yevlax", "Mərkəzi Aran", 40.6172, 47.15),
-        City("Göyçay", "Mərkəzi Aran", 40.6531, 47.7406),
-        City("Şirvan", "Şirvan-Salyan", 39.9319, 48.9203),
-        City("Salyan", "Şirvan-Salyan", 39.5961, 48.9847),
-        City("Neftçala", "Şirvan-Salyan", 39.3586, 49.2469),
-        City("Şəki", "Şəki-Zaqatala", 41.1919, 47.1706),
-        City("Zaqatala", "Şəki-Zaqatala", 41.6336, 46.6433),
-        City("Qax", "Şəki-Zaqatala", 41.4228, 46.9242),
-        City("Quba", "Quba-Xaçmaz", 41.3625, 48.5122),
-        City("Xaçmaz", "Quba-Xaçmaz", 41.4606, 48.8022),
-        City("Lənkəran", "Lənkəran-Astara", 38.7529, 48.8475),
+    // ── Şəhərlər — D-126 (direktiv 2026-11-11: „bütün Azərbaycan şəhərləri
+    // mütləq əlavə olunsun — event yaradılmasında və ana menyudakı axtarışda,
+    // A-Z sıralı“): Azərbaycanın BÜTÜN rəsmi şəhərləri (79). Bölgə etiketi =
+    // 7 iyul 2021-ci il prezident fərmanının iqtisadi rayon bölgüsü
+    // (president.az/az/articles/view/52389; Ağdərə — 2023 əlavəsi), koordinatlar
+    // şəhər mərkəzi (xəritə pinləri üçün). Siyahı AzCollation ilə A-Z
+    // sıralanır — əlifbamızın xüsusi hərfləri (ç/ə/ğ/ı/ö/ş/ü) Unicode
+    // nöqtəsinə görə YOX, əlifba sırasına görə düzülür. ──
+    override val cities: List<City> = listOf(
+        City("Ağcabədi", "Qarabağ", 40.0528, 47.4589),
+        City("Ağdam", "Qarabağ", 39.9906, 46.9231),
+        City("Ağdaş", "Mərkəzi Aran", 40.6333, 47.4656),
+        City("Ağdərə", "Qarabağ", 40.2131, 46.9722),
+        City("Ağstafa", "Qazax-Tovuz", 41.1167, 45.4486),
+        City("Ağsu", "Dağlıq Şirvan", 40.5667, 48.4000),
         City("Astara", "Lənkəran-Astara", 38.4558, 48.8725),
-        City("Naxçıvan", "Naxçıvan MR", 39.2093, 45.4109),
-        City("Şamaxı", "Şirvan-Salyan", 40.6314, 48.6406),
-        City("Qəbələ", "Şəki-Zaqatala", 40.9875, 47.8439),
-        City("İsmayıllı", "Şəki-Zaqatala", 40.7358, 48.1817),
-        City("Şuşa", "Qarabağ", 39.8222, 46.7489),
+        City("Babək", "Naxçıvan MR", 39.1278, 45.4247),
+        City("Bakı", "Bakı", 40.4093, 49.8671),
+        City("Balakən", "Şəki-Zaqatala", 41.7342, 46.4008),
+        City("Beyləqan", "Mil-Muğan", 39.7692, 47.6311),
+        City("Bərdə", "Qarabağ", 40.3775, 47.1272),
+        City("Biləsuvar", "Şirvan-Salyan", 39.4533, 48.5489),
+        City("Cəbrayıl", "Şərqi Zəngəzur", 39.3988, 47.0273),
+        City("Cəlilabad", "Lənkəran-Astara", 39.2158, 48.4983),
+        City("Culfa", "Naxçıvan MR", 38.9533, 45.6308),
+        City("Daşkəsən", "Gəncə-Daşkəsən", 40.5867, 46.0869),
+        City("Dəliməmmədli", "Gəncə-Daşkəsən", 40.6372, 46.7433),
+        City("Füzuli", "Qarabağ", 39.6008, 47.1450),
+        City("Gədəbəy", "Qazax-Tovuz", 40.5656, 45.8019),
+        City("Gəncə", "Gəncə-Daşkəsən", 40.6828, 46.3606),
+        City("Goranboy", "Gəncə-Daşkəsən", 40.6011, 46.7944),
+        City("Göyçay", "Mərkəzi Aran", 40.6531, 47.7406),
+        City("Göygöl", "Gəncə-Daşkəsən", 40.5856, 46.3189),
+        City("Göytəpə", "Lənkəran-Astara", 39.2075, 48.5683),
+        City("Hacıqabul", "Şirvan-Salyan", 40.0333, 48.9331),
+        City("Horadiz", "Qarabağ", 39.4486, 47.3417),
+        City("Xaçmaz", "Quba-Xaçmaz", 41.4606, 48.8022),
         City("Xankəndi", "Qarabağ", 39.8181, 46.7529),
-    )
+        City("Xırdalan", "Abşeron-Xızı", 40.4481, 49.7553),
+        City("Xızı", "Abşeron-Xızı", 40.9492, 49.0847),
+        City("Xocalı", "Qarabağ", 39.9156, 46.8361),
+        City("Xocavənd", "Qarabağ", 39.7039, 47.0042),
+        City("Xudat", "Quba-Xaçmaz", 41.6306, 48.6689),
+        City("İmişli", "Mil-Muğan", 39.8717, 48.3544),
+        City("İsmayıllı", "Dağlıq Şirvan", 40.7358, 48.1817),
+        City("Kəlbəcər", "Şərqi Zəngəzur", 40.1031, 46.0331),
+        City("Kürdəmir", "Mərkəzi Aran", 40.3353, 47.9778),
+        City("Qax", "Şəki-Zaqatala", 41.4228, 46.9242),
+        City("Qazax", "Qazax-Tovuz", 41.0819, 45.3658),
+        City("Qəbələ", "Şəki-Zaqatala", 40.9875, 47.8439),
+        City("Qobustan", "Dağlıq Şirvan", 40.5364, 48.9444),
+        City("Qovlar", "Qazax-Tovuz", 40.9569, 46.5169),
+        City("Quba", "Quba-Xaçmaz", 41.3625, 48.5122),
+        City("Qubadlı", "Şərqi Zəngəzur", 39.3186, 46.6064),
+        City("Qusar", "Quba-Xaçmaz", 41.4281, 48.4358),
+        City("Laçın", "Şərqi Zəngəzur", 39.6653, 46.5400),
+        City("Lerik", "Lənkəran-Astara", 38.7772, 48.4856),
+        City("Lənkəran", "Lənkəran-Astara", 38.7529, 48.8475),
+        City("Liman", "Lənkəran-Astara", 39.0447, 49.0061),
+        City("Masallı", "Lənkəran-Astara", 38.9486, 48.6647),
+        City("Mingəçevir", "Mərkəzi Aran", 40.7703, 47.0489),
+        City("Naftalan", "Gəncə-Daşkəsən", 40.5044, 46.8397),
+        City("Naxçıvan", "Naxçıvan MR", 39.2093, 45.4109),
+        City("Neftçala", "Şirvan-Salyan", 39.3586, 49.2469),
+        City("Oğuz", "Şəki-Zaqatala", 41.0675, 47.4608),
+        City("Ordubad", "Naxçıvan MR", 38.9047, 46.0144),
+        City("Saatlı", "Mil-Muğan", 39.9322, 48.3847),
+        City("Sabirabad", "Mil-Muğan", 40.0131, 48.4864),
+        City("Salyan", "Şirvan-Salyan", 39.5961, 48.9847),
+        City("Samux", "Gəncə-Daşkəsən", 40.8492, 46.3542),
+        City("Siyəzən", "Quba-Xaçmaz", 41.0683, 49.1072),
+        City("Sumqayıt", "Abşeron-Xızı", 40.5897, 49.6686),
+        City("Şabran", "Quba-Xaçmaz", 41.2844, 48.9256),
+        City("Şahbuz", "Naxçıvan MR", 39.4056, 45.5836),
+        City("Şamaxı", "Dağlıq Şirvan", 40.6314, 48.6406),
+        City("Şəki", "Şəki-Zaqatala", 41.1919, 47.1706),
+        City("Şəmkir", "Qazax-Tovuz", 40.8347, 46.0183),
+        City("Şərur", "Naxçıvan MR", 39.5558, 44.9758),
+        City("Şirvan", "Şirvan-Salyan", 39.9319, 48.9203),
+        City("Şuşa", "Qarabağ", 39.8222, 46.7489),
+        City("Tərtər", "Qarabağ", 40.3428, 46.9331),
+        City("Tovuz", "Qazax-Tovuz", 40.9842, 45.6181),
+        City("Ucar", "Mərkəzi Aran", 40.5181, 47.6492),
+        City("Yardımlı", "Lənkəran-Astara", 38.9622, 48.2403),
+        City("Yevlax", "Mərkəzi Aran", 40.6172, 47.1500),
+        City("Zaqatala", "Şəki-Zaqatala", 41.6336, 46.6433),
+        City("Zəngilan", "Şərqi Zəngəzur", 39.0869, 46.6483),
+        City("Zərdab", "Mərkəzi Aran", 40.2167, 47.6986),
+    ).sortedWith { a, b -> AzCollation.compare(a.name, b.name) }
 
     // findCity — interfeys default-metodudur (City?; çağıran fallback edir).
 
@@ -380,7 +442,7 @@ object FakeQoshulDataSource : QoshulDataSource {
         Partner(
             id = "v6", name = "Kokaltı Kafesi", category = "Kafe",
             address = "Kokaltı küçəsi 8", city = "Bakı",
-            deal = "Yeni açılış — XP qazanmaq üçün aktivite keçir", hours = "09:00–22:00",
+            deal = "Yeni açılış — XP qazanmaq üçün tədbir keçir", hours = "09:00–22:00",
             image = imgCoffee, lat = 40.3781, lng = 49.8469, priceRange = "₼",
             autoAccept = true, rating = 4.3, reviewsCount = 9,
             openFrom = 9, openTo = 22, discountPercent = 0,
@@ -533,7 +595,7 @@ object FakeQoshulDataSource : QoshulDataSource {
         AppNotification(
             id = "n1", type = NotifType.NEARBY_EVENT,
             title = "Yaxınlıqda uyğun tədbir",
-            body = "Şənbə saat 10:00-da Coffee Lab-da qəhvə söhbəti — maraqlarına uyğundur.",
+            body = "Şənbə saat 10:00-da Coffee Lab'da qəhvə söhbəti — maraqlarına uyğundur.",
             at = LocalDateTime.now().minusHours(2),
         ),
         AppNotification(
@@ -559,11 +621,11 @@ object FakeQoshulDataSource : QoshulDataSource {
             listOf(
                 az.qoshul.app.core.model.XpLedgerEntry(
                     "xl1", "v5", true, 50, 50,
-                    "Təşkilatçı mükafatı — \"Mafiya oyunu gecəsi\"",
+                    "Təşkilatçı mükafatı — „Mafiya oyunu gecəsi“",
                     LocalDateTime.of(2026, 10, 24, 23, 10)),
                 az.qoshul.app.core.model.XpLedgerEntry(
                     "xl2", "v5", true, 275, 325,
-                    "11 taq edilən iştirakçı · aktivite şəkli paylaşılıb",
+                    "11 taq edilən iştirakçı · tədbir şəkli paylaşılıb",
                     LocalDateTime.of(2026, 10, 24, 23, 12)),
             )),
         "v2" to account("v2", "Coffee Lab", 120,
@@ -571,7 +633,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             listOf(
                 az.qoshul.app.core.model.XpLedgerEntry(
                     "xl3", "v2", true, 120, 120,
-                    "Təşkilatçı + taq edilən iştirakçılar — \"Səhər qəhvə klubu\"",
+                    "Təşkilatçı + taq edilən iştirakçılar — „Səhər qəhvə klubu“",
                     LocalDateTime.of(2026, 10, 18, 10, 5)),
             )),
         "v6" to account("v6", "Kokaltı Kafesi", 0,
@@ -581,7 +643,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             listOf(
                 az.qoshul.app.core.model.XpLedgerEntry(
                     "xl4", "v1", true, 340, 340,
-                    "Təşkilatçı + taq edilən iştirakçılar — \"Padel turniri\"",
+                    "Təşkilatçı + taq edilən iştirakçılar — „Padel turniri“",
                     LocalDateTime.of(2026, 10, 11, 21, 40)),
             )),
         "v4" to account("v4", "Dostlar Bağı", 150,
@@ -589,7 +651,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             listOf(
                 az.qoshul.app.core.model.XpLedgerEntry(
                     "xl5", "v4", true, 150, 150,
-                    "Təşkilatçı + 4 taq edilən iştirakçı — \"Piknik günü\"",
+                    "Təşkilatçı + 4 taq edilən iştirakçı — „Piknik günü“",
                     LocalDateTime.of(2026, 10, 4, 17, 20)),
             )),
         // A3 (M0, 2026-11-07): v3 (Techno Hub) əvvəllər YOX idi — partners ⊆
@@ -610,7 +672,7 @@ object FakeQoshulDataSource : QoshulDataSource {
     // ── Başlanğıc söhbətlər ──
     override val initialEventMessages = mapOf(
         "e1" to listOf(
-            ChatMessage("Leyla Məmmədova", "Salam hamıya! Şənbə saat 10:00-da Coffee Lab-da görüşürük."),
+            ChatMessage("Leyla Məmmədova", "Salam hamıya! Şənbə saat 10:00-da Coffee Lab'da görüşürük."),
             ChatMessage("Rəşad Əliyev", "Yarışıq, yerlər tükənməsin."),
             ChatMessage("Nigar Quliyeva", "Yeni gələnlər üçün masa rezervasiya etdim, narahat olmayın."),
         ),

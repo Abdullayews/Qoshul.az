@@ -146,7 +146,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                         item {
                             EmptyState(
                                 icon = Icons.Filled.ConfirmationNumber,
-                                text = "Hələ kuponun yoxdur.\n\"Endirimlər\" siyahısından XP ilə al.",
+                                text = "Hələ kuponun yoxdur.\n„Endirimlər“ siyahısından XP ilə al.",
                             )
                         }
                     } else {

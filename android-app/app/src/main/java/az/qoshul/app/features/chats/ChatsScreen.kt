@@ -34,7 +34,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.animation.animateColorAsState
@@ -88,8 +87,6 @@ import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.ChatBubble
-import az.qoshul.app.core.ui.CommunityBanner
-import az.qoshul.app.core.ui.EmptyState
 import az.qoshul.app.core.ui.SectionHeading
 import az.qoshul.app.core.ui.ViewHeading
 import az.qoshul.app.core.ui.imagePaint
@@ -273,18 +270,9 @@ private fun ChatList(
                     }
                 }
             }
-            // D-063: siyahı qısa olanda ekranda böyük boş sahə qalırdı —
-            // (vizual audit: "bottom 60% blank — looks like a loading error").
-            // Söhbət açma yollarını izah edən bilgi kartı boşluğu doldurur.
-            item {
-                Spacer(Modifier.height(20.dp))
-                CommunityBanner(
-                    icon = Icons.Outlined.ChatBubble,
-                    title = "Yeni söhbətlər burada açılır",
-                    subtitle = "Tədbirə qoşulanda onun qrup söhbəti, match/dostluq " +
-                        "qəbulunda isə şəxsi söhbət siyahıda görünür.",
-                )
-            }
+            // D-132 (direktiv 2026-11-11: „chatlar menyusunda yeni söhbətlər
+            // burda açılır barını sil“): D-063 izahat banneri LƏĞV — siyahı
+            // artıq yalnız real söhbətlərdən ibarətdir.
         }
     }
 }

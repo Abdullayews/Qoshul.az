@@ -164,9 +164,6 @@ fun AppShell(
     var index by rememberSaveable { mutableStateOf(0) }
     var navHidden by rememberSaveable { mutableStateOf(false) }
     var wasChats by rememberSaveable { mutableStateOf(false) }
-    // D-111: Kəşf-in daxili görünüşü (1 = Tədbirlər) — AI FAB yalnız
-    // Tədbirlər görünüşündə görünür (direktiv: „eventlərdə görünsün“)
-    var feedEvents by rememberSaveable { mutableStateOf(false) }
 
     // "Yol göstər / Yol tap" → xəritə tabına keç (D-050)
     LaunchedEffect(focus.request) {
@@ -293,8 +290,7 @@ fun AppShell(
                     label = "tabs",
                 ) { i ->
                     when (i) {
-                        0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat,
-                            onViewChange = { feedEvents = it == 1 })
+                        0 -> FeedScreen(engine, nav, focus, onFinishActivity, onOpenChat)
                         1 -> MapScreen(engine, nav, focus)
                         2 -> ChatsScreen(engine, chatFocus)
                         else -> ProfileScreen(engine, nav, onFinishActivity, onOpenChat)
@@ -319,14 +315,17 @@ fun AppShell(
             )
         }
     }
-    // — D-111: AI FAB (direktiv 2026-11-10: „ai düyməsini navigation barın
-    // üstündə sağ tərəfdə floating button kimi et“) — sağ altda, nav pill
-    // zone-unun dəqiq üstündə (96dp — navbar inset + 10 + bar hündürlüyü +
-    // boşluq), yalnız Kəşf→Tədbirlər görünüşündə: chat, xəritə, profil,
-    // ayarlar və digər push ekranlarda gizlidir.
+    // — D-111/D-130: AI FAB (direktiv 2026-11-10: „ai düyməsini navigation
+    // barın üstündə sağ tərəfdə floating button kimi et“ + direktiv
+    // 2026-11-11: „ai düyməsini dairədə, liquid glass, nav barın üstündə
+    // sağda, yalnız xəritə və chat-da gizli“) — sağ altda, nav pill
+    // zone-unun dəqiq üstündə (96dp), Xəritə (1) və Söhbətlər (2) tabları
+    // xaricində HƏR YERDƏ görünür (Ana menyunun hər iki görünüşü + Profil);
+    // push-ekranlar AppShell-i tam əvəz etdiyindən orada avtomatik gizlidir.
+    // Üzlük: nav bar ilə EYNİ liquid glass recipesi.
     Box(Modifier.fillMaxSize()) {
         AiFab(
-            visible = index == 0 && feedEvents,
+            visible = index != 1 && index != 2,
             onClick = { nav.push(Route.Assistant) },
             modifier = Modifier.align(Alignment.BottomEnd),
         )
@@ -335,9 +334,14 @@ fun AppShell(
 }
 
 /**
- * D-111: AI üzən düyməsi — marka qradiyentli (primary→primaryDeep) 54dp
- * dairə, nav barın üstündə sağda; görünəndə pop (scale+fade), yox olanda
- * yığılır. CreateFab (rail) ilə eyni vizual dili daşıyır.
+ * D-111: AI üzən düyməsi — 54dp dairə, nav barın üstündə sağda; görünəndə
+ * pop (scale+fade), yox olanda yığılır.
+ * D-130 (direktiv 2026-11-11: „ai düyməsini dairədə, nav bardakı kimi
+ * liquid glass stilində“): üzlük nav bar ilə EYNİ Echo-Music liquid glass
+ * recipesidir (liquidGlassNavBar — app backdrop-unu nümunə götürür, işıq
+ * məzmun üstündə işıq şüşə, tünd üstündə tünd); ikon glass monoxromu
+ * (navGlassPalette().selected). Fallback (API <31 / Robolectric): köhnə
+ * brend qradiyenti (primary→primaryDeep) + primaryFg ikon.
  * D-121: pressable (pressScale + haptik + indication=null).
  * D-122: GİRİŞ 220ms gecikir — tab keçidinin 2-ci fazası (yeni tabın
  * girişi) bitəndən sonra pop edir; keçid animasiyaları ilə iç-içə girmir.
@@ -349,6 +353,9 @@ private fun AiFab(
     modifier: Modifier = Modifier,
 ) {
     val interaction = remember { MutableInteractionSource() }
+    // D-130: glass gate — FloatingNav ilə eyni qayda (backdrop + API 31+)
+    val glassOn = isLiquidGlassAvailable() && LocalAppBackdrop.current != null
+    val iconTint = if (glassOn) navGlassPalette().selected else Q.primaryFg
     AnimatedVisibility(
         visible = visible,
         modifier = modifier,
@@ -371,26 +378,35 @@ private fun AiFab(
                 .padding(bottom = 96.dp)
                 .pressable(interaction, onClick = onClick)
                 .size(54.dp)
-                .shadow(
-                    9.dp, CircleShape,
-                    ambientColor = Q.primary.copy(alpha = 0.32f),
-                    spotColor = Q.primary.copy(alpha = 0.38f),
-                )
-                .background(
-                    Brush.linearGradient(listOf(Q.primary, Q.primaryDeep)),
-                    CircleShape,
+                .then(
+                    if (glassOn) {
+                        // D-130: liquid glass dairə — nav bar recipesi (Shadow
+                        // və highlight glass boru xəttindən gəlir)
+                        Modifier.liquidGlassNavBar(CircleShape)
+                    } else {
+                        Modifier
+                            .shadow(
+                                9.dp, CircleShape,
+                                ambientColor = Q.primary.copy(alpha = 0.32f),
+                                spotColor = Q.primary.copy(alpha = 0.38f),
+                            )
+                            .background(
+                                Brush.linearGradient(listOf(Q.primary, Q.primaryDeep)),
+                                CircleShape,
+                            )
+                    }
                 )
                 .semantics { contentDescription = "AI köməkçi" },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.SmartToy, null, tint = Q.primaryFg, modifier = Modifier.size(24.dp))
+            Icon(Icons.Filled.SmartToy, null, tint = iconTint, modifier = Modifier.size(24.dp))
         }
     }
 }
 
 /** .app-header — 67px, ağ, alt haşiyə (web-parity).
  *  D-111 (direktiv: „ai düyməsini yuxarıdan sil“): AI ikonu headerdən
- *  çıxarıldı — üzən düymə (FAB) oldu, yalnız Tədbirlər görünüşündə.
+ *  çıxarıldı — üzən düymə (FAB) oldu (D-130: xəritə/söhbət xaricində).
  *  D-115 (direktiv: „tərəfdaşlar ikonunu dəyişdir“): Handshake →
  *  Storefront (tərəfdaş məkanlar dili). */
 @Composable

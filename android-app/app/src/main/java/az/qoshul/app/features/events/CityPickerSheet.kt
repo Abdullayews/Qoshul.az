@@ -53,7 +53,8 @@ fun CityPickerSheet(engine: AppEngine, onDismiss: () -> Unit) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             Text("Şəhərini seç", style = T.titleLg)
             Spacer(Modifier.height(4.dp))
-            Text("Azərbaycanın ${engine.dataSource.cities.size} şəhər və rayon mərkəzindən birini seç.",
+            // D-126: bütün Azərbaycan şəhərləri (79) — A-Z sıralı siyahı
+            Text("Azərbaycanın ${engine.dataSource.cities.size} şəhəri — A-Z sıralı, axtarış dəstəklənir.",
                 style = T.subtitle)
             Spacer(Modifier.height(12.dp))
             // axtarış sətri

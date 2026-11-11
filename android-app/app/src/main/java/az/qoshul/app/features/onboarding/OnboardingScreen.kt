@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Male
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Nightlife
 import androidx.compose.material.icons.filled.LocalCafe
@@ -492,8 +493,40 @@ private fun InterestsStep(engine: AppEngine, onNext: () -> Unit) {
 
 @Composable
 private fun PermissionsStep(engine: AppEngine) {
-    var location by rememberSaveable { mutableStateOf(false) }
-    var notifications by rememberSaveable { mutableStateOf(false) }
+    // D-129 (direktiv 2026-11-11: „istifadəçidən lokasiya, şəkil, saxlama
+    // icazələri al“): SAXTA keçidlər (kartı basanda lokal boolean true edirdi,
+    // heç bir sistem dialoqu açılmırdı) → REAL runtime sorğuları.
+    // API-uyğun icazə: şəkil = READ_MEDIA_IMAGES (33+) / saxlama =
+    // READ_EXTERNAL_STORAGE (≤32); bildiriş yalnız API 33+ runtime-dır.
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    fun isGranted(p: String) =
+        androidx.core.content.ContextCompat.checkSelfPermission(ctx, p) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+
+    val imagePerm =
+        if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.READ_MEDIA_IMAGES
+        else android.Manifest.permission.READ_EXTERNAL_STORAGE
+    val notifPerm: String? =
+        if (android.os.Build.VERSION.SDK_INT >= 33) android.Manifest.permission.POST_NOTIFICATIONS else null
+
+    var locGranted by rememberSaveable {
+        mutableStateOf(
+            isGranted(android.Manifest.permission.ACCESS_FINE_LOCATION) ||
+                isGranted(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        )
+    }
+    var imageGranted by rememberSaveable { mutableStateOf(isGranted(imagePerm)) }
+    var notifGranted by rememberSaveable { mutableStateOf(notifPerm?.let { isGranted(it) } ?: true) }
+
+    val locLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { locGranted = it }
+    val imgLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { imageGranted = it }
+    val notifLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { notifGranted = it }
 
     Column(
         Modifier
@@ -511,14 +544,19 @@ private fun PermissionsStep(engine: AppEngine) {
         Spacer(Modifier.height(14.dp))
         Text("İcazələr", style = T.h1)
         Spacer(Modifier.height(4.dp))
-        Text("Hər ikisi istəyə bağlıdır — rədd etsən də tətbiq işləməyə davam edir.", style = T.subtitle)
+        Text("Hamısı istəyə bağlıdır — rədd etsən də tətbiq işləməyə davam edir.", style = T.subtitle)
         Spacer(Modifier.height(18.dp))
         PermCard(Icons.Filled.LocationOn, "Məkan",
-            "Yaxınlıq üçün · \"tətbiq istifadə olunarkən\"\nDəqiq koordinat yalnız sənə görünür, başqalarına ~məsafə.",
-            location) { location = true }
+            "Yaxınlıq üçün · „tətbiq istifadə olunarkən”\nDəqiq koordinat yalnız sənə görünür, başqalarına ~məsafə.",
+            locGranted) { locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION) }
+        PermCard(Icons.Filled.PhotoLibrary, "Şəkil və saxlama",
+            "Profil şəkli və tədbir fotoları üçün qalereya girişi.\nBeta mərhələsində brend şəkil dəsti ilə davam edir.",
+            imageGranted) { imgLauncher.launch(imagePerm) }
         PermCard(Icons.Filled.Notifications, "Bildirişlər",
             "Match, mesaj, xatırlatma və rezerv yenilikləri (FCM).",
-            notifications) { notifications = true }
+            notifGranted) {
+            if (notifPerm != null) notifLauncher.launch(notifPerm) else notifGranted = true
+        }
         Spacer(Modifier.height(16.dp))
         CommunityBanner(
             icon = Icons.Filled.EmojiEvents,
@@ -532,7 +570,7 @@ private fun PermissionsStep(engine: AppEngine) {
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(Q.rPill),
             colors = ButtonDefaults.buttonColors(containerColor = Q.primary, contentColor = Q.primaryFg),
-        ) { Text("Qoshul-a başla", style = T.button) }
+        ) { Text("Qoshula başla", style = T.button) }
         Spacer(Modifier.height(24.dp))
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Schedule
+import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.core.motion.scaleTap
 import az.qoshul.app.core.ui.LiveBadge
 import az.qoshul.app.features.events.CityPickerSheet
@@ -40,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NightlightRound
@@ -95,11 +97,11 @@ import az.qoshul.app.features.events.EventsScreen
  * Kəşf (ANA EKRAN) — Flutter feed_screen.dart portu (ROL TAB 1, D-034):
  * "Sənin üçün | Tədbirlər" daxili tabları; axtarış pinned (D-029).
  * D-115 (v0.41.0, direktiv 2026-11-09: „ana ekranda salam kimsə və xp
- * kimi olan barı sil"): salamlaşma bloku („Salam, Kimsə!" + rütbə
+ * kimi olan barı sil"): salamlaşma bloku („Salam, Kimsə!“ + rütbə
  * nişanı + alt yazı) və XP trekı LƏĞV — axın birbaşa aktiv
  * tədbirlərlə açılır; şəhər həbi axtarış sətrinə keçir (funksiya
- * itmir). [onViewChange] — daxili görünüş dəyişməsi AppShell-ə
- * xəbər verir (AI FAB yalnız Tədbirlər görünüşündə görünür — D-111).
+ * itmir). onViewChange parametri D-130-də ləğv edildi — AI FAB artıq
+ * görünüşə deyil, yalnız tab-a bağlıdır (xəritə/söhbət xaricində).
  */
 @Composable
 fun FeedScreen(
@@ -108,7 +110,6 @@ fun FeedScreen(
     focus: MapFocusState,
     onFinishActivity: (QoshulEvent) -> Unit = {},
     onOpenChat: (QoshulEvent) -> Unit = {},
-    onViewChange: (Int) -> Unit = {},
 ) {
     var view by remember { mutableIntStateOf(0) }
     var search by remember { mutableStateOf("") }
@@ -138,13 +139,13 @@ fun FeedScreen(
         val tabs: @Composable () -> Unit = {
             ViewTabs(
                 active = v,
-                onChanged = { view = it; onViewChange(it) },
+                onChanged = { view = it },
                 horizontal = 0.dp,
             )
         }
         if (v == 0) {
             ForYouView(engine, nav, focus, search = search, onSearchChange = { search = it },
-                onOpenEvents = { view = 1; onViewChange(1) }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat,
+                onOpenEvents = { view = 1 }, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat,
                 tabs = tabs)
         } else {
             EventsScreen(engine, nav, focus, onFinishActivity = onFinishActivity, onOpenChat = onOpenChat,
@@ -233,6 +234,18 @@ private fun ForYouView(
         }
     }
 
+    // D-126 (direktiv: „bütün Azərbaycan şəhərləri ... ana menyudakı axtarışda,
+    // A-Z sıralı“): axtarış mətni şəhər adına tuş olanda üst 5 şəhər nəticəsi
+    // göstərilir (mənbə siyahısı AzCollation A-Z sıralıdır); seçəndə
+    // engine.setCity — məkan/insan bölmələri yeni şəhərə keçir, şəhər həbi
+    // yenilənir, axtarış təmizlənir.
+    val cityHits = remember(search) {
+        if (search.isBlank()) emptyList()
+        else engine.dataSource.cities.filter {
+            it.name.lowercase().contains(search.lowercase())
+        }.take(5)
+    }
+
     // D-125: tablar + axtarış + şəhər həbi məzmunla BİRGƏ sürüşür — sabit
     // başlıq bloku YOX (köhnə Column+pinned-Row ləğv; axtarışın üstündəki
     // 6+10dp ritm axtarış sətrinin bottom-16dp-də qorunub).
@@ -253,12 +266,60 @@ private fun ForYouView(
                 Box(Modifier.weight(1f)) {
                     SearchBarField(
                         value = search, onValueChange = onSearchChange,
-                        hint = "Məkan və ya insan axtar...",
+                        hint = "Məkan, insan və ya şəhər axtar...",
                     )
                 }
                 Spacer(Modifier.width(10.dp))
                 CityPill(city = st.city, onClick = { cityOpen = true })
             }
+        }
+        // — D-126: Şəhərlər bölməsi (axtarışa uyğun şəhərlər, A-Z) —
+        if (cityHits.isNotEmpty()) {
+            item(key = "cityHitsHeading") {
+                SectionHeading(
+                    title = "Şəhərlər", icon = Icons.Filled.LocationOn,
+                    trailing = {
+                        Text("${cityHits.size} nəticə", style = T.chipXs.copy(fontWeight = FontWeight.W600, color = Q.mutedFg))
+                    },
+                )
+            }
+            items(cityHits, key = { "city-${it.name}" }) { c ->
+                val selected = st.city == c.name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pressable(onClick = {
+                            engine.setCity(c.name)
+                            onSearchChange("")
+                        })
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.LocationOn, null,
+                        tint = if (selected) Q.primaryText else Q.mutedFg,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        c.name,
+                        style = T.personName.copy(
+                            fontWeight = if (selected) FontWeight.W700 else FontWeight.W500,
+                            color = if (selected) Q.primaryText else Q.foreground,
+                        ),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        c.region,
+                        style = T.metaSm.copy(color = Q.mutedFg),
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (selected) {
+                        Icon(Icons.Filled.Check, null, tint = Q.primaryText, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
+            item(key = "cityHitsSpace") { Spacer(Modifier.height(12.dp)) }
         }
             // — Aktiv tədbirlər (D-054): bugünkü tədbirlər birbaşa ana ekranda —
             val active = engine.activeEvents
@@ -355,7 +416,7 @@ private fun ForYouView(
                         icon = Icons.Filled.Search,
                         text = if (search.isEmpty())
                             "Yaxınlıqda yeni insan yoxdur.\nGörüşlərə qoşul, tanış ol!"
-                        else "\"$search\" üzrə insan tapılmadı.",
+                        else "„$search“ üzrə insan tapılmadı.",
                     )
                 }
             } else {

@@ -73,6 +73,7 @@ import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.theme.OpenSans
 import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.NavState
+import az.qoshul.app.features.partners.BusinessModeSheet
 import az.qoshul.app.core.ui.PushScreenScaffold
 import az.qoshul.app.core.ui.Route
 import androidx.compose.material.icons.filled.People
@@ -93,6 +94,8 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     var showPhone by remember { mutableStateOf(false) }
     // D-115: şirkət hesabı dialoqu
     var showCompany by remember { mutableStateOf(false) }
+    // D-131: Biznes rejimi sheet-i (şirkət dialoqundan açılır)
+    var businessOpen by remember { mutableStateOf(false) }
     var cityOpen by remember { mutableStateOf(false) }
     var inviteOpen by remember { mutableStateOf(false) }
     // D-119: dizayn seçim dialoqları (rəng + mod)
@@ -160,7 +163,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             item { SectionLabel("Bildirişlər") }
             item {
                 SettingsCard {
-                    NavRow(Icons.Filled.Tune, "Bildiriş tercihleri", null,
+                    NavRow(Icons.Filled.Tune, "Bildiriş seçimləri", null,
                         subtitle = "Hər tip ayrıca; marketinq 23:00-08:00 sükut") {
                         nav.push(Route.Notifications)
                     }
@@ -428,7 +431,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 Column {
                     Text(
                         "Telefon nömrəni əlavə et və SMS kodunu yaz. Təsdiq " +
-                            "\"Təsdiqlənmiş\" nişanı + ${XpRules.PHONE_VERIFY_XP} XP verir.",
+                            "„Təsdiqlənmiş“ nişanı + ${XpRules.PHONE_VERIFY_XP} XP verir.",
                         style = T.bodySm,
                     )
                     Spacer(Modifier.height(12.dp))
@@ -516,7 +519,10 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
 
     // — D-115: şirkət hesabı dialoqu („ayarların sonuna yaxın bir yerdə
     // şirkət hesabına keç düyməsi olsun“) — tərəfdaş/şirkət axınının
-    // giriş nöqtəsi; beta mərhələsində məlumatlandırma dialoqudur.
+    // giriş nöqtəsi. D-131 (direktiv 2026-11-11: „biznes yalnız ayarlarda
+    // biznes hesabına keç seçənəyində görünsün“): Tərəfdaşlar ekranından
+    // köçürülən Biznes rejimi (işçi modu — XP endirimi) ARTIQ buradan
+    // açılır — biznes UI-ın yeganə giriş nöqtəsi bu dialoqdur.
     if (showCompany) {
         AlertDialog(
             onDismissRequest = { showCompany = false },
@@ -527,14 +533,26 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         "rezervasiyaları, endirim kuponları və obyekt XP hesabatı " +
                         "bir paneldən idarə olunur.\n\nTərəfdaş olmaq üçün: " +
                         "qoshul.az/partners ünvanından müraciət et — komanda " +
-                        "obyektini təsdiqləyib hesabı aktivləşdirəcək.",
+                        "obyektini təsdiqləyib hesabı aktivləşdirəcək.\n\nBeta " +
+                        "demoda Biznes rejimini (müştəri XP kodunu oxu → hesab → " +
+                        "endirim) birbaşa sınaya bilərsən.",
                     style = T.subtitle.copy(lineHeight = 21.sp),
                 )
             },
             confirmButton = {
+                TextButton(onClick = { showCompany = false; businessOpen = true }) {
+                    Text("Biznes rejimini aç", style = T.button)
+                }
+            },
+            dismissButton = {
                 TextButton(onClick = { showCompany = false }) { Text("Bağla", style = T.button) }
             },
         )
+    }
+
+    // D-131: Biznes rejimi sheet-i — yalnız bu ekrandan (şirkət dialoqu → aç)
+    if (businessOpen) {
+        BusinessModeSheet(engine, onDismiss = { businessOpen = false })
     }
 }
 

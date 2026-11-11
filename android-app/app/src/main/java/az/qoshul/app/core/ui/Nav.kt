@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,21 @@ import az.qoshul.app.core.theme.T
  * Navigation-Compose kitabxanası bu mərhələdə RƏDD (Flutter imperativ
  * Navigator modelinə birebir uyğun + deep-link lazım olanda əlavə olunar;
  * qərar docs/decisions.md D-036).
+ *
+ * D-127 (v0.44.0, direktiv 2026-11-11: „ayarlara girib çıxandan sonra
+ * istifadəçi Profil tabında qalsın, menyuya yönləndirilməsin“): hər ekran
+ * SaveableStateProvider içindədir — push/pop roundtrip-də rememberSaveable
+ * state İTMİR. Əvvəl AppShell (home) push açılanda kompozisiyadan çıxır,
+ * tab index-i (Profil) sıfırlanırdı — ayarlardan qayıdanda istifadəçi
+ * Ana menyuya düşürdü. İndi index=3 bərpa olunur (navigation-compose
+ * NavHost-un eyni mexanizmi).
+ *
+ * D-134 (direktiv: „animasiyaları daha da araşdır“): push/pop keçidi 2
+ * FAZALIDIR (D-122 tab keçidi pariteti) — (1) köhnə ekran 140ms-də tam
+ * çıxır, (2) yeni ekran yalnız SONRA girir (220ms, 140ms gecikmə ilə).
+ * Əvvəlki vahid crossfade-də iki ekran eyni anda yarı-şəffaf olurdu —
+ * arxada qalan window fonu (ağ) görünüb „iç içə“ təsir bağışlayırdı
+ * (D-128 ilə birlikdə tam həll: artıq arxada tema rəngi görünür).
  */
 
 /** Push olunan ekranlar (AppShell daxilində). */
@@ -97,6 +113,10 @@ fun GlassNavHost(
     content: @Composable (Route) -> Unit,
 ) {
     val current: Route? = nav.stack.lastOrNull()
+    // D-127: state retention — SaveableStateHolder hər ekranın saveable
+    // state-ini kompozisiyadan çıxanda saxlayır, geri qayıdanda bərpa edir
+    // (navigation-compose NavHost-un eyni mexanizmi).
+    val stateHolder = rememberSaveableStateHolder()
     // D-053 fix: sistem geri düyməsi/gesture push-ekranı POP etsin.
     // Əvvəl heç bir BackHandler yox idi — push-ekranda geri basanda bütün
     // tətbiq bağlanırdı (10 push-ekranın hamısında). Sheet-lər öz daxili
@@ -105,19 +125,26 @@ fun GlassNavHost(
     AnimatedContent(
         targetState = current,
         transitionSpec = {
+            // D-134: 2-fazalı sıralama — köhnə ekranın çıxışı (140ms) ilə
+            // yeni ekranın girişi (220ms + 140ms gecikmə) ÜST-ÜSTƏ DÜŞMÜR.
+            // Motion.ease = easeOutCubic (D-025 dil ailəsi).
             (
-                fadeIn(tween(Motion.D4, easing = Motion.ease)) +
+                fadeIn(tween(220, delayMillis = 140, easing = Motion.ease)) +
                     scaleIn(
                         initialScale = 0.98f,
-                        animationSpec = tween(Motion.D4, easing = Motion.ease),
+                        animationSpec = tween(220, delayMillis = 140, easing = Motion.ease),
                     ) togetherWith
-                    fadeOut(tween(Motion.D2))
+                    fadeOut(tween(140))
                 ).using(androidx.compose.animation.SizeTransform(clip = false))
         },
         label = "glassNav",
         contentKey = { it?.hashCode() ?: -1 },
     ) { target ->
-        if (target == null) home() else content(target)
+        if (target == null) {
+            stateHolder.SaveableStateProvider("home") { home() }
+        } else {
+            stateHolder.SaveableStateProvider("route-${target.hashCode()}") { content(target) }
+        }
     }
 }
 

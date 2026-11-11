@@ -142,7 +142,7 @@ fun EventDetailSheet(
                 ) {
                     Icon(Icons.Filled.WorkspacePremium, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Aktiviteyi bitir və XP payla (+${XpRules.ORGANIZER_XP})", style = T.button)
+                    Text("Tədbiri bitir və XP payla (+${XpRules.ORGANIZER_XP})", style = T.button)
                 }
             } else if (engine.isActivityFinished(event.id)) {
                 Spacer(Modifier.height(8.dp))

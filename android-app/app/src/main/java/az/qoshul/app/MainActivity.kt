@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -21,6 +24,8 @@ import az.qoshul.app.core.model.EventProposal
 import az.qoshul.app.core.model.Partner
 import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.model.parseAssistantEvent
+import az.qoshul.app.core.motion.Motion
+import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.GlassNavHost
 import az.qoshul.app.core.ui.MapFocusState
@@ -126,7 +131,20 @@ fun QoshulApp() {
     val finishActivity: (QoshulEvent) -> Unit = remember { { e -> finishEvent = e } }
     val openChat: (QoshulEvent) -> Unit = remember { { e -> chatFocus.event(e.id) } }
 
-    Box(Modifier.fillMaxSize()) {
+    // D-128 (direktiv 2026-11-11: „qara/AMOLED temalarda animasiyalar arasında
+    // ağ səhifə problemi həll olsun, temaya uyğun rəngli keçid animasiyası da
+    // əlavə et“): kök qat TEMAYA UYĞUN fon daşıyır — (1) GlassNavHost push/pop
+    // keçidinin yarı-şəffaf anlarında (D-134 2-fazalı keçid) arxada AĞ window
+    // fonu deyil, tema rəngi görünür; (2) dizayn modu dəyişəndə (Ağ↔Qara↔Amoled)
+    // fon yumşaq KEÇİR (animateColorAsState 400ms — „temaya uyğun keçid
+    // animasiyası“), qəflən snap YOX. Window-un öz fonu Theme.kt-də (SideEffect)
+    // tema rənginə boyanır — ilk kadr öncəsi flaşın qarşısı.
+    val rootBg by animateColorAsState(
+        targetValue = Q.background,
+        animationSpec = tween(400, easing = Motion.ease),
+        label = "rootBg",
+    )
+    Box(Modifier.fillMaxSize().background(rootBg)) {
         when {
             !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() }, engine = engine)
             !st.onboarded -> OnboardingScreen(engine)

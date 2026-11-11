@@ -76,7 +76,7 @@ fun SafetyScreen(nav: NavState) {
                     icon = Icons.Outlined.Shield,
                     title = "Dəqiq ünvan heç vaxt paylaşılmır",
                     subtitle = "Başqa istifadəçilər yalnız təxmini məsafəni görür " +
-                        "(məs. \"~2 km\"). Ev ünvanın və koordinatın API cavablarında gizli qalır.",
+                        "(məs. „~2 km“). Ev ünvanın və koordinatın API cavablarında gizli qalır.",
                 )
             }
             item { SafetyNote() }

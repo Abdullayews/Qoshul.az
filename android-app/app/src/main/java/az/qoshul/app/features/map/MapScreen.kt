@@ -106,6 +106,27 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     val pickHost = rememberPickHostState()
     val hour = remember { engine.now().hour } // A2: vahid clock
 
+    // D-129 (direktiv 2026-11-11: „istifadəçidən lokasiya, şəkil, saxlama
+    // icazələri al“): xəritə ilk dəfə açılanda (SESSİYA başına bir dəfə —
+    // bayraq MapFocusState-də, tab keçidlərində ölmür) lokasiya icazəsi
+    // istənilir — yaxınlıq pinləri/məsafə filtrləri üçün. Rədd → seçilmiş
+    // şəhərin mərkəzi ilə davam (mövcud demo davranışı dəyişmir).
+    val locCtx = androidx.compose.ui.platform.LocalContext.current
+    val locLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { }
+    if (!focus.locationPermissionAsked &&
+        android.content.pm.PackageManager.PERMISSION_GRANTED !=
+        androidx.core.content.ContextCompat.checkSelfPermission(
+            locCtx, android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    ) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            focus.locationPermissionAsked = true
+            locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
     // U1.1 (UI-03 pattern): seçilmiş pinin alt kartı açıqdırsa GERİ kartı
     // bağlayır (app-i yox). PickHost overlay (D-089) öz BackHandler-ini
     // qoyur — içdə olduğu üçün (innermost) üstünlük onundur.

@@ -102,7 +102,7 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
                             Spacer(Modifier.height(2.dp))
                             Text(
                                 "Səviyyə üçün istifadə olunur — xərclənmir. " +
-                                    "Səviyyən artdıqca Kəşf-də sənə peşəkar aktivliklər önə düşür.",
+                                    "Səviyyən artdıqca Kəşfdə sənə peşəkar aktivliklər önə düşür.",
                                 style = T.chipXs.copy(color = Q.mutedFg),
                             )
                         }
@@ -184,7 +184,7 @@ private fun AccountCard(
             Text("Hərəkətlər (ledger)", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.mutedFg))
             Spacer(Modifier.height(8.dp))
             if (account.recentLedger.isEmpty()) {
-                Text("Hərəkət yoxdur — aktivite keçir, XP qazan.", style = T.chipXs.copy(color = Q.mutedFg))
+                Text("Hərəkət yoxdur — tədbir keçir, XP qazan.", style = T.chipXs.copy(color = Q.mutedFg))
             } else {
                 account.recentLedger.take(4).forEach { e ->
                     Row(Modifier.padding(bottom = 7.dp)) {

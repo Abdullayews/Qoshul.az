@@ -962,12 +962,12 @@ class AppEngine(
         val acct = venueXp[venueId] ?: return null
         finishedActivitiesV.add(e.id)
 
-        report(SyncEvent.GrantVenueXpIntent(acct.venueId, XpRules.ORGANIZER_XP, "Təşkilatçı — \"${e.title}\""))
+        report(SyncEvent.GrantVenueXpIntent(acct.venueId, XpRules.ORGANIZER_XP, "Təşkilatçı — „${e.title}“"))
 
         // Təşkilatçı mükafatı — obyekt bazasına grant (A2: at = vahid clock).
         acct.grant(
             XpRules.ORGANIZER_XP,
-            "Təşkilatçı mükafatı — \"${e.title}\"",
+            "Təşkilatçı mükafatı — „${e.title}“",
             "xl${ledgerSeq++}",
             now(),
         )
@@ -983,7 +983,7 @@ class AppEngine(
         notify(
             NotifType.LEVEL_UP,
             "+${XpRules.ORGANIZER_XP} Endirim XP qazandın",
-            "${acct.venueName} · \"${e.title}\" bitirildi. Şəkillər obyektin " +
+            "${acct.venueName} · „${e.title}“ bitirildi. Şəkillər obyektin " +
                 "biznes hesabına düşdü; ${taggedIds.size} iştirakçı taq edildi " +
                 "(hər birinə +${XpRules.TAGGED_PARTICIPANT_XP} XP).",
         )
@@ -1218,7 +1218,7 @@ class AppEngine(
         if (rec.isEmpty()) return "Bu şəhərdə hələ tədbir yoxdur. İlk tədbiri sən yarat — mən kömək edərəm!"
         return "Sənin üçün tövsiyələrim:\n\n" +
             rec.joinToString("\n") { "• ${it.title} (${it.category}) — ${it.date} ${it.time}" } +
-            "\n\nHər hansı birini seçmək istəsən, \"Sənin üçün\" bölməsində AI seçimi də sınaya bilərsən."
+            "\n\nHər hansı birini seçmək istəsən, „Sənin üçün“ bölməsində AI seçimi də sınaya bilərsən."
     }
 
     /** Azərbaycan hərfləri üçün lowercase (I→ı və İ→i xüsusi halları). */
