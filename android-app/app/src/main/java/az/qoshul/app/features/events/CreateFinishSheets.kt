@@ -56,7 +56,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.data.dateLabelFor
@@ -306,6 +309,10 @@ fun CreateEventSheet(
                 QoshulTextField(
                     value = capacityText,
                     onValueChange = { if (it.length <= 3 && it.all(Char::isDigit)) capacityText = it },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
                 )
             }
             // U4-1 (D-097): qonşu FormLine strukturuna keçid — əvvəl sağ sütun
@@ -325,7 +332,12 @@ fun CreateEventSheet(
                 Box(Modifier.weight(1f)) {
                     FormLine(if (paid) "Qiymət (AZN)" else "Yaş həddi") {
                         if (paid) {
-                            QoshulTextField(value = price, onValueChange = { price = it.filter { c -> c.isDigit() } })
+                            QoshulTextField(value = price,
+                                onValueChange = { price = it.filter { c -> c.isDigit() } },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Done,
+                                ))
                         } else {
                             DropdownLine(
                                 host = pickHost, key = "age",

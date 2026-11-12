@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -229,7 +231,11 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     value = code,
                     onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) code = it },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { if (!busy) submit() }),
                     textStyle = T.statSm.copy(fontWeight = FontWeight.W700),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(Q.rPill),
@@ -295,13 +301,18 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             Spacer(Modifier.height(12.dp))
             if (mode == AuthMode.UP) {
                 FormFieldX("Ad və soyad") {
-                    QoshulTextField(value = name, onValueChange = { name = it })
+                    QoshulTextField(value = name, onValueChange = { name = it },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
                 }
             }
             FormFieldX("E-poçt") {
                 QoshulTextField(
                     value = email, onValueChange = { email = it },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = if (mode == AuthMode.UP) ImeAction.Next else ImeAction.Done,
+                    ),
+                    onImeAction = if (mode != AuthMode.UP) { { if (!busy) submit() } } else null,
                 )
             }
             if (mode != AuthMode.FORGOT) {
@@ -309,6 +320,11 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     QoshulTextField(
                         value = pass, onValueChange = { pass = it },
                         visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = if (mode == AuthMode.UP) ImeAction.Next else ImeAction.Done,
+                        ),
+                        onImeAction = if (mode != AuthMode.UP) { { if (!busy) submit() } } else null,
                     )
                 }
             }
@@ -317,6 +333,11 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     QoshulTextField(
                         value = repeat, onValueChange = { repeat = it },
                         visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done,
+                        ),
+                        onImeAction = { if (!busy) submit() },
                     )
                 }
             }
@@ -406,6 +427,7 @@ fun QoshulTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     maxLines: Int = 1,
     hint: String? = null,
+    onImeAction: (() -> Unit)? = null,
 ) {
     OutlinedTextField(
         value = value,
@@ -414,6 +436,8 @@ fun QoshulTextField(
         maxLines = maxLines,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
+        keyboardActions = onImeAction?.let { KeyboardActions(onDone = { it() }) }
+            ?: KeyboardActions.Default,
         modifier = modifier.fillMaxWidth(),
         placeholder = hint?.let {
             { Text(it, style = T.input.copy(color = Q.mutedFg)) }

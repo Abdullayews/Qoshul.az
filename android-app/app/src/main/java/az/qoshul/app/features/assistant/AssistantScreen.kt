@@ -36,7 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
@@ -187,7 +189,13 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
             ) {
                 Box(Modifier.weight(1f)) {
                     QoshulTextField(value = text, onValueChange = { text = it },
-                        hint = "Sualını yaz...")
+                        hint = "Sualını yaz...",
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        onImeAction = {
+                            if (!st.assistantBusy && text.isNotBlank()) {
+                                engine.sendAssistant(text); text = ""
+                            }
+                        })
                 }
                 Spacer(Modifier.width(8.dp))
                 Button(

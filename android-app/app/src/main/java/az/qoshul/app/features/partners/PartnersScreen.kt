@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -338,12 +339,21 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                         SpendError.BAD_CONFIG -> "Bu obyektin XP məzənnəsi düzgün qurulmayıb — obyektlə əlaqə saxlayın."
                         else -> ""
                     }
-                    QoshulTextField(value = bill, onValueChange = { bill = it }, hint = "48.00")
+                    QoshulTextField(value = bill,
+                        onValueChange = { bill = it },
+                        hint = "48.00",
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next,
+                        ))
                     Spacer(Modifier.height(4.dp))
                     Text("Hesab məbləği (₼)", style = T.label)
                     Spacer(Modifier.height(10.dp))
                     QoshulTextField(value = xpSpend, onValueChange = { xpSpend = it },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done,
+                        ))
                     Spacer(Modifier.height(4.dp))
                     Text("Xərclənəcək XP", style = T.label)
                     Spacer(Modifier.height(14.dp))

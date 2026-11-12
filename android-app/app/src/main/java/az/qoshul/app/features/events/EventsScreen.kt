@@ -445,11 +445,13 @@ fun EventCard(
                     )
                 }
                 if (!event.past) {
+                    // D-138: 38→48dp — Material/WCAG minimum toxunma hədəfi;
+                    // vizual dairə 34dp qalır (görmə balansı), hit sahəsi böyüyür.
                     Box(
                         Modifier
                             .align(Alignment.TopEnd)
-                            .padding(10.dp)
-                            .size(38.dp)
+                            .padding(4.dp)
+                            .size(48.dp)
                             .androidxMinTouch { onToggleSave() },
                         contentAlignment = Alignment.Center,
                     ) {
@@ -459,9 +461,11 @@ fun EventCard(
                                 .background(Q.photoFg.copy(alpha = 0.9f), CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
+                            // D-139: etiket vəziyyəti bildirir (TalkBack üçün)
                             Icon(
                                 if (saved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                                "Yadda saxla", tint = if (saved) Q.primaryText else Q.foreground,
+                                if (saved) "Saxlanmışlardan çıxart" else "Yadda saxla",
+                                tint = if (saved) Q.primaryText else Q.foreground,
                                 modifier = Modifier.size(18.dp),
                             )
                         }
