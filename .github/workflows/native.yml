@@ -236,8 +236,6 @@ jobs:
       - name: Tag-dən versiya + release yarat
         env:
           GH_TOKEN: ${{ github.token }}
-          # QEYD (gh CLI): --notes-from-tag -R/--repo ilə birlikdə işləmir —
-          # repo GH_REPO env-i ilə verilir (D-099 CI dərsi, run 42503437941).
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -248,17 +246,27 @@ jobs:
           mv apk/app-release.apk "${APK}"
           ls -la "${APK}"
           echo "TAG=${TAG} → APK=${APK}"
+          # D-141: annotated tag mesajını REST API-dən oxu (--notes-from-tag
+          # D-099-də sənədləşdirilən bug-a görə işə düşmür — v0.35.0-dan
+          # bəri release qeydləri "Full Changelog" sətrinə düşürdü).
+          # QEYD: release job-da checkout YOXDUR → SHA git ilə deyil,
+          # refs API ilə həll olunur (annotated tag → tag obyekti → message).
+          TAG_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.sha)"
+          NOTES="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" --jq .message || true)"
           if gh release view "${TAG}" > /dev/null 2>&1; then
             echo "Release artıq mövcuddur — APK yenilənir (--clobber)"
             gh release upload "${TAG}" "${APK}" --clobber
-          else
-            gh release create "${TAG}" "${APK}" \
-              --title "Qoshul.az v${BASE} (Beta)" \
-              --latest \
-              --notes-from-tag || \
+          elif [ -z "${NOTES}" ]; then
+            echo "Tag mesajı boşdur — generate-notes ilə davam"
             gh release create "${TAG}" "${APK}" \
               --title "Qoshul.az v${BASE} (Beta)" \
               --latest \
               --generate-notes
+          else
+            printf '%s' "${NOTES}" > release-notes.md
+            gh release create "${TAG}" "${APK}" \
+              --title "Qoshul.az v${BASE} (Beta)" \
+              --latest \
+              --notes-file release-notes.md
           fi
           echo "✔ Release hazır: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
