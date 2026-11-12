@@ -253,6 +253,18 @@ jobs:
           # refs API ilə həll olunur (annotated tag → tag obyekti → message).
           TAG_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.sha)"
           NOTES="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${TAG_SHA}" --jq .message || true)"
+          # APK bloku — ölçü + SHA-256 faylın özündən hesablanır (D-141)
+          APK_SHA="$(sha256sum "${APK}" | cut -d' ' -f1)"
+          APK_MB="$(du -m "${APK}" | cut -f1)"
+          APK_BLOCK="
+
+          ---
+
+          📦 **APK:** \`${APK}\` · ${APK_MB} MB · SHA-256 \`${APK_SHA}\`
+
+          **Quraşdırma:** Android 7.0+ (minSdk 24) · beta imzası · [README bələdçisi](https://github.com/Abdullayews/Qoshul.az#readme)
+
+          <sub>Qoshul.az — Azərbaycanın sosial platforması</sub>"
           if gh release view "${TAG}" > /dev/null 2>&1; then
             echo "Release artıq mövcuddur — APK yenilənir (--clobber)"
             gh release upload "${TAG}" "${APK}" --clobber
@@ -263,7 +275,7 @@ jobs:
               --latest \
               --generate-notes
           else
-            printf '%s' "${NOTES}" > release-notes.md
+            printf '%s' "${NOTES}${APK_BLOCK}" > release-notes.md
             gh release create "${TAG}" "${APK}" \
               --title "Qoshul.az v${BASE} (Beta)" \
               --latest \
