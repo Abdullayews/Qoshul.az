@@ -3,6 +3,8 @@
 .env.*
 # M5 (D-086): nümunə konfiq repo-da qalır (sirlər YOXDUR — PLACEHOLDER)
 !infra/selfhost/.env.example
+# M4 (D-082): mikroservis nümunə konfiqi — eyni PLACEHOLDER prinsipi
+!service/.env.example
 keys/
 *.p8
 *-service-account.json
