@@ -116,10 +116,14 @@ class EngineSyncTest {
         e.setProfileName(past.host)
         val res = e.finishActivity(past, listOf("p1", "p2"))
         assertTrue(res != null)
+        // F2 (audit 2026-11-14): məbləğ artıq klientdən getmir — intent
+        // yalnız event ID + taq edilənləri daşıyır; məbləği serverdə
+        // fn_finish_activity sabitləyir (50/25, XpRules pariteti).
         assertTrue(
             rec.events.any {
                 it is SyncEvent.GrantVenueXpIntent &&
-                    it.amount == az.qoshul.app.core.model.XpRules.ORGANIZER_XP
+                    it.eventId == past.id &&
+                    it.taggedIds == listOf("p1", "p2")
             },
         )
     }

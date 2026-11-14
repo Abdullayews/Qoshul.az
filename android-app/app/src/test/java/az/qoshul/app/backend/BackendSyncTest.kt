@@ -130,7 +130,7 @@ class SupabaseMapTest {
         assertEquals("Yürüş", c.params["p_title"]!!.toString().trim('"'))
     }
 
-    @Test fun `grant venue xp intent — F2: fn_finish_activity`() {
+    @Test fun `grant venue xp intent — F2 fn_finish_activity`() {
         // F2 (audit 2026-11-14): self-grant qapısı bağlandı — köhnə
         // fn_grant_venue_xp authenticated-dən revok olundu; yeni axın
         // host-müəlliflik + sabit məbləği serverdə yoxlayır.
