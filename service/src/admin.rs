@@ -18,24 +18,14 @@ fn forbidden() -> axum::response::Response {
 
 /// X-Admin-Token başlığı DƏYƏRİ server tokeni ilə eyni olmalıdır
 /// (yalnız «konfiq var» yoxlaması KİFAYƏT DEYİL — dəyər yoxlanır).
+/// F7: qarşılaşdırma sabit-vaxtlı — lib.rs-dəki `constant_time_eq` (tək mənbə).
 fn auth_ok(st: &AppState, headers: &axum::http::HeaderMap) -> bool {
     st.admin_ok()
         && headers
             .get("x-admin-token")
             .and_then(|v| v.to_str().ok())
-            .map(|v| constant_time_eq(v, &st.admin_token))
+            .map(|v| crate::constant_time_eq(v, &st.admin_token))
             .unwrap_or(false)
-}
-
-/// Sabit-vaxt müqayisə (timing attack qarşısı).
-fn constant_time_eq(a: &str, b: &str) -> bool {
-    if a.len() != b.len() {
-        return false;
-    }
-    a.bytes()
-        .zip(b.bytes())
-        .fold(0u8, |acc, (x, y)| acc | (x ^ y))
-        == 0
 }
 
 fn bad_gateway(e: crate::supabase::RestError) -> axum::response::Response {

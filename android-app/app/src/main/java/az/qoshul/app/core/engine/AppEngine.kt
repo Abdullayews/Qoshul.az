@@ -962,7 +962,9 @@ class AppEngine(
         val acct = venueXp[venueId] ?: return null
         finishedActivitiesV.add(e.id)
 
-        report(SyncEvent.GrantVenueXpIntent(acct.venueId, XpRules.ORGANIZER_XP, "Təşkilatçı — „${e.title}“"))
+        // F2 (audit): server axını artıq fn_finish_activity-dir — event ID +
+        // taq edilmiş iştirakçılar gedir; məbləğ serverdə sabitlənib.
+        report(SyncEvent.GrantVenueXpIntent(acct.venueId, e.id, taggedIds))
 
         // Təşkilatçı mükafatı — obyekt bazasına grant (A2: at = vahid clock).
         acct.grant(

@@ -1,11 +1,21 @@
 //! FCM HTTP v1 (D-069/D-082) — OAuth2 service-account → RS256 JWT →
-//! fcm.googleapis.com/v1/projects/{id}/messages:send.
+//! **token endpoint mübadiləsi** → access_token (F3 düzəlişi, audit 2026-11-14)
+//! → fcm.googleapis.com/v1/projects/{id}/messages:send.
+//!
+//! Google OAuth2 (developers.google.com/identity/protocols/oauth2/service-account):
+//! imzalı JWT `Authorization: Bearer` kimi FCM-ə DİREKT göndərilə bilməz —
+//! əvvəlcə POST oauth2.googleapis.com/token (grant_type=
+//! urn:ietf:params:oauth:grant-type:jwt-bearer, assertion=<jwt>) ilə
+//! short-lived access_token alınmalıdır. Keş: ~1 saat, 60 s ehtiyat ilə.
 //!
 //! PLACEHOLDER konfiqdə sender SÖNDÜRÜLÜR (fcm_ready=false) — joblar
 //! notifikasiya cədvəlinə yazır, push getmir (log).
 
 use serde_json::{json, Value};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+/// Access-token keşinə qədər keçən müddət (expires_in=3600; 60 s ehtiyat).
+const TOKEN_EARLY_REFRESH: Duration = Duration::from_secs(60);
 
 #[derive(Debug, Clone)]
 pub struct ServiceAccount {
@@ -25,8 +35,9 @@ impl ServiceAccount {
     }
 }
 
-/// OAuth2 access token (RS256 JWT) — jsonwebtoken::encode birbaşa imzalı
-/// JWT qaytarır (D-082: əl ilə base64 YOX).
+/// OAuth2 JWT assertion (RS256) — jsonwebtoken::encode birbaşa imzalı
+/// JWT qaytarır (D-082: əl ilə base64 YOX). Bu, ACCESS TOKEN deyil —
+/// token endpointdə mübadilə ediləcək assertion-dur (F3).
 pub fn oauth_token(sa: &ServiceAccount) -> Result<String, String> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -53,6 +64,8 @@ pub fn oauth_token(sa: &ServiceAccount) -> Result<String, String> {
 pub struct FcmSender {
     account: Option<ServiceAccount>,
     http: reqwest::Client,
+    /// F3: access-token keşi — RS256 imzası + şəbəkə turu yalnız ~1x/saat.
+    token_cache: tokio::sync::RwLock<Option<(String, Instant)>>,
 }
 
 impl FcmSender {
@@ -64,6 +77,7 @@ impl FcmSender {
                 None
             },
             http: reqwest::Client::new(),
+            token_cache: tokio::sync::RwLock::new(None),
         }
     }
 
@@ -71,9 +85,43 @@ impl FcmSender {
         self.account.is_some()
     }
 
+    /// JWT assertion → access_token mübadiləsi (Google OAuth2 JWT-bearer grant).
+    async fn access_token(&self, sa: &ServiceAccount) -> Result<String, String> {
+        {
+            let cached = self.token_cache.read().await;
+            if let Some((tok, at)) = cached.as_ref() {
+                if at.elapsed() + TOKEN_EARLY_REFRESH < Duration::from_secs(3600) {
+                    return Ok(tok.clone());
+                }
+            }
+        }
+        let assertion = oauth_token(sa)?;
+        let resp = self
+            .http
+            .post("https://oauth2.googleapis.com/token")
+            .form(&[
+                ("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"),
+                ("assertion", assertion.as_str()),
+            ])
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        if !resp.status().is_success() {
+            return Err(format!("oauth exchange {}", resp.status()));
+        }
+        let v: Value = resp.json().await.map_err(|e| e.to_string())?;
+        let tok = v
+            .get("access_token")
+            .and_then(Value::as_str)
+            .ok_or("cavabda access_token yoxdur")?
+            .to_string();
+        *self.token_cache.write().await = Some((tok.clone(), Instant::now()));
+        Ok(tok)
+    }
+
     pub async fn send(&self, device_token: &str, title: &str, body: &str) -> Result<(), String> {
         let sa = self.account.as_ref().ok_or("FCM PLACEHOLDER-dır")?;
-        let token = oauth_token(sa)?;
+        let token = self.access_token(sa).await?;
         let payload = json!({
             "message": {
                 "token": device_token,

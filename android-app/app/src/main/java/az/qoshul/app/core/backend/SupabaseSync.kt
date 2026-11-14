@@ -118,9 +118,13 @@ class SupabaseSync(
             is SyncEvent.BuyCouponIntent ->
                 rpc("fn_buy_coupon", "p_offer_id" to e.offerId)
             is SyncEvent.GrantVenueXpIntent ->
+                // F2 (audit 2026-11-14): köhnə fn_grant_venue_xp client-in
+                // amount-u ilə self-grant idi → authenticated-dən revok olundu.
+                // Yeni axın: fn_finish_activity — host-müəlliflik, sabit məbləğ
+                // (50/25) və idempotensiya server tərəfində yoxlanılır.
                 rpc(
-                    "fn_grant_venue_xp", "p_venue_id" to e.venueId,
-                    "p_amount" to e.amount, "p_note" to e.note,
+                    "fn_finish_activity", "p_event_id" to e.eventId,
+                    "p_tagged_ids" to e.taggedIds,
                 )
             is SyncEvent.XpCardIssueIntent ->
                 rpc("fn_issue_xp_card_nonce", "p_venue_id" to e.venueId)
@@ -131,7 +135,10 @@ class SupabaseSync(
                     "fn_create_reservation", "p_venue_id" to e.venueId,
                     "p_resv_date" to e.dateIso, "p_resv_time" to e.time,
                     "p_party" to e.party, "p_note" to e.note,
-                    "p_coupon_id" to e.couponCode,   // M1: görüntü kodu; M2 server-ID
+                    // F6 (audit 2026-11-14): köhnə kod p_coupon_id-yə KOD
+                    // qoyurdu, SQL ULID id gözləyirdi → həmişə INVALID_INPUT.
+                    // 0004 hər ikisini qəbul edir; M1 kod, M2 server-ID.
+                    "p_coupon_code" to e.couponCode,
                 )
             is SyncEvent.ConfirmReservationIntent ->
                 rpc("fn_confirm_reservation", "p_qr_code" to e.qrCode)
