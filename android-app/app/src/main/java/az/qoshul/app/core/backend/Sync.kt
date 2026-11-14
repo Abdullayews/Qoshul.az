@@ -48,8 +48,14 @@ sealed interface SyncEvent {
     /** fn_buy_coupon — D-072: yalnız balansda var olandan; REDD. */
     data class BuyCouponIntent(val offerId: String) : SyncEvent
 
-    /** fn_grant_venue_xp — L.3 təşkilatçı bitirmə axını. */
-    data class GrantVenueXpIntent(val venueId: String, val amount: Int, val note: String) : SyncEvent
+    /**
+     * fn_finish_activity — L.3 təşkilatçı bitirmə axını (F2, audit 2026-11-14).
+     * Köhnə fn_grant_venue_xp self-grant idi; yeni server funksiyası host-
+     * müəllifliyi, sabit məbləği (50/25) və idempotensiya açarını özü yoxlayır.
+     */
+    data class GrantVenueXpIntent(
+        val venueId: String, val eventId: String, val taggedIds: List<String>,
+    ) : SyncEvent
 
     /** fn_issue_xp_card_nonce — B5: CSPRNG serverdə. */
     data class XpCardIssueIntent(val venueId: String) : SyncEvent

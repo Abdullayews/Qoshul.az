@@ -69,8 +69,12 @@ class SupabaseMapTest {
     }
 
     @Test fun `rezerv intentləri — create confirm use cancel noshow`() {
-        assertEquals("fn_create_reservation",
-            fn(SyncEvent.CreateReservationIntent("v5", "2026-11-09", "18:00", 4, "", null, "r1")))
+        val create = SupabaseSync.mapEvent(
+            SyncEvent.CreateReservationIntent("v5", "2026-11-09", "18:00", 4, "", null, "r1"))!!
+        assertEquals("fn_create_reservation", create.fn)
+        // F6 (audit 2026-11-14): kupon KODU p_coupon_code ilə gedir (0004
+        // körpüsü); p_coupon_id yalnız M2 server-ID gələndə istifadə olunacaq.
+        assertNull(create.params["p_coupon_id"])
         assertEquals("fn_confirm_reservation",
             fn(SyncEvent.ConfirmReservationIntent("QSH-r-abc")))
         assertEquals("fn_use_reservation",
@@ -78,6 +82,16 @@ class SupabaseMapTest {
         assertEquals("fn_cancel_reservation",
             fn(SyncEvent.CancelReservationIntent("r1")))
         assertEquals("fn_mark_no_show", fn(SyncEvent.NoShowIntent("r1")))
+    }
+
+    @Test fun `rezerv kupon KODU ilə — F6 körpüsü`() {
+        val c = SupabaseSync.mapEvent(
+            SyncEvent.CreateReservationIntent("v5", "2026-11-09", "18:00", 2, "",
+                "QSHUL-0001-V2", "r2"))!!
+        assertEquals("fn_create_reservation", c.fn)
+        assertEquals("QSHUL-0001-V2",
+            c.params["p_coupon_code"]!!.toString().trim('"'))
+        assertNull(c.params["p_coupon_id"])
     }
 
     @Test fun `check-in intent null koordinatla`() {
@@ -116,11 +130,18 @@ class SupabaseMapTest {
         assertEquals("Yürüş", c.params["p_title"]!!.toString().trim('"'))
     }
 
-    @Test fun `grant venue xp intent`() {
+    @Test fun `grant venue xp intent — F2: fn_finish_activity`() {
+        // F2 (audit 2026-11-14): self-grant qapısı bağlandı — köhnə
+        // fn_grant_venue_xp authenticated-dən revok olundu; yeni axın
+        // host-müəlliflik + sabit məbləği serverdə yoxlayır.
         val c = SupabaseSync.mapEvent(
-            SyncEvent.GrantVenueXpIntent("v5", 50, "Təşkilatçı"))!!
-        assertEquals("fn_grant_venue_xp", c.fn)
-        assertEquals("Təşkilatçı", c.params["p_note"]!!.toString().trim('"'))
+            SyncEvent.GrantVenueXpIntent("v5", "e9", listOf("u1", "u2")))!!
+        assertEquals("fn_finish_activity", c.fn)
+        assertEquals("e9", c.params["p_event_id"]!!.toString().trim('"'))
+        // taq edilmiş iştirakçılar massiv kimi gedir
+        val tagged = c.params["p_tagged_ids"]!!.toString()
+        assertTrue(tagged.contains("u1") && tagged.contains("u2"))
+        assertNull(c.params["p_amount"])   // məbləş artıq klientdən GƏLMİR
     }
 
     @Test fun `location + notif pref + invite`() {

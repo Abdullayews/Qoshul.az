@@ -124,22 +124,39 @@ pub async fn run_reminders(
     fcm: &FcmSender,
     now: DateTime<Utc>,
 ) -> Result<usize, String> {
-    // aktiv rezervlər (sent_at hələ NULL olanlar SELECT-də gəlir)
-    let rows = db
+    // aktiv rezervlər — F4 düzəlişi: İKİ select (24s və 2s üçün ayrı
+    // idempotensiya sütunları). Köhnə tək filtri reminder_24h_sent_at=is.null
+    // idi → 24s göndərilən kimi sətir selektdən düşürdülər və 2 SAATLIQ
+    // xatırlatma heç vaxt seçilmirdi.
+    let base_cols =
+        "select=id,profile_id,resv_date,resv_time,reminder_24h_sent_at,reminder_2h_sent_at";
+    let rows_24 = db
         .select(
             "reservations",
-            "select=id,profile_id,resv_date,resv_time,reminder_24h_sent_at,reminder_2h_sent_at&status=in.(PENDING,CONFIRMED)&reminder_24h_sent_at=is.null&resv_date=gte.today",
+            &format!(
+                "{base_cols}&status=in.(PENDING,CONFIRMED)&reminder_24h_sent_at=is.null&resv_date=gte.today"
+            ),
         )
         .await
         .map_err(|e| e.to_string())?;
+    let rows_2h = db
+        .select(
+            "reservations",
+            &format!(
+                "{base_cols}&status=in.(PENDING,CONFIRMED)&reminder_2h_sent_at=is.null&resv_date=gte.today"
+            ),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut rows = rows_24;
+    rows.extend(rows_2h);
     let plans = plan_reminders(&rows, now);
     let mut sent = 0usize;
     for action in plans {
-        let (col, other_col) = match action.kind {
-            ReminderKind::Hours24 => (columns::REMINDER_24H, columns::REMINDER_2H),
-            ReminderKind::Hours2 => (columns::REMINDER_2H, columns::REMINDER_24H),
+        let col = match action.kind {
+            ReminderKind::Hours24 => columns::REMINDER_24H,
+            ReminderKind::Hours2 => columns::REMINDER_2H,
         };
-        let _ = other_col;
         // İDEMPOTENT UPDATE: yalnız NULL-dursa yazılır; təkrar tur boş qayıdır
         let updated = db
             .patch(
@@ -153,15 +170,26 @@ pub async fn run_reminders(
             continue; // başqa tur artıq göndərib — bu İDEMPOTENTLİYİN sübutudur
         }
         sent += 1;
-        // notifications cədvəli (RLS bypass — service_role)
-        let _ = db
+        // F5 düzəlişi: köhnə kod fn_set_notif_pref çağırırdı — yəni
+        // İSTİFADƏÇİNİN BİLDİRİŞ TƏRCİHİNİ yandırırdı, notification YAZMIRDI.
+        // Əvəzinə service-only fn_push_notification (tərcih + sükut saatı
+        // SQL tərəfində; qaytarır: push göndərilsinmi).
+        let push_ok = db
             .rpc(
-                "fn_set_notif_pref",
-                json!({ "p_notif_type": action.kind.notif_type(), "p_enabled": true }),
+                "fn_push_notification",
+                json!({
+                    "p_profile_id": action.profile_id,
+                    "p_type": action.kind.notif_type(),
+                    "p_title": "Rezerv xatırlatması",
+                    "p_body": action.kind.label(),
+                }),
             )
-            .await; // tərcih yoxlaması SQL tərəfində daha dəqiq olmalı — burada səhv udulur
-                    // FCM: push token-ləri
-        if fcm.enabled() {
+            .await
+            .ok()
+            .and_then(|v: Value| v.as_bool())
+            .unwrap_or(false);
+        // FCM: push token-ləri (yalnız tərcihə görə + sükut saatı xaricində)
+        if fcm.enabled() && push_ok {
             let tokens = db
                 .select(
                     "push_tokens",
@@ -182,8 +210,10 @@ pub async fn run_reminders(
 }
 
 /// Moderasiya jobu: köhnə OPEN report-lar DISMISSED; >7 günlük PENDING
-/// review-lər avtomatik APPROVE (fn_moderate_review → XP + həftəlik cap SQL-də).
-pub async fn run_moderation(db: &dyn SupabaseRest) -> Result<(usize, usize), String> {
+/// review-lər avtomatik APPROVE (fn_moderate_review → XP + həftəlik cap SQL-də);
+/// vaxtı bitmiş ACTIVE kuponlar EXPIRED (F9 — fn_expire_coupons əvvəl heç
+/// kim tərəfindən çağırılmırdı).
+pub async fn run_moderation(db: &dyn SupabaseRest) -> Result<(usize, usize, usize), String> {
     // 1) report-lar
     let open = db
         .select("reports", "select=id,created_at&status=eq.OPEN")
@@ -240,7 +270,15 @@ pub async fn run_moderation(db: &dyn SupabaseRest) -> Result<(usize, usize), Str
             approved += 1;
         }
     }
-    Ok((dismissed, approved))
+    // 3) F9: kupon köhnəlmə işi — fn_expire_coupons idempotentdir
+    //    (yalnız ACTIVE + vaxtı keçmiş sətirlər UPDATE olunur).
+    let expired = db
+        .rpc("fn_expire_coupons", json!({}))
+        .await
+        .ok()
+        .and_then(|v| v.as_i64())
+        .unwrap_or(0) as usize;
+    Ok((dismissed, approved, expired))
 }
 
 #[cfg(test)]

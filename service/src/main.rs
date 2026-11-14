@@ -41,8 +41,10 @@ async fn main() {
                     Err(e) => eprintln!("[jobs] reminders xətası: {e}"),
                 }
                 match qoshul_service::jobs::run_moderation(st.db.as_ref()).await {
-                    Ok((d, a)) if d + a > 0 => {
-                        println!("[jobs] moderasiya: {d} dismissed, {a} approved")
+                    Ok((d, a, x)) if d + a + x > 0 => {
+                        println!(
+                            "[jobs] moderasiya: {d} dismissed, {a} approved, {x} kupon expired"
+                        )
                     }
                     Ok(_) => {}
                     Err(e) => eprintln!("[jobs] moderasiya xətası: {e}"),

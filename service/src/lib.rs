@@ -42,9 +42,48 @@ impl AppState {
     }
 }
 
+/// Sabit-vaxt müqayisə (timing attack qarşısı) — admin.rs ilə eyni semantika.
+pub(crate) fn constant_time_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.bytes()
+        .zip(b.bytes())
+        .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+        == 0
+}
+
+/// F7 (audit 2026-11-14): /jobs/* və /admin/* üçün ORTAQ token qoruması.
+/// Köhnə layoutda job route-ları heç bir auth qatından keçmirdi — servis
+/// 0.0.0.0-a bind olunduğundan xarici tetikləmə mümkün idi. Middleware
+/// hər iki qrupu əhatə edir; /health açıq qalır (D-082 degrade kontraktı).
+async fn require_admin_token(
+    axum::extract::State(st): axum::extract::State<Arc<AppState>>,
+    req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    let ok = st.admin_ok()
+        && req
+            .headers()
+            .get("x-admin-token")
+            .and_then(|v| v.to_str().ok())
+            .map(|v| constant_time_eq(v, &st.admin_token))
+            .unwrap_or(false);
+    if ok {
+        next.run(req).await
+    } else {
+        (StatusCode::FORBIDDEN, Json(json!({"error": "FORBIDDEN"}))).into_response()
+    }
+}
+
 pub fn build_router(state: Arc<AppState>) -> Router {
-    Router::new()
+    // F7: /health AÇIQ qalır (D-082 degrade kontraktı — CI health yoxlaması
+    // token göndərmir); /jobs/* və /admin/* ümumi token qoruması altında.
+    // İki ayrı sub-router birləşdirilir — route_layer yalnız qorunana düşür.
+    let public_routes = Router::new()
         .route("/health", get(health))
+        .with_state(state.clone());
+    let protected_routes = Router::new()
         .route("/jobs/reminders/run", post(run_reminders_now))
         .route("/jobs/moderation/run", post(run_moderation_now))
         .route("/admin/reports", get(admin::list_reports))
@@ -52,7 +91,12 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/admin/profiles/{id}", post(admin::restrict_profile))
         .route("/admin/reviews/{id}", post(admin::moderate_review))
         .route("/admin/actions", get(admin::list_actions))
-        .with_state(state)
+        .route_layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            require_admin_token,
+        ))
+        .with_state(state);
+    public_routes.merge(protected_routes)
 }
 
 async fn health(
@@ -85,9 +129,11 @@ async fn run_moderation_now(
     axum::extract::State(st): axum::extract::State<Arc<AppState>>,
 ) -> axum::response::Response {
     match jobs::run_moderation(st.db.as_ref()).await {
-        Ok((d, a)) => {
-            (StatusCode::OK, Json(json!({"dismissed": d, "approved": a}))).into_response()
-        }
+        Ok((d, a, x)) => (
+            StatusCode::OK,
+            Json(json!({"dismissed": d, "approved": a, "coupons_expired": x})),
+        )
+            .into_response(),
         Err(e) => (StatusCode::BAD_GATEWAY, Json(json!({"error": e}))).into_response(),
     }
 }

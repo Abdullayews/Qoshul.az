@@ -170,7 +170,16 @@ async fn reminders_idempotent_ikinci_tur_gormur() {
     // D-092: resv dinamikdir (AZ-indi+24s) — run_reminders_now real now
     // istifadə edir, pəncərə 20-28s həmişə tutur:
     // (plan_reminder-in saf testləri jobs.rs-də; burada HTTP təbəqəsi yoxlanılır)
-    let (status, v) = post_json(router.clone(), "/jobs/reminders/run", None, json!({})).await;
+    // F7 (audit): /jobs/* artıq token qorumasındadır — headersiz 403:
+    let (s, _) = post_json(router.clone(), "/jobs/reminders/run", None, json!({})).await;
+    assert_eq!(s, axum::http::StatusCode::FORBIDDEN);
+    let (status, v) = post_json(
+        router.clone(),
+        "/jobs/reminders/run",
+        Some("test-admin-token"),
+        json!({}),
+    )
+    .await;
     assert_eq!(status, axum::http::StatusCode::OK);
     assert!(v.get("reminders_sent").is_some());
     // İDEMPOTENSİYA: patch çağırışı və yalnız sent_at NULL şərti ilə
@@ -194,7 +203,13 @@ async fn reminders_patch_bos_qaytarir_sa_gondermir() {
     })]));
     fake.make_patch_succeed(0); // «başqa tur artıq göndərib»
     let st = test_state(fake.clone());
-    let (status, v) = post_json(build_router(st), "/jobs/reminders/run", None, json!({})).await;
+    let (status, v) = post_json(
+        build_router(st),
+        "/jobs/reminders/run",
+        Some("test-admin-token"),
+        json!({}),
+    )
+    .await;
     assert_eq!(status, axum::http::StatusCode::OK);
     assert_eq!(v["reminders_sent"], 0); // boş → sayılmır
 }
@@ -203,13 +218,22 @@ async fn reminders_patch_bos_qaytarir_sa_gondermir() {
 async fn moderation_job_stale_report_dismissed() {
     let fake = Arc::new(FakeBackend::new(vec![]));
     let st = test_state(fake.clone());
-    let (status, v) = post_json(build_router(st), "/jobs/moderation/run", None, json!({})).await;
+    let (status, v) = post_json(
+        build_router(st),
+        "/jobs/moderation/run",
+        Some("test-admin-token"),
+        json!({}),
+    )
+    .await;
     assert_eq!(status, axum::http::StatusCode::OK);
     assert!(v["dismissed"].as_i64().unwrap_or(0) >= 1, "{v}");
     assert!(v["approved"].as_i64().unwrap_or(0) >= 1, "{v}");
+    // F9: kupon köhnəlmə RPC-si də çağırılır (yeni cavab sahəsi)
+    assert!(v.get("coupons_expired").is_some(), "{v}");
     // rpc: fn_moderate_review çağırılıb (approve)
     let rpc = fake.rpc_calls.lock().unwrap();
     assert!(rpc.iter().any(|(f, _)| f == "fn_moderate_review"));
+    assert!(rpc.iter().any(|(f, _)| f == "fn_expire_coupons"));
     // patch: reports DISMISSED
     let patches = fake.patch_calls.lock().unwrap();
     assert!(patches

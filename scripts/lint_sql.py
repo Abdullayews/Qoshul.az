@@ -97,10 +97,15 @@ def main(argv: list[str]) -> int:
             problems.append(f"public.{t}: authenticated üçün DML revoke YOXDUR")
 
     # funksiyalar
+    # (create or replace — 0004 evolyusiya miqrasiyasında qəsdən təkrar tərif:
+    #  linter yalnız EYNİ fayl daxilindəki təkrarlardan xəbərdar edir)
     fns = re.findall(r"create\s+or\s+replace\s+function\s+public\.(\w+)", all_sql, re.I)
-    dupes = {x for x in fns if fns.count(x) > 1 and x != "fn_touch_updated_at"}
-    for d in dupes:
-        problems.append(f"funksiya təkrar tərif olunub: {d}")
+    for f in files:
+        sql_f = strip_comments(f.read_text(encoding="utf-8"))
+        per_file = re.findall(r"create\s+or\s+replace\s+function\s+public\.(\w+)", sql_f, re.I)
+        dupes = {x for x in per_file if per_file.count(x) > 1 and x != "fn_touch_updated_at"}
+        for d in dupes:
+            problems.append(f"{f.name}: funksiya təkrar tərif olunub: {d}")
     if "ulid" not in fns:
         problems.append("ulid() funksiyası yoxdur (N1)")
 
