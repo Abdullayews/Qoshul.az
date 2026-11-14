@@ -14,11 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,35 +33,40 @@ import az.qoshul.app.core.theme.T
 
 /**
  * Xəritə kanvasının ortaq xromu (D-108) — hər iki backend (MapLibre /
- * Google) eyni zoom həblərini və xəta kartını işlədir; yalnız kamera
- * əmrləri backend-ə xasdır ([onZoom] delta alır).
+ * Google) eyni kamera həblərini və xəta kartını işlədir; kamera əmrləri
+ * backend-ə xasdır.
  *
- * D-117 (v0.42.0, direktiv 2026-11-10: „üstdəki xəritəni düzləşdirmə
- * düyməsini yaxınlaşdırma və uzaqlaşdırma düymələrinin altına
- * yerləşdir“): SDK compass pəncərənin üstündə deyil, BİZİM üçüncü
- * düyməmizdir — +/− sütununun ALTINDA (Explore qlifi; fırlanmış xəritəni
- * şimala „düzləşdirir“ — bearing/pitch sıfırlanır).
+ * D-143 (v0.48.0, direktiv 2026-11-14: „xəritədən böyüdüb kiçiltmə
+ * düymələrini sil, düzləşdirmə düyməsini böyütmə düyməsinin yerinə qoy,
+ * kiçiltmə düyməsinin yerinə isə telefondan alınan dataya görə
+ * istifadəçinin lokasiyasına getməyi seç“): +/− həbləri LƏĞV —
+ * çıxarma hələ iki barmaq jesti ilə qalır (pinch-zoom native toxunma
+ * jestidir, həb tələb etmir). Sütun indi İKİ həbdən ibarətdir:
+ *  - ÜST (əvvəlki böyütmə yeri): düzləşdirmə — fırlanmış xəritəni
+ *    şimala qaytarır (bearing/pitch sıfırlanır; D-117 direktivi saxlanılır).
+ *  - ALT (əvvəlki kiçiltmə yeri): „mənim yerimə get“ — real telefon
+ *    lokasiyası (GPS/network fix, mock mənbə RƏDD — QoshulLocation).
+ *    İcazə verilməyibsə düymə onu istəyir, sonra kameranı istifadəçiyə
+ *    uçurur (MapScreen məntiqi).
  *
- * D-121: həblər artıq IconButton deyil — vahid pressable dili
- * (pressScale 0.97 + haptik tick + indication=null); 48dp toxunma
- * hədəfi qorunur (U1.3/UI-04).
+ * D-121: həblər vahid pressable dilidir (pressScale 0.97 + haptik tick +
+ * indication=null); 48dp toxunma hədəfi qorunur (U1.3/UI-04).
  */
 @Composable
-internal fun BoxScope.MapZoomControls(
-    onZoom: (Double) -> Unit,
+internal fun BoxScope.MapControls(
     onResetBearing: () -> Unit,
+    onMyLocation: () -> Unit,
 ) {
     Column(
         Modifier
             .align(Alignment.TopEnd)
             .padding(top = 170.dp, end = 12.dp)
     ) {
-        ZoomPill(Icons.Filled.Add, "Yaxınlaşdır") { onZoom(+1.0) }
-        Spacer(Modifier.height(8.dp))
-        ZoomPill(Icons.Filled.Remove, "Uzaqlaşdır") { onZoom(-1.0) }
-        Spacer(Modifier.height(8.dp))
-        // D-117: düzləşdirmə — zoom sütununun altında (direktiv)
+        // D-143: böyütmə həbinin yerində düzləşdirmə (direktiv)
         ZoomPill(Icons.Filled.Explore, "Xəritəni düzləşdir") { onResetBearing() }
+        Spacer(Modifier.height(8.dp))
+        // D-143: kiçiltmə həbinin yerində lokasiya (real GPS, mock YOX)
+        ZoomPill(Icons.Filled.MyLocation, "Mənim yerimə get") { onMyLocation() }
     }
 }
 

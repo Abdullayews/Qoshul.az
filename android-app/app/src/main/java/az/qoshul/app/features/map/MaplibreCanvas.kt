@@ -111,6 +111,7 @@ internal fun MaplibreCanvas(
     onPinTap: (MapPin) -> Unit,
     onPinDismiss: () -> Unit,
     onCameraConsumed: () -> Unit,
+    onMyLocationRequest: () -> Unit,
 ) {
     // D-061: key(mapRetry) — „Yenidən dənə“ bütün xəritə alt-ağacını
     // (rememberMapState daxil) söküb yenidən qurur: təzə stil yükləmə cəhdi.
@@ -183,19 +184,9 @@ internal fun MaplibreCanvas(
             },
         )
 
-        // — zoom + düzləşdirmə həbləri (D-117) — kamera animasiyası ilə —
-        MapZoomControls(
-            onZoom = { delta ->
-                scope.launch {
-                    mapState.animateCamera(
-                        CameraUpdate(
-                            zoom = (mapState.cameraPosition.zoom + delta)
-                                .coerceIn(3.0, 18.0),
-                        ),
-                        CameraAnimation.Ease.Standard,
-                    )
-                }
-            },
+        // — kamera həbləri (D-143: +/− ləğv; düzləşdirmə üst, „mənim
+        // yerim“ alt) — kamera animasiyası ilə —
+        MapControls(
             onResetBearing = {
                 scope.launch {
                     // D-117: fırlanmış/əyilmiş xəritəni şimala düzləşdir
@@ -206,6 +197,7 @@ internal fun MaplibreCanvas(
                     )
                 }
             },
+            onMyLocation = onMyLocationRequest,
         )
 
         // D-061: stil yüklenmə xətası — fallback kart + təkrar cəhd

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- D-120: ikonun üst kənarlarının orta göy tonu (full-bleed foreground-in
-     arxası — yalnız nadir maska/kenar hallarda görünür) -->
+<!-- D-120/D-143: yeni ikon (2026-11-14) — üst kənarların dominant tonu
+     (full-bleed foreground-in arxası; yalnız aşırı maskalarda görünür) -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#D3F0EF" />
+    <solid android:color="#B5E1FC" />
 </shape>

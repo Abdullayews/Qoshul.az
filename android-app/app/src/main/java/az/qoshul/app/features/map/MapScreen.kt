@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import az.qoshul.app.BuildConfig
 import az.qoshul.app.core.engine.AppEngine
+import az.qoshul.app.core.location.QoshulLocation
+import kotlinx.coroutines.launch
 import az.qoshul.app.core.glass.GlassPill
 import az.qoshul.app.core.glass.GlassSurface
 import az.qoshul.app.core.model.MapVisibility
@@ -132,8 +135,56 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     // qoyur — içdə olduğu üçün (innermost) üstünlük onundur.
     BackHandler(enabled = selected != null) { selected = null }
 
-    val myLat = 40.4093
-    val myLng = 49.8671
+    // D-143 (direktiv 2026-11-14: „istifadəçi lokasiyası mock data ola
+    // bilməz“): „mənim yerim“ dotu real telefon lokasiyasındandır —
+    // QoshulLocation (framework LocationManager, mock fix RƏDD). Fix
+    // yoxdursa seçilmiş şəhərin mərkəzi ilə davam (əvvəlki demo dəyəri
+    // FALLBACK kimi qalır — kamera buna uçmur, yalnız dot kənar halda).
+    var myRealLat by remember { mutableStateOf<Double?>(null) }
+    var myRealLng by remember { mutableStateOf<Double?>(null) }
+    var locating by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // İcazə verilibsə xəritə açılışında bir dəfə arxa planda fix al
+    LaunchedEffect(focus.locationPermissionAsked) {
+        if (QoshulLocation.hasPermission(locCtx)) {
+            when (val r = QoshulLocation.locateOnce(locCtx)) {
+                is QoshulLocation.LocateResult.Found -> {
+                    myRealLat = r.lat; myRealLng = r.lng
+                }
+                else -> Unit // fallback ilə davam (aşagıda myLat/myLng)
+            }
+        }
+    }
+
+    val myLat = myRealLat ?: 40.4093
+    val myLng = myRealLng ?: 49.8671
+
+    // D-143: „Mənim yerimə get“ həbi — icazə yoxdursa İSTƏYİR (bir dəfə
+    // rədd edilibsə sistem dialoqu bir daha avtomatik gəlmir — Settings
+    // zənciri lazım olur, amma launcher yenə də soruşur; rədd cavabı
+    // boş keçilir və istifadəçi xəritəni normal istifadə edir). İcazə
+    // varsa real fix alınıb kameraya uçurulur (mock fix RƏDD olunur —
+    // QoshulLocation müdafiəsi).
+    val onMyLocation: () -> Unit = {
+        if (!QoshulLocation.hasPermission(locCtx)) {
+            locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        } else if (!locating) {
+            locating = true
+            scope.launch {
+                when (val r = QoshulLocation.locateOnce(locCtx)) {
+                    is QoshulLocation.LocateResult.Found -> {
+                        myRealLat = r.lat; myRealLng = r.lng
+                        pendingCamera = r.lng to r.lat
+                    }
+                    // İcazə var, amma fix yoxdur / yalnız mock: kamera
+                    // saxta koordinata uçmur — səssizcə fallback dotu qalır
+                    else -> Unit
+                }
+                locating = false
+            }
+        }
+    }
 
     // — pinlər (filtrlərlə, D-027 görünüş rejimi) —
     val venuePins = engine.partners.filter { v ->
@@ -203,6 +254,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     onPinTap = { selected = it },
                     onPinDismiss = { selected = null },
                     onCameraConsumed = { pendingCamera = null },
+                    onMyLocationRequest = onMyLocation,
                 )
             } else {
                 MaplibreCanvas(
@@ -214,6 +266,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     onPinTap = { selected = it },
                     onPinDismiss = { selected = null },
                     onCameraConsumed = { pendingCamera = null },
+                    onMyLocationRequest = onMyLocation,
                 )
             }
         }

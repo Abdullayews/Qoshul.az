@@ -59,6 +59,7 @@ internal fun GoogleMapCanvas(
     onPinTap: (MapPin) -> Unit,
     onPinDismiss: () -> Unit,
     onCameraConsumed: () -> Unit,
+    onMyLocationRequest: () -> Unit,
 ) {
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(LatLng(myLat, myLng), 13f)
@@ -85,7 +86,7 @@ internal fun GoogleMapCanvas(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
         properties = MapProperties(mapType = MapType.NORMAL),
-        // zoom həbləri bizimdir (MapZoomControls) — SDK-nınkini söndürürük
+        // kamera həbləri bizimdir (MapControls) — SDK-nınkini söndürürük
         uiSettings = MapUiSettings(zoomControlsEnabled = false),
         // boş toxunma = seçimi burax (MapLibre onUnhandled pariteti)
         onMapClick = { onPinDismiss() },
@@ -142,13 +143,9 @@ internal fun GoogleMapCanvas(
         }
     }
 
-    // — zoom + düzləşdirmə həbləri (ortaq xrom, D-030 dili; D-117 reset) —
-    MapZoomControls(
-        onZoom = { delta ->
-            scope.launch {
-                cameraPositionState.animate(CameraUpdateFactory.zoomBy(delta.toFloat()))
-            }
-        },
+    // — kamera həbləri (D-143: +/− ləğv; düzləşdirmə üst, „mənim yerim“
+    // alt — ortaq xrom; kamera animasiyaları backend-ə xasdır) —
+    MapControls(
         onResetBearing = {
             scope.launch {
                 // D-117: fırlanmış/əyilmiş xəritəni şimala düzləşdir —
@@ -163,6 +160,7 @@ internal fun GoogleMapCanvas(
                 )
             }
         },
+        onMyLocation = onMyLocationRequest,
     )
     } // Box (kanvas kökü)
 }

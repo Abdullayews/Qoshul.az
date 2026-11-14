@@ -1,13 +1,14 @@
 package az.qoshul.app
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 /**
- * D-126..D-134 (v0.44.0) qoruyucu source-audit testi — istifadəçi
- * direktivlərinin CI-də daimi təsdiqi (TokenAuditTest dili):
+ * D-126..D-134 (v0.44.0) + D-143 (v0.48.0) qoruyucu source-audit testi —
+ * istifadəçi direktivlərinin CI-də daimi təsdiqi (TokenAuditTest dili):
  *   D-126: bütün şəhərlər mənbədə (79) + axtarışda şəhər nəticələri;
  *   D-127: SaveableStateProvider GlassNavHost-da;
  *   D-128: window background tema rənginə boyanır + kök fon keçidi;
@@ -16,7 +17,9 @@ import java.io.File
  *   D-131: biznes CTA mətnləri PartnersScreen-də YOX;
  *   D-132: „minimum 2“ etiketi + chats izahat barı mətni YOX;
  *   D-133: türkizm/ASCII-dırnaq qalıntıları UI stringlərində YOX;
- *   D-134: push/pop keçidi 2-fazalı (delay 140ms).
+ *   D-134: push/pop keçidi 2-fazalı (delay 140ms);
+ *   D-143: xəritədən +/− həbləri silindi, düzləşdirmə böyütmə yerinə,
+ *     kiçiltmə yerinə real lokasiya (telefon datası, mock RƏDD).
  */
 class DirectivesAuditTest {
 
@@ -242,6 +245,66 @@ class DirectivesAuditTest {
         assertTrue(
             "Qızılı brend #EAC66C sabit qalmalıdır",
             c.contains("0xFFEAC66C"),
+        )
+    }
+
+    // ═══════════ D-143: xəritə həbləri (v0.48) ═══════════
+    // Direktiv 2026-11-14: „böyüdüb kiçiltmə düymələrini sil, düzləşdirmə
+    // düyməsini böyütmə düyməsinin yerinə qoy, kiçiltmə yerinə telefondan
+    // alınan dataya görə istifadəçinin lokasiyasına getmək — mock YOX“.
+
+    @Test
+    fun `D-143 zoom plus minus hebleri silinir`() {
+        val chrome = read("$main/features/map/MapChrome.kt")
+        assertFalse(
+            "MapChrome-da böyütmə/kiçiltmə həbi qalmamalıdır",
+            chrome.contains("Icons.Filled.Add") || chrome.contains("Icons.Filled.Remove"),
+        )
+        assertFalse(
+            "MapZoomControls ləğv olunub — MapControls var",
+            chrome.contains("fun BoxScope.MapZoomControls"),
+        )
+    }
+
+    @Test
+    fun `D-143 duzlesdirme birinci heybede lokasiya ikincidedir`() {
+        // sütun sırası: Explore (düzləşdirmə) ÜST, MyLocation ALT
+        val chrome = read("$main/features/map/MapChrome.kt")
+        val iExplore = chrome.indexOf("Icons.Filled.Explore")
+        val iMyLoc = chrome.indexOf("Icons.Filled.MyLocation")
+        assertTrue("hər iki həb mövcuddur", iExplore >= 0 && iMyLoc >= 0)
+        assertTrue(
+            "düzləşdirmə (böyütmə yeri) lokasiyadan (kiçiltmə yeri) YUXARIDA",
+            iExplore < iMyLoc,
+        )
+    }
+
+    @Test
+    fun `D-143 canvaslar mapcontrols istifade edir ve onzoom yoxdur`() {
+        for (f in listOf("MaplibreCanvas.kt", "GoogleMapCanvas.kt")) {
+            val src = read("$main/features/map/$f")
+            assertTrue("$f MapControls çağırmalıdır", src.contains("MapControls("))
+            assertFalse("$f onZoom parametri qalmamalıdır", src.contains("onZoom"))
+        }
+    }
+
+    @Test
+    fun `D-143 istifadeci lokasiyasi mock data ola bilmez`() {
+        val loc = read("$main/core/location/QoshulLocation.kt")
+        assertTrue(
+            "mock provayder fix-ləri rədd edilməlidir (isFromMockProvider)",
+            loc.contains("isFromMockProvider"),
+        )
+        // MapScreen: „mənim yerim“ real fix-dən gəlir — hardcoded dəyər
+        // YALNIZ fallback (?: operatoru) kimi qala bilər
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "MapScreen QoshulLocation istifadə etməlidir (real fix)",
+            scr.contains("QoshulLocation."),
+        )
+        assertFalse(
+            "hardcoded koordinat birbaşa təyinat ola bilməz — fallback olmalıdır",
+            Regex("val myLat = \\s*40\\.4093\\s*$", RegexOption.MULTILINE).containsMatchIn(scr),
         )
     }
 }
