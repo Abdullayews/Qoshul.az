@@ -136,7 +136,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                 }
                 // U2.1 (UI-01) + M4 (audit v0.49): stabil id açarı —
                 // yazı simulyasiyası body-ni dəyişsə də item kimliyi
-                // qorunur (əvvəl "$i-${body.hashCode()}" typing-də partlayırdı)
+                // qorunur (əvvəl body-hash kompoziti typing-də partlayırdı)
                 itemsIndexed(st.assistantMsgs, key = { _, m -> m.id }) { _, m ->
                     ChatBubble(
                         sender = if (m.mine) "Sən" else "Köməkçi",

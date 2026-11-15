@@ -115,8 +115,8 @@ object QoshulLocation {
             // H1 (audit v0.49): provayderlər FƏRDİ qeydiyyata alınır — biri
             // partlasa (Security/IllegalArgument) qalanın listener-i awaitClose
             // ilə təmizlənir. Əvvəl: forEach ümumi try içində idi, ikinci
-            // provayder atanda return@callbackFlow awaitClose-i ATLAYIRDI və
-            // uğurla qeydiyyata alan birincinin listener-i sızırdı.
+            // provayder atanda erkən return awaitClose-i ATLAYIRDI və uğurla
+            // qeydiyyata alan birincinin listener-i sızırdı.
             val registered = providers.mapNotNull { p ->
                 try {
                     lm.requestLocationUpdates(p, 500L, 0f, listener, Looper.getMainLooper())
