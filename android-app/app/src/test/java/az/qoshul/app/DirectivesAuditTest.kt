@@ -319,12 +319,17 @@ class DirectivesAuditTest {
         assertFalse("ic_launcher_monochrome.xml (köhnə halqalar) silinməlidir", File(repoDir(), "app/src/main/res/drawable/ic_launcher_monochrome.xml").exists())
         for (f in listOf("ic_launcher.xml", "ic_launcher_round.xml")) {
             val xml = read("app/src/main/res/mipmap-anydpi-v26/$f")
-            assertFalse("$f monochrome qatına istinad etməməlidir", xml.contains("monochrome"))
+            assertFalse("$f tək-rəngli köhnə qatına istinad etməməlidir", xml.contains("monochrome"))
         }
-        assertFalse(
-            "README-də köhnə favicon şəkli qalmamalıdır",
-            read("README.md").contains("favicon.svg"),
-        )
+        // README əsl Git kökündədir (repoDir = android-app/) — mövcuddursa yoxla
+        val gitRoot = repoDir().parentFile
+        val readme = File(gitRoot, "README.md")
+        if (readme.exists()) {
+            assertFalse(
+                "README-də köhnə favicon şəkli qalmamalıdır",
+                readme.readText().contains("favicon.svg"),
+            )
+        }
     }
 
     @Test
