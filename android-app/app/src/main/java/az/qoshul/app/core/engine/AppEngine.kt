@@ -917,7 +917,7 @@ class AppEngine(
             NotifType.COUPON_EXPIRING,
             "XP endirimi tətbiq olundu",
             "${acct.venueName} · $xpAmount XP → " +
-                String.format("%.2f", xpAmount.toDouble() / acct.config.xpPerAzn) +
+                String.format(java.util.Locale.US, "%.2f", xpAmount.toDouble() / acct.config.xpPerAzn) +
                 " ₼ endirim. Receipt ledger-ə yazıldı.",
         )
         emit()
@@ -1167,7 +1167,10 @@ class AppEngine(
                     // yazı simulyasiyası yeni elementə keçir, çökmür.
                     idx = idx.coerceAtMost(assistantMsgsV.size - 1)
                     shown = reply.substring(0, minOf(shown.length + 2, reply.length))
-                    assistantMsgsV[idx] = ChatMessage("Köməkçi", shown)
+                    // M4 (audit v0.49): copy() id-ni qoruyur — LazyColumn
+                    // key-i typing zamanı sabit qalır (əvvəl hər 24ms-də
+                    // item silinib yenidən yaradılırdı)
+                    assistantMsgsV[idx] = assistantMsgsV[idx].copy(body = shown)
                     emit()
                     delay(24)
                 }

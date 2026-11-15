@@ -411,9 +411,9 @@ private fun ChatView(
                         horizontal = 20.dp, vertical = 8.dp
                     ),
                 ) {
-                    // U2.1 (UI-01): ChatMessage-də id yoxdur — append-only axın;
-                    // index-prefix kompozit açar (AssistantScreen ilə eyni qayda)
-                    itemsIndexed(messages, key = { i, m -> "$i-${m.body.hashCode()}" }) { i, m ->
+                    // U2.1 (UI-01) + M4 (audit v0.49): stabil id açarı
+                    // (AssistantScreen ilə eyni qayda — typing-də kimlik qalır)
+                    itemsIndexed(messages, key = { _, m -> m.id }) { i, m ->
                         StaggerIn(i.coerceIn(0, 8)) {
                             ChatBubble(
                                 sender = m.sender, body = m.body, mine = m.mine,

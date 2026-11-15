@@ -134,9 +134,10 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                         }
                     }
                 }
-                // U2.1 (UI-01): ChatMessage-də id sahəsi yoxdur — append-only
-                // söhbət axını; index-prefix kompozit açar (unikallığı index təmin edir)
-                itemsIndexed(st.assistantMsgs, key = { i, m -> "$i-${m.body.hashCode()}" }) { _, m ->
+                // U2.1 (UI-01) + M4 (audit v0.49): stabil id açarı —
+                // yazı simulyasiyası body-ni dəyişsə də item kimliyi
+                // qorunur (əvvəl "$i-${body.hashCode()}" typing-də partlayırdı)
+                itemsIndexed(st.assistantMsgs, key = { _, m -> m.id }) { _, m ->
                     ChatBubble(
                         sender = if (m.mine) "Sən" else "Köməkçi",
                         body = parseAssistantEvent(m.body).text,

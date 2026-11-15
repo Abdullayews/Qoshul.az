@@ -112,18 +112,25 @@ object QoshulLocation {
                 // mock fix kanala düşmür — kamera saxta koordinata uçmur
                 if (!location.isFromMockProvider) trySend(location)
             }
-            try {
-                providers.forEach {
-                    lm.requestLocationUpdates(it, 500L, 0f, listener, Looper.getMainLooper())
+            // H1 (audit v0.49): provayderlər FƏRDİ qeydiyyata alınır — biri
+            // partlasa (Security/IllegalArgument) qalanın listener-i awaitClose
+            // ilə təmizlənir. Əvvəl: forEach ümumi try içində idi, ikinci
+            // provayder atanda return@callbackFlow awaitClose-i ATLAYIRDI və
+            // uğurla qeydiyyata alan birincinin listener-i sızırdı.
+            val registered = providers.mapNotNull { p ->
+                try {
+                    lm.requestLocationUpdates(p, 500L, 0f, listener, Looper.getMainLooper())
+                    p
+                } catch (_: SecurityException) {
+                    null
+                } catch (_: IllegalArgumentException) {
+                    null
                 }
-            } catch (_: SecurityException) {
-                close()
-                return@callbackFlow
-            } catch (_: IllegalArgumentException) {
-                close()
-                return@callbackFlow
             }
-            awaitClose { providers.forEach { try { lm.removeUpdates(listener) } catch (_: Exception) {} } }
+            if (registered.isEmpty()) close()
+            awaitClose {
+                registered.forEach { try { lm.removeUpdates(listener) } catch (_: Exception) {} }
+            }
         }
         return withTimeoutOrNull(timeoutMs) {
             fixes.first()

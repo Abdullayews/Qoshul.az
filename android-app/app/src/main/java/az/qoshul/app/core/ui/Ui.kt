@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -660,7 +659,7 @@ fun VenueMiniCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Star, null, tint = Q.accent, modifier = Modifier.size(12.5.dp))
                 Spacer(Modifier.width(3.dp))
-                Text(String.format("%.1f", rating), style = T.chipXs.copy(fontWeight = FontWeight.W600))
+                Text(String.format(java.util.Locale.US, "%.1f", rating), style = T.chipXs.copy(fontWeight = FontWeight.W600))
                 Spacer(Modifier.width(6.dp))
                 Text(
                     "$category · $priceRange",
@@ -777,36 +776,26 @@ fun OfferCard(
 // ═══════════════════ Brend (brand.dart portu) ═══════════════════
 
 /**
- * Brend nişanı (D-046, müvəqqəti) — web favicon motivinin portu: yaşıl
- * kvadrat + iki ağ birləşən halqa ("qoshul" = qoşul). Auth/Onboarding
- * ekranlarında wordmark üzərində. Bütün brend gələcəkdə dəyişəcək
- * (istifadəçi direktivi) — mənbə: Amin099015/qoshul favicon.svg.
+ * Brend nişanı (D-144, direktiv 2026-11-14: „hər yerdə köhnə loqonu sil“)
+ * — köhnə favicon portu (yaşıl kvadrat + halqalar, ic_logo_mark.xml)
+ * LƏĞV; yeni launcher ikonunun (istifadəçi dizaynı, D-143) full-bleed
+ * foreground şəkli brend nişanı kimi çəkilir (drawable-nodpi/brand_mark).
+ * Auth/Onboarding ekranlarında wordmark ilə birlikdə.
  */
 @Composable
 fun LogoMark(size: Dp = 56.dp) {
     Image(
-        painter = painterResource(R.drawable.ic_logo_mark),
+        painter = painterResource(R.drawable.brand_mark),
         contentDescription = null,
-        modifier = Modifier.size(size),
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(Q.rXl.dp)),
     )
 }
 
-/** "qoshul.az" wordmark — Link ikonu -12°, qoshul yaşıl + .az tünd. */
+/** "Qoshul.az" wordmark (D-144: böyük hərflə başlayır) — ad yaşıl, .az tünd. */
 @Composable
 fun Wordmark(fontSize: Int = 25) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            Icons.Filled.Link, null, tint = Q.primaryText,
-            modifier = Modifier
-                .size((fontSize + 2).dp)
-                .androidxScaleRotate(),
-        )
-        Spacer(Modifier.width(7.dp))
-        Text("qoshul", style = T.brand(fontSize.toDouble(), Q.primaryText))
-        Text(".az", style = T.brand(fontSize.toDouble(), Q.foreground))
-    }
+    Text("Qoshul", style = T.brand(fontSize.toDouble(), Q.primaryText))
+    Text(".az", style = T.brand(fontSize.toDouble(), Q.foreground))
 }
-
-/** Link ikonunun -12° fırlanması (web wordmark). */
-private fun Modifier.androidxScaleRotate(): Modifier =
-    this.then(Modifier.graphicsLayer { rotationZ = -12f })

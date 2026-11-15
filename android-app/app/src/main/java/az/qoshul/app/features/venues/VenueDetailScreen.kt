@@ -156,7 +156,7 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RatingStars(rating = venue.rating, size = 15.dp)
                 Spacer(Modifier.width(6.dp))
-                Text(String.format("%.1f (%d rəy)", venue.rating, venue.reviewsCount), style = T.meta)
+                Text(String.format(java.util.Locale.US, "%.1f (%d rəy)", venue.rating, venue.reviewsCount), style = T.meta)
                 Spacer(Modifier.width(10.dp))
                 Text("${venue.category} · ${venue.priceRange}", style = T.meta)
             }

@@ -307,4 +307,136 @@ class DirectivesAuditTest {
             Regex("val myLat = \\s*40\\.4093\\s*$", RegexOption.MULTILINE).containsMatchIn(scr),
         )
     }
+
+    // ═══════════ D-144: köhnə loqo ləğv + böyük hərf (v0.49) ═══════════
+    // Direktiv 2026-11-14: „hər yerdə köhnə loqonu sil. Qoşul adını
+    // böyük hərflə başlat“.
+
+    @Test
+    fun `D-144 kohnelogo qaliqilari yoxdur`() {
+        // favicon portu (yaşıl kvadrat + halqalar) hər qatda ləğv:
+        assertFalse("ic_logo_mark.xml silinməlidir", File(repoDir(), "app/src/main/res/drawable/ic_logo_mark.xml").exists())
+        assertFalse("ic_launcher_monochrome.xml (köhnə halqalar) silinməlidir", File(repoDir(), "app/src/main/res/drawable/ic_launcher_monochrome.xml").exists())
+        for (f in listOf("ic_launcher.xml", "ic_launcher_round.xml")) {
+            val xml = read("app/src/main/res/mipmap-anydpi-v26/$f")
+            assertFalse("$f monochrome qatına istinad etməməlidir", xml.contains("monochrome"))
+        }
+        assertFalse(
+            "README-də köhnə favicon şəkli qalmamalıdır",
+            read("README.md").contains("favicon.svg"),
+        )
+    }
+
+    @Test
+    fun `D-144 brend marki yeni ikondan gelir`() {
+        val ui = read("$main/core/ui/Ui.kt")
+        assertTrue(
+            "LogoMark yeni brand_mark resursunu çəkməlidir",
+            ui.contains("R.drawable.brand_mark"),
+        )
+        assertTrue(
+            "brand_mark.webp mövcuddur (drawable-nodpi)",
+            File(repoDir(), "app/src/main/res/drawable-nodpi/brand_mark.webp").exists(),
+        )
+    }
+
+    @Test
+    fun `D-144 qoshul adi boyuk herfle baslayir`() {
+        // Görünən brend mətnlərində "qoshul" kiçik başlanğıc YOX
+        // (URL/domen kod identifikatorları istisnadır — yalnız UI mətnləri)
+        val ui = read("$main/core/ui/Ui.kt")
+        assertFalse(
+            "Wordmark 'qoshul' kiçik hərflə başlamamalıdır",
+            ui.contains("\"qoshul\""),
+        )
+        assertTrue(
+            "Wordmark 'Qoshul' olmalıdır",
+            ui.contains("\"Qoshul\""),
+        )
+    }
+
+    // ═══════════ D-145: audit v0.49 düzəlişlərinin qorunması ═══════════
+
+    @Test
+    fun `D-145 location listener teberligi awaitclose ile qorunur`() {
+        // H1: callbackFlow-da return@callbackFlow awaitClose-i atmamalıdır
+        val loc = read("$main/core/location/QoshulLocation.kt")
+        assertFalse(
+            "awaitClose atlanmamalıdır — return@callbackFlow yolverilməz",
+            loc.contains("return@callbackFlow"),
+        )
+        assertTrue(
+            "provayderlər fərdi qeydiyyata alınmalıdır (mapNotNull)",
+            loc.contains("mapNotNull"),
+        )
+    }
+
+    @Test
+    fun `D-145 xarite kateqoriya filtri events paritetidir`() {
+        // H2: tədbir pin-ləri QRUP üzrə filtrlənir (groupOf)
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "eventPins groupOf ilə filtrlənməlidir (EventsScreen pariteti)",
+            scr.contains("groupOf(it.category) == category"),
+        )
+    }
+
+    @Test
+    fun `D-145 google me markeri sinxronlasdirilir`() {
+        // H3: rememberMarkerState ilk pozisiyadan sonra yenilənmir —
+        // LaunchedEffect(manual sync) olmalıdır
+        val g = read("$main/features/map/GoogleMapCanvas.kt")
+        assertTrue(
+            "meState.position manual sinxronlaşdırılmalıdır",
+            g.contains("meState.position ="),
+        )
+    }
+
+    @Test
+    fun `D-145 seher merkezi fallback ve permission recompose`() {
+        // M1: fallback sabit Bakı deyil — findCity(st.city)
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "fallback şəhər mərkəzindən gəlməlidir (findCity)",
+            scr.contains("findCity(st.city)"),
+        )
+        // M2: icazə dialoqundan qayıdış recompose tetikləməlidir
+        assertTrue(
+            "launcher callback-i locateRequest-i artırmalıdır",
+            scr.contains("if (granted) locateRequest++"),
+        )
+    }
+
+    @Test
+    fun `D-145 sohbet mesaj acari stabildir`() {
+        // M4: LazyColumn key-i body hash-inə deyil, mesaj id-sinə bağlanır
+        val a = read("$main/features/assistant/AssistantScreen.kt")
+        val c = read("$main/features/chats/ChatsScreen.kt")
+        assertTrue("AssistantScreen key = m.id olmalıdır", a.contains("key = { _, m -> m.id }"))
+        assertTrue("ChatsScreen key = m.id olmalıdır", c.contains("key = { _, m -> m.id }"))
+        assertFalse(
+            "köhnə body-hash kompozit açar qalmamalıdır",
+            a.contains("body.hashCode()") || c.contains("body.hashCode()"),
+        )
+        // typing simulyasiyası copy() ilə id qoruyur
+        val e = read("$main/core/engine/AppEngine.kt")
+        assertTrue("typing copy(body=…) ilə yaymalıdır", e.contains(".copy(body = shown)"))
+    }
+
+    @Test
+    fun `D-145 locale bagli formatlar us drdir`() {
+        // L4: onluq ayırıcı locale-dən asılı olmamalıdır
+        for (f in listOf(
+            "$main/features/map/MapScreen.kt",
+            "$main/features/venues/VenueDetailScreen.kt",
+            "$main/features/partners/PartnersScreen.kt",
+            "$main/core/ui/Ui.kt",
+            "$main/core/engine/AppEngine.kt",
+        )) {
+            assertFalse(
+                "$f — Locale.US-suz String.format qalmamalıdır",
+                read(f).contains("String.format(\""),
+            )
+        }
+    }
 }

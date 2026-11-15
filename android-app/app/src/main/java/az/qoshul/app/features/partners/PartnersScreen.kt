@@ -333,7 +333,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             "yalnız hesabda olan qədər istifadə oluna bilər."
                         SpendError.BILL_BELOW_MIN -> "Hesab minimum ${acct.config.minBillAzn} ₼ olmalıdır (obyekt qaydası)."
                         SpendError.CAP_EXCEEDED -> "Endirim hesabın ${acct.config.maxDiscountPercent}%-i həddini aşır — " +
-                            String.format("%.2f", p.discount) + " ₼-dən çox ola bilməz. Daha az XP yaz."
+                            String.format(java.util.Locale.US, "%.2f", p.discount) + " ₼-dən çox ola bilməz. Daha az XP yaz."
                         SpendError.INVALID_INPUT -> "Məbləğ və XP düzgün daxil edilməyib."
                         SpendError.NO_ACCOUNT -> "Bu obyektin XP hesabı tapılmadı."
                         SpendError.BAD_CONFIG -> "Bu obyektin XP məzənnəsi düzgün qurulmayıb — obyektlə əlaqə saxlayın."
@@ -366,7 +366,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Endirim", style = T.bodySmBold)
                             Text(
-                                if (p.ok) "− ${String.format("%.2f", p.discount)} ₼" else "—",
+                                if (p.ok) "− ${String.format(java.util.Locale.US, "%.2f", p.discount)} ₼" else "—",
                                 style = T.personName.copy(fontWeight = FontWeight.W800, color = if (p.ok) Q.primaryText else Q.destructive),
                             )
                         }
@@ -374,7 +374,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Müştəri ödəyir", style = T.bodySm.copy(color = Q.mutedFg))
                             Text(
-                                if (p.ok) "${String.format("%.2f", billD - p.discount)} ₼" else "—",
+                                if (p.ok) "${String.format(java.util.Locale.US, "%.2f", billD - p.discount)} ₼" else "—",
                                 style = T.metaBold,
                             )
                         }

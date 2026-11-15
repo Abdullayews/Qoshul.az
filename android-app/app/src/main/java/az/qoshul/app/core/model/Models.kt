@@ -153,7 +153,26 @@ data class ChatMessage(
     val sender: String,
     val body: String,
     val mine: Boolean = false,
-)
+    /**
+     * M4 (audit v0.49): mesaj identikliyi — LazyColumn key-i. Əvvəl
+     * "index-hashCode(body)" kompoziti işlədilirdi; yazı simulyasiyası
+     * (typing effect) body-ni hər 24ms-də dəyişdiyindən key də dəyişir,
+     * item silinib yenidən yaradılırdı (state/animasiya pozulurdu).
+     * Defolt: unikal sayğac; typing .copy(body=…) ilə yayır → id qalır.
+     * Bərabərlik eşitimən id DAHİL DEYİL (aşağıda override) — testlərdə
+     * və eyni məzmunlu mesajlarda semantik bərabərlik qorunur.
+     */
+    val id: String = "m${counter.incrementAndGet()}",
+) {
+    override fun equals(other: Any?): Boolean =
+        other is ChatMessage && other.sender == sender && other.body == body && other.mine == mine
+
+    override fun hashCode(): Int = 31 * (31 * sender.hashCode() + body.hashCode()) + mine.hashCode()
+
+    private companion object {
+        val counter = java.util.concurrent.atomic.AtomicLong(0)
+    }
+}
 
 // ═════════════════════════ Şəxsiyyət testi ═════════════════════════
 

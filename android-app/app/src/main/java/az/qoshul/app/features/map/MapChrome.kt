@@ -131,7 +131,7 @@ internal fun MapLoadFailedCard(
         ) {
             Icon(Icons.Filled.Refresh, null, tint = Q.primaryFg, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Yenidən dənə", style = T.bodyBold.copy(color = Q.primaryFg))
+            Text("Yenidən cəhd et", style = T.bodyBold.copy(color = Q.primaryFg))
         }
     }
 }

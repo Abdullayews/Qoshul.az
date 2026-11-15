@@ -127,9 +127,17 @@ internal fun GoogleMapCanvas(
         }
 
         // — „mənim yerim“ dotu (üst qat) —
+        // H3 (audit v0.49): rememberMarkerState-in position arqumenti yalnız
+        // İLK kompozisiyada tətbiq olunur (SDK məhdudiyyəti) — real fix
+        // gələndə (myLat/myLng dəyişəndə) marker köhnə fallback nöqtəsində
+        // qalırdı. LaunchedEffect position-u manual sinxronlaşdırır.
+        val meState = rememberMarkerState(key = "me", position = LatLng(myLat, myLng))
+        LaunchedEffect(myLat, myLng) {
+            meState.position = LatLng(myLat, myLng)
+        }
         MarkerComposable(
             keys = arrayOf(myLat, myLng),
-            state = rememberMarkerState(key = "me", position = LatLng(myLat, myLng)),
+            state = meState,
             anchor = Offset(0.5f, 0.5f),
             zIndex = 3f,
             contentDescription = null,

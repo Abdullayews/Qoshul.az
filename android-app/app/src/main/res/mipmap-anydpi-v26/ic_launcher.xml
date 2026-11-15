@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- D-120: istifadəçi ikonu (jxl → webp) full-bleed foreground; background
-     üst-orta göy tonu (yalnız aşırı maskalarda görünür); monochrome =
-     brend halqalar qlifi (tematik ikonlar API 33+). -->
+<!-- D-120/D-144: istifadəçi ikonu (jxl → webp) full-bleed foreground;
+     background üst-orta göy tonu (yalnız aşırı maskalarda görünür).
+     D-144: monochrome (köhnə halqalar qlifi) LƏĞV — tematik rejim (API 33+)
+     yeni launcher ikonuna düşür; köhnə brend heç yerdə qalmır. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground android:drawable="@mipmap/ic_launcher_fg" />
-    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>

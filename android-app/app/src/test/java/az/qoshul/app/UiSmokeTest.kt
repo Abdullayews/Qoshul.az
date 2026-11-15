@@ -44,7 +44,8 @@ class UiSmokeTest {
     @Test
     fun `brend wordmark render olunur`() {
         compose.setContent { QoshulTheme { Wordmark(fontSize = 25) } }
-        compose.onNodeWithText("qoshul").assertIsDisplayed()
+        // D-144: ad böyük hərflə başlayır (əvvəl "qoshul" idi)
+        compose.onNodeWithText("Qoshul").assertIsDisplayed()
         compose.onNodeWithText(".az").assertIsDisplayed()
     }
 

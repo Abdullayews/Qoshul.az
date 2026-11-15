@@ -383,8 +383,8 @@ private fun CardFace(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(12.dp)
-                .background(Q.photoShade.copy(alpha = 0.55f), RoundedCornerShape(Q.rPill.dp))
-                .border(1.dp, Q.photoShade.copy(alpha = 0.7f), RoundedCornerShape(Q.rPill.dp))
+                .background(Q.photoShade.copy(alpha = 0.55f), RoundedCornerShape(Q.rPill))
+                .border(1.dp, Q.photoShade.copy(alpha = 0.7f), RoundedCornerShape(Q.rPill))
                 .padding(horizontal = 10.dp, vertical = 5.dp),
         ) {
             Text("${person.match}% uyğunluq",

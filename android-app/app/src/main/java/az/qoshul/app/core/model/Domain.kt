@@ -161,7 +161,7 @@ val safetyTips = listOf(
     "İctimai yerdə görüş" to
         "İlk görüşü kafe, park və ya digər adam olan məkanda keçir. Şəxsi ünvanda görüşmə.",
     "Yaxın adamını xəbərdar et" to
-        "Gedəcəyin yeri və kiminlə görüşəcəyini dostuna yaz. Canlı konum paylaşımı da faydalıdır.",
+        "Gedəcəyin yeri və kiminlə görüşəcəyini dostuna yaz. Canlı mövqe paylaşımı da faydalıdır.",
     "Şəxsi məlumatını dərhal paylaşma" to
         "Ev ünvanı, iş yeri ünvanı və maliyyə məlumatlarını tanışlığın ilk günündə vermə.",
     "Narahatçılıq yaranarsa" to

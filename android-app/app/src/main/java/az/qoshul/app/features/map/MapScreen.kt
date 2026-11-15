@@ -115,9 +115,15 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     // istənilir — yaxınlıq pinləri/məsafə filtrləri üçün. Rədd → seçilmiş
     // şəhərin mərkəzi ilə davam (mövcud demo davranışı dəyişmir).
     val locCtx = androidx.compose.ui.platform.LocalContext.current
+
+    // M2 (audit v0.49): icazə dialoqundan qayıdış recompose TETİKLƏYİR —
+    // launcher callback-i (əvvəl boş idi) permission GRANTED halında
+    // locateRequest sayğacını artırır → aşağıdakı LaunchedEffect yenidən
+    // işə düşür və fix dərhal alınır (əvvəl "Allow" basanda heç nə olmurdı).
+    var locateRequest by remember { mutableStateOf(0) }
     val locLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { }
+    ) { granted -> if (granted) locateRequest++ }
     if (!focus.locationPermissionAsked &&
         android.content.pm.PackageManager.PERMISSION_GRANTED !=
         androidx.core.content.ContextCompat.checkSelfPermission(
@@ -145,9 +151,11 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var locating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // İcazə verilibsə xəritə açılışında bir dəfə arxa planda fix al
-    LaunchedEffect(focus.locationPermissionAsked) {
-        if (QoshulLocation.hasPermission(locCtx)) {
+    // İcazə verilibsə fix al — bir dəfəlik (locateRequest açılışda 0-dır,
+    // yalnız icazə YENİ verildikdə artır; myRealLat qoruyur: tab keçidlə-
+    // rində təkrar GPS dinləməsi YOX — M2-nin ikinci yarısı).
+    LaunchedEffect(locateRequest) {
+        if (myRealLat == null && QoshulLocation.hasPermission(locCtx)) {
             when (val r = QoshulLocation.locateOnce(locCtx)) {
                 is QoshulLocation.LocateResult.Found -> {
                     myRealLat = r.lat; myRealLng = r.lng
@@ -157,8 +165,13 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         }
     }
 
-    val myLat = myRealLat ?: 40.4093
-    val myLng = myRealLng ?: 49.8671
+    // M1 (audit v0.49): fallback sabit Bakı deyil — SEÇİLƏN ŞƏHƏRİN mərkəzi
+    // (istifadəçi Gəncədədirsə dot Gəncədə düşür; şəhər tapılmasa Bakı).
+    val cityCenter = remember(st.city) {
+        engine.dataSource.findCity(st.city) ?: engine.dataSource.findCity("Bakı")
+    }
+    val myLat = myRealLat ?: cityCenter?.lat ?: 40.4093
+    val myLng = myRealLng ?: cityCenter?.lng ?: 49.8671
 
     // D-143: „Mənim yerimə get“ həbi — icazə yoxdursa İSTƏYİR (bir dəfə
     // rədd edilibsə sistem dialoqu bir daha avtomatik gəlmir — Settings
@@ -192,7 +205,11 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             (!openNow || v.isOpenAt(hour)) && (!withDiscount || v.hasDiscount)
     }.map { MapPin.Venue(it) }
     val eventPins = engine.cityEvents.filter {
-        (category == "Hamısı" || it.category == category) && it.distance <= distanceKm
+        // H2 (audit v0.49): tədbir kateqoriyaları QRUP-lardır ("Futbol" →
+        // "İdman") — EventsScreen (groupOf) pariteti; əvvəl birbaşa
+        // müqayisə "İdman"/"Texnologiya" seçimində hamını süpürürdü.
+        (category == "Hamısı" || engine.dataSource.groupOf(it.category) == category) &&
+            it.distance <= distanceKm
     }.map { MapPin.Event(it) }
     val peoplePins = engine.matchCandidates
         .filter { it.distanceKm <= distanceKm }
@@ -443,7 +460,7 @@ private fun BottomCardContent(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.Star, null, tint = Q.accent, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(3.dp))
-                            Text(String.format("%.1f · %s", v.rating, v.priceRange), style = T.meta)
+                            Text(String.format(java.util.Locale.US, "%.1f · %s", v.rating, v.priceRange), style = T.meta)
                             if (v.hasDiscount) {
                                 Spacer(Modifier.width(6.dp))
                                 Text("-${v.discountPercent}%", style = T.chipXs.copy(fontWeight = FontWeight.W800, color = Q.accentFg))
