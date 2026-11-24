@@ -136,11 +136,11 @@ class SupabaseAuth(
         val result = CredentialManager.create(context).getCredential(
             context = context, request = request,
         )
-        val idToken = GoogleIdTokenCredential
+        val googleIdToken = GoogleIdTokenCredential
             .createFrom(result.credential.data).idToken
 
         c.auth.signInWith(IDToken) {
-            idToken = idToken
+            idToken = googleIdToken
             provider = Google
             nonce = rawNonce
         }

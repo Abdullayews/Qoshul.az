@@ -15,9 +15,10 @@ import az.qoshul.app.core.model.VenueXpAccount
  * BOŞDUR (data canlı serverdən gəlir; fake seed oxunmur — direktiv
  * 2026-11-24: „FakeData mənbəyi SUPABASE rejimində oxunmamalı“).
  *
- * TAKSONOMİYA (kateqoriya qrupları, şəhərlər) tətbiq məzmunudur — D-050
- * bölgüsünə görə hər iki rejimdə eyni verilir (serverdəki `categories`
- * sistem cədvəli ilə eyni kökdən — 0003_seed).
+ * TAKSONOMİYA (kateqoriya qrupları, şəhərlər, onboarding statik siyahıları)
+ * tətbiq məzmunudur — D-050 bölgüsünə görə hər iki rejimdə eyni verilir;
+ * mənbəyi FakeQoshulDataSource-un sabit dəyərləridir (serverdəki
+ * `categories` sistem cədvəli ilə eyni kökdən — 0003_seed).
  *
  * Qeyd: REST-dən oxuma ayrı mərhələdir (M2 oxu yolu); bu obyekt yalnız
  * təmiz başlanğıc vəziyyəti təmin edir — boş listlər UI-da „hələ heç nə
@@ -44,4 +45,19 @@ object ServerSeedDataSource : QoshulDataSource {
         FakeQoshulDataSource.categoryGroups
 
     override val cities: List<City> = FakeQoshulDataSource.cities
+
+    override val statusLabels: Map<String, String> = FakeQoshulDataSource.statusLabels
+    override val statuses: List<String> = FakeQoshulDataSource.statuses
+    override val universities: List<String> = FakeQoshulDataSource.universities
+    override val languageOptions: List<String> = FakeQoshulDataSource.languageOptions
+    override val languageLevels: List<String> = FakeQoshulDataSource.languageLevels
+    override val goals: List<String> = FakeQoshulDataSource.goals
+    override val availabilityOptions: List<String> = FakeQoshulDataSource.availabilityOptions
+    override val groupSizes: List<String> = FakeQoshulDataSource.groupSizes
+    override val budgets: List<String> = FakeQoshulDataSource.budgets
+    override val traitLabels: Map<String, String> = FakeQoshulDataSource.traitLabels
+    override val personalityQuestions: List<Pair<String, Pair<String, Boolean>>> =
+        FakeQoshulDataSource.personalityQuestions
+    override val rolCategories: List<String> = FakeQoshulDataSource.rolCategories
+    override val rolCategoryHints: Map<String, String> = FakeQoshulDataSource.rolCategoryHints
 }
