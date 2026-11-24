@@ -17,18 +17,12 @@ val localProps = Properties().apply {
 // Bu, hər APK-nın EYNİ sertifikatla çıxmasını təmin edir → Android update
 // axını (INSTALL_FAILED_UPDATE_INCOMPATIBLE yox) + Google Cloud OAuth
 // klienti üçün sabit SHA-1 fingerprint.
-fun releaseKeyStoreOrNull(): com.android.build.gradle.internal.dsl.SigningConfig? {
+val releaseKeyProps: Properties? = run {
     val f = rootProject.file("key.properties")
-    if (!f.exists()) return null
+    if (!f.exists()) return@run null
     val p = Properties().apply { f.inputStream().use { load(it) } }
-    val storeFile = p.getProperty("storeFile") ?: return null
-    if (!java.io.File(storeFile).exists()) return null
-    return signingConfigs.create("release").apply {
-        storeFile = java.io.File(storeFile)
-        storePassword = p.getProperty("storePassword")
-        keyAlias = p.getProperty("keyAlias")
-        keyPassword = p.getProperty("keyPassword")
-    }
+    val sf = p.getProperty("storeFile") ?: return@run null
+    if (!java.io.File(sf).exists()) null else p
 }
 
 android {
@@ -86,7 +80,14 @@ android {
             )
             // D-148: daimi release imzası (key.properties varsa); yoxdursa
             // lokal build üçün debug fallback qalır. CI-də secret həmişə var.
-            signingConfig = releaseKeyStoreOrNull() ?: signingConfigs.getByName("debug")
+            signingConfig = (releaseKeyProps?.let { props ->
+                signingConfigs.create("qoshulRelease").apply {
+                    storeFile = java.io.File(props.getProperty("storeFile"))
+                    storePassword = props.getProperty("storePassword")
+                    keyAlias = props.getProperty("keyAlias")
+                    keyPassword = props.getProperty("keyPassword")
+                }
+            }) ?: signingConfigs.getByName("debug")
             // MapLibre nüvə .so ~13.4 MB/ABI (D-048): release-da real telefon ABI-ları;
             // x86_64 (yalnız emulator) buraxılır — debug variantında qalır.
             // Play-də app bundle per-device çatdırır; birbaşa APK üçün universal phone build.

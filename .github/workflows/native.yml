@@ -163,7 +163,8 @@ jobs:
           set -euo pipefail
           KS="$HOME/qoshul-release.jks"
           echo "$QOSHUL_KEYSTORE_B64" | base64 -d > "$KS"
-          cat > android-app/key.properties <<EOF
+          # job working-directory = android-app → key.properties orada yazılır
+          cat > key.properties <<EOF
           storeFile=$KS
           storePassword=$QOSHUL_STORE_PASS
           keyAlias=$QOSHUL_KEY_ALIAS
@@ -185,12 +186,16 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon
 
       - name: APK imza yoxlaması (D-148 — release sertifikatı ilə imzalanmalı)
+        # minSdk 24 → APK yalnız v2/v3 imzalıdır; keytool -printcert -jarfile
+        # v1 (JAR) imzasını axtarır və boş qaytarır → apksigner istifadə olunur.
         run: |
           set -euo pipefail
-          APK="android-app/app/build/outputs/apk/release/app-release.apk"
-          ACTUAL_SHA1=$(keytool -printcert -jarfile "$APK" | grep -oP 'SHA1: \K[0-9A-F:]+' | head -1)
-          EXPECTED_SHA1="24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0"
+          APK="app/build/outputs/apk/release/app-release.apk"
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          ACTUAL_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | grep -oP 'SHA-1 digest: \K[0-9a-f:]+' | head -1)
+          EXPECTED_SHA1="24:6b:e9:42:be:eb:c6:f4:b4:7d:d2:76:59:4d:54:97:3b:42:68:d0"
           echo "APK SHA-1: $ACTUAL_SHA1"
+          [ -n "$ACTUAL_SHA1" ] || { echo "XƏTA: APK imzası oxuna bilmədi!"; exit 1; }
           [ "$ACTUAL_SHA1" = "$EXPECTED_SHA1" ] || {
             echo "XƏTA: APK daimi D-148 sertifikatı ilə imzalanmayıb!"; exit 1; }
           echo "OK: APK daimi sertifikatla imzalanıb — update axını təhlükəsizdir."
