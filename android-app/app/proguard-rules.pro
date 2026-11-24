@@ -7,6 +7,11 @@
 -dontwarn io.ktor.**
 -keep class io.github.jan.tennert.supabase.** { *; }
 -dontwarn io.github.jan.tennert.supabase.**
+# D-149: gotrue-kt Auth companion-i OPTIONAL Kermit logger-inə istinad edir
+# (io.github.jan.supabase.logging.KermitSupabaseLogger) — Kermit asılılığı
+# bizə lazım deyil, runtime-da heç vaxt yüklənmir; R8 -dontwarn kifayətdir.
+-dontwarn io.github.jan.supabase.logging.KermitSupabaseLogger
+-dontwarn io.github.jan.supabase.logging.**
 -keepclassmembers class kotlinx.serialization.json.** { *** Companion; }
 -keepclasseswithmembers class kotlinx.serialization.json.** {
     kotlinx.serialization.KSerializer serializer(...);
