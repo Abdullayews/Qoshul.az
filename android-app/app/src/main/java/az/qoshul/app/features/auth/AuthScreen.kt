@@ -2,7 +2,6 @@ package az.qoshul.app.features.auth
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,8 +20,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-// Apple ikonu: material-icons-da yoxdur — PlaceHolder istifadə olunur
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.GMobiledata
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -42,14 +39,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import az.qoshul.app.core.data.AppConfig
+import az.qoshul.app.core.backend.BackendConfig
+import az.qoshul.app.core.backend.BackendMode
+import az.qoshul.app.core.backend.SupabaseAuth
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.OpenSans
@@ -57,21 +55,23 @@ import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.FormFieldX
 import az.qoshul.app.core.ui.LogoMark
 import az.qoshul.app.core.ui.Wordmark
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * Daxil ol / Qeydiyyat — Flutter auth_screen.dart portu (ROL B, Addım 2).
- * Mock: "Google ilə davam et", "Apple ilə davam et", email + şifrə →
- * 6 rəqəmli təsdiq kodu (istənilən 6 rəqəm).
  *
- * D-050 (PLACEHOLDER rejimi): [engine] verildikdə vəhdət hardcoded DEMO
- * hesabı düyməsi göstərilir — bir toxunuşla dolu profillə tam tətbiq açılır
- * (bütün funksiyaların görünməsi üçün). Manual axın da qalır (onboarding
- * sınağı üçün).
+ * D-149/D-150 (server inteqrasiyası 2026-11-24): MOCK axınları silindi —
+ * demoSignIn (D-050 qalığı), „istənilən 6 rəqəm“ OTP mock-u, social()
+ * 900ms mock-u və Apple düyməsi (developer hesabı yoxdur). Yerini real
+ * GoTrue axınları aldı:
  *
- * Qeyd (qayda ③): bu MOCK autentifikasiyadır — heç bir real təhlükəsizlik
- * iddiası yoxdur; backend fazasında custom JWT (product-spec B) gələcək.
+ *  - SUPABASE rejimi: [SupabaseAuth] canlı serverlə işləyir — qeydiyyat
+ *    (autoconfirm on → dərhal sessiya), giriş, email OTP, şifrə bərpası,
+ *    Google native sign-in (Credential Manager + IDToken grant).
+ *  - MOCK rejimi (CI/test): köhnə səssiz lokal axın qalır — [engine]
+ *    mühərrik simulyasiyası üçün signIn() çağırır (determinizm qorunur).
+ *
+ * Qeyd (qayda ③): MOCK rejimi heç bir real təhlükəsizlik iddiası yoxdur.
  */
 private enum class AuthMode { ENTER, UP, FORGOT, CODE }
 
@@ -88,70 +88,96 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     var error by remember { mutableStateOf<String?>(null) }
     var msg by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
-    // U1.2 (UI-36): kod/parol bərpası/qeydiyyat ekranlarında GERİ giriş
-    // ekranına qayıdır (əvvəl: back tətbiqi bağlayırdı — audit UI-36).
-    // ENTER kök ekrandır — orada BackHandler İŞLƏMİR (default back qalır).
-    BackHandler(enabled = mode != AuthMode.ENTER) { mode = AuthMode.ENTER }
+    // D-149: rejimə görə auth kanalı — MOCK → lokal simulyasiya (testlər),
+    // SUPABASE → real GoTrue client (canlı server).
+    val isServer = BackendConfig.mode == BackendMode.SUPABASE
+    val serverAuth = remember { if (isServer) SupabaseAuth() else null }
 
-    /** D-050: vahid demo hesabı — anında dolu profillə daxil ol. */
-    fun demoSignIn() {
+    /** D-150: Google Credential Manager axını — WEB client ID BuildConfig-dən. */
+    fun googleSignIn() {
+        val auth = serverAuth ?: return
+        if (az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) return
         scope.launch {
-            busy = true
-            delay(450)
-            engine?.signInDemo()
-            busy = false
-            onSignedIn()
-        }
-    }
-
-    fun submit() {
-        error = null
-        msg = null
-        scope.launch {
-            busy = true
-            delay(800)
-            when (mode) {
-                AuthMode.CODE -> {
-                    if (code.length != 6 || code.toIntOrNull() == null) {
-                        error = "Kod 6 rəqəmdən ibarət olmalıdır."
-                        busy = false
-                    } else {
-                        busy = false
-                        onSignedIn()
-                    }
-                }
-                AuthMode.UP -> {
-                    if (pass.length < 8) {
-                        error = "Şifrə ən azı 8 simvol olmalıdır."
-                        busy = false
-                    } else if (pass != repeat) {
-                        error = "Şifrələr eyni deyil."
-                        busy = false
-                    } else {
-                        mode = AuthMode.CODE
-                        msg = "E-poçtuna 6 rəqəmli təsdiq kodu göndərildi. (Demo: istənilən 6 rəqəm)"
-                        busy = false
-                    }
-                }
-                AuthMode.FORGOT -> {
-                    msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi."
-                    busy = false
-                }
-                AuthMode.ENTER -> {
-                    busy = false
-                    onSignedIn()
-                }
+            busy = true; error = null
+            try {
+                auth.signInWithGoogle(context, az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                engine?.signIn() ?: onSignedIn()
+                busy = false
+            } catch (t: Throwable) {
+                busy = false
+                error = t.message?.take(160) ?: "Google girişi alınmadı. Bir az sonra yenidən cəhd et."
             }
         }
     }
 
-    fun social() {
+    /**
+     * Göndər — rejimə görə real / simulyasiya axını.
+     * SUPABASE: GoTrue çağırışları (signup/login/OTP/reset); xətalar
+     * göstərilir (busy saxlanılır, istifadəçi düzəldib təkrar göndərir).
+     */
+    fun submit() {
+        error = null
+        msg = null
+        if (pass.length < 8 && mode != AuthMode.FORGOT && mode != AuthMode.CODE) {
+            error = "Şifrə ən azı 8 simvol olmalıdır."
+            return
+        }
+        if (mode == AuthMode.UP && pass != repeat) {
+            error = "Şifrələr eyni deyil."
+            return
+        }
+        if (email.isBlank() || !email.contains("@")) {
+            error = "Düzgün e-poçt ünvanı yaz."
+            return
+        }
+        val auth = serverAuth
+        if (auth == null) {
+            // MOCK (CI/test): səssiz lokal axın — determinizm qorunur
+            scope.launch {
+                busy = true
+                when (mode) {
+                    AuthMode.CODE -> { mode = AuthMode.ENTER; onSignedIn() }
+                    AuthMode.UP -> { mode = AuthMode.ENTER; onSignedIn() }
+                    AuthMode.FORGOT -> { msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi." }
+                    AuthMode.ENTER -> onSignedIn()
+                }
+                busy = false
+            }
+            return
+        }
         scope.launch {
             busy = true
-            delay(900)
-            busy = false
-            onSignedIn()
+            try {
+                when (mode) {
+                    AuthMode.UP -> {
+                        auth.signUp(email, pass, name.ifBlank { null })
+                        // autoconfirm on → sessiya dərhal açılır
+                        engine?.signIn() ?: onSignedIn()
+                    }
+                    AuthMode.ENTER -> {
+                        auth.signIn(email, pass)
+                        engine?.signIn() ?: onSignedIn()
+                    }
+                    AuthMode.CODE -> {
+                        if (code.length != 6 || code.toIntOrNull() == null) {
+                            error = "Kod 6 rəqəmdən ibarət olmalıdır."
+                        } else {
+                            auth.verifyOtp(email, code)
+                            engine?.signIn() ?: onSignedIn()
+                        }
+                    }
+                    AuthMode.FORGOT -> {
+                        auth.resetPassword(email)
+                        msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi."
+                    }
+                }
+            } catch (t: Throwable) {
+                error = t.message?.take(160) ?: "Əməliyyat alınmadı. Bir az sonra yenidən cəhd et."
+            } finally {
+                busy = false
+            }
         }
     }
 
@@ -173,15 +199,13 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             .background(Q.background)
             // D-051 fix: məzmun status barın altında çəkilirdi — inset əlavə olundu
             .statusBarsPadding()
-            // D-053 fix: aşağıdakı məzmun (demo düyməsi, giriş düyməsi) alt sistem
-            // barının altında qalırdı — navbar inseti əlavə olundu
+            // D-053 fix: aşağıdakı məzmun giriş düyməsinin altında qalırdı — navbar inseti
             .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp)
             .imePadding(),
     ) {
-        // D-063: üst boşluq 44→36dp; marka ÜFYQİ lockup (logo + wordmark yan-yana) —
-        // əvvəl üst-üstə idi və ikisi üfüqi düzülüşdə "kəsik" görünürdü (vizual audit)
+        // D-063: üst boşluq 44→36dp; marka ÜFYQİ lockup (logo + wordmark yan-yana)
         Spacer(Modifier.height(36.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             LogoMark(size = 46.dp)
@@ -193,37 +217,6 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         Spacer(Modifier.height(4.dp))
         Text(subtitle, style = T.subtitle)
         Spacer(Modifier.height(22.dp))
-
-        // — D-050: vahid hardcoded demo hesabı (yalnız PLACEHOLDER rejimi) —
-        val demo = AppConfig.DemoAccount
-        if (AppConfig.isPlaceholder && engine != null) {
-            Button(
-                onClick = { if (!busy) demoSignIn() },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rPill),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Q.primary, contentColor = Q.primaryFg),
-            ) {
-                Icon(Icons.Filled.Bolt, null, modifier = Modifier.height(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Demo hesabı ilə davam et", style = T.button)
-                    Text(
-                        demo.EMAIL,
-                        style = T.metaSm.copy(color = Q.primaryFg),
-                    )
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Demo rejimi: bütün funksiyalar nümunə məlumatla doludur.",
-                textAlign = TextAlign.Center,
-                style = T.chipXs.copy(color = Q.mutedFg),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(14.dp))
-        }
 
         if (mode == AuthMode.CODE) {
             FormFieldX("6 rəqəmli təsdiq kodu") {
@@ -243,62 +236,50 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 )
             }
         } else {
-            OutlinedButton(
-                onClick = { if (!busy) social() },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rPill),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground
-                ),
-            ) {
-                Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Google ilə davam et", style = T.button)
+            // D-150: Google düyməsi — yalnız real rejimdə və WEB client ID olanda.
+            // Apple düyməsi silindi (mock idi; Apple developer hesabı yoxdur).
+            if (isServer && az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()) {
+                OutlinedButton(
+                    onClick = { if (!busy) googleSignIn() },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(Q.rPill),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Q.card, contentColor = Q.foreground
+                    ),
+                ) {
+                    Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Google ilə davam et", style = T.button)
+                }
+                // D-063: "və ya" ayırıcısı — xətlərlə balanslı
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(1.dp)
+                            .androidxAuthDivider(),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        "və ya",
+                        style = T.bodySm.copy(color = Q.mutedFg),
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Box(
+                        Modifier
+                            .weight(1f)
+                            .height(1.dp)
+                            .androidxAuthDivider(),
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
             }
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = { if (!busy) social() },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(Q.rPill),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground
-                ),
-            ) {
-                Icon(az.qoshul.app.core.ui.appleIcon, null, modifier = Modifier.height(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Apple ilə davam et", style = T.button)
-            }
-            Spacer(Modifier.height(12.dp))
-            // D-063: "və ya" ayırıcısı — xətlərlə balanslı (əvvəl 14/6dp
-            // qeyri-bərabər boşluq idi — vizual audit: "unbalanced margin")
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(1.dp)
-                        .androidxAuthDivider(),
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "və ya",
-                    style = T.bodySm.copy(color = Q.mutedFg),
-                )
-                Spacer(Modifier.width(12.dp))
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(1.dp)
-                        .androidxAuthDivider(),
-                )
-            }
-            Spacer(Modifier.height(12.dp))
             if (mode == AuthMode.UP) {
                 FormFieldX("Ad və soyad") {
                     QoshulTextField(value = name, onValueChange = { name = it },
@@ -387,7 +368,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         Spacer(Modifier.height(16.dp))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             modifier = Modifier.fillMaxWidth().padding(bottom = 28.dp),
         ) {
             when (mode) {
@@ -400,7 +381,19 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     }
                 }
                 AuthMode.CODE -> {
-                    TextButton(onClick = { mode = AuthMode.UP; msg = null }) {
+                    TextButton(onClick = {
+                        // D-149: real OTP yenidən göndərişi (mock silindi)
+                        if (serverAuth != null) {
+                            scope.launch {
+                                busy = true
+                                try { serverAuth.sendEmailOtp(email) }
+                                catch (t: Throwable) {
+                                    error = t.message?.take(160) ?: "Kod göndərilə bilmədi."
+                                }
+                                busy = false
+                            }
+                        } else { msg = "Yeni kod göndərildi." }
+                    }) {
                         Text("Kod gəlmədi? Yenidən göndər", style = qTextButton())
                     }
                 }

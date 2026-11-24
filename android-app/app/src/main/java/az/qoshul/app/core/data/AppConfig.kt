@@ -1,17 +1,20 @@
 package az.qoshul.app.core.data
 
 /**
- * Tətbiq rejimi (D-050, istifadəçi direktivi 2026-10-31).
+ * Tətbiq rejimi (D-050, istifadəçi direktivi 2026-10-31; D-149 yeniləmə
+ * 2026-11-24: server inteqrasiyası — main branch artıq SUPABASE rejimində
+ * də işləyir, BACKEND_MODE = MOCK|SUPABASE BuildConfig-dən).
  *
  * İKI versiya, İKİ branch:
- *  - PLACEHOLDER  → `main` branch: bütün funksiyalar görünür, məlumatlar
- *    fake/placeholder, vahid hardcoded demo hesabı (`signInDemo`) ilə bir toxunuşda
- *    tam tətbiq açılır. UI sınağı / investor demo / marketinq üçün.
- *  - SERVER_ONLY  → `server-only` branch: serverə qoşulana qədər HEÇ NƏ yoxdur —
- *    yalnız server məlumatı. Fake data yoxdur, giriş yalnız real server auth ilə.
+ *  - PLACEHOLDER  → `main` branch: MOCK rejimində fake/placeholder məlumat
+ *    (CI/test). SUPABASE rejimində canlı server (D-149).
+ *  - SERVER_ONLY  → `server-only` branch: yalnız server məlumatı.
  *
- * Rejim tərtibat vaxtı sabitdir (branch seçimi = rejim seçimi); runtime
- * keçidi yoxdur — iki ayrı APK/branch qəsdən ayrı saxlanılır.
+ * Rejim tərtibat vaxtı sabitdir; runtime keçidi yoxdur.
+ *
+ * D-149: vahid hardcoded demo hesabı (DemoAccount, demo@qoshul.az /
+ * qoshul-demo sabitləri) SİLİNDİ — istifadəçiyə təhvil verilən APK
+ * SUPABASE rejimindədir, demo qalığı görünmür.
  */
 enum class AppMode {
     PLACEHOLDER,
@@ -33,18 +36,4 @@ object AppConfig {
             AppMode.PLACEHOLDER -> "Demo (placeholder məlumat)"
             AppMode.SERVER_ONLY -> "Yalnız server məlumatı"
         }
-
-    /**
-     * Vahid hardcoded demo hesabı (PLACEHOLDER rejimi, D-050).
-     * "Hər funksiyanın görünməsi üçün" — bir toxunuşla dolu profillə daxil olma.
-     */
-    object DemoAccount {
-        const val EMAIL = "demo@qoshul.az"
-        const val PASSWORD = "qoshul-demo"
-        const val FIRST_NAME = "Demo"
-        const val LAST_NAME = "İstifadəçi"
-        const val FULL_NAME = "Demo İstifadəçi"
-        const val CITY = "Bakı"
-        const val BIO = "Qoshul demo hesabı — bütün funksiyalar sınaq məlumatı ilə doludur."
-    }
 }

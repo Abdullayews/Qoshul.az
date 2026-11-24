@@ -108,11 +108,14 @@ class MainActivity : ComponentActivity() {
  * bitirmə axını bütün 695 sətirlik sheet UI-dan əlçatmaz idi).
  */
 @Composable
-fun QoshulApp() {
+fun QoshulApp(engineOverride: AppEngine? = null) {
     val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
     // M1 (D-078): MOCK → NoopSync; SUPABASE → SupabaseSync (BuildConfig-dən).
+    // D-149: engineOverride — Robolectric UI testləri hazır engine verir
+    // (demo düyməsi silindi; testlər onboarding-i ötürmək üçün seed-li
+    // engine inyeksiya edir — istehsal kodu yolunu dəyişmir).
     val sync = remember { az.qoshul.app.core.backend.BackendSync.create(scope) }
-    val engine = remember { AppEngine(scope = scope, sync = sync) }
+    val engine = engineOverride ?: remember { AppEngine(scope = scope, sync = sync) }
     val st by engine.state.collectAsStateWithLifecycle()
     val nav = rememberNavState()
     val focus = remember { MapFocusState() }

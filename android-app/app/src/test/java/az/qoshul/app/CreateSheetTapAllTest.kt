@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
 import org.junit.Rule
 import org.junit.Test
@@ -37,8 +38,26 @@ class CreateSheetTapAllTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private fun signInDemoAndWait() {
-        compose.onNodeWithText("Demo hesabı ilə davam et").performClick()
+
+    /**
+     * D-149: demo düyməsi silindi — testlər seed-li engine inyeksiya edir
+     * (QoshulApp(engineOverride)). signInDemo köhnə profil dəyərlərini
+     * burada bərpa edir (D-050 semantikası: onboarding keçilib, dolu profil).
+     */
+    private fun seededEngine(): AppEngine {
+        val e = AppEngine()
+        e.setProfileCreation(
+            "Demo", "İstifadəçi", java.time.LocalDate.of(2000, 1, 1),
+            gdr = "", bioText = "Qoshul demo — UI test seed.", photos = 1,
+        )
+        e.setInterests(listOf("Qəhvə", "Yürüş", "Stolüstü oyunlar", "Foto-gəzinti"))
+        e.signIn()
+        return e
+    }
+
+    /** Engine hazır + onboarding keçilib — „Sənin üçün" gözlə. */
+    private fun signInWithSeededEngine() {
+        compose.setContent { QoshulTheme { QoshulApp(engineOverride = seededEngine()) } }
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
                 compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
@@ -54,8 +73,7 @@ class CreateSheetTapAllTest {
 
     @Test
     fun `yarat axini - dropdown acmaq crash vermir`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
 
         // mərkəzi Yarat düyməsi → sheet (istifadəçinin çökdüyü tab)
         compose.onNodeWithContentDescription("Yarat").performClick()
@@ -87,8 +105,7 @@ class CreateSheetTapAllTest {
 
     @Test
     fun `sheetde geri duymesu dismiss edir - crash yoxdur`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
         compose.onNodeWithContentDescription("Yarat").performClick()
         compose.waitForIdle()
         compose.onNodeWithText("Məsələn, şənbə günü qəhvə görüşü").performTextInput("Sınaq")

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import androidx.activity.ComponentActivity
+import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
 import org.junit.Rule
 import org.junit.Test
@@ -40,9 +41,26 @@ class CreateEventFlowTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    /** Demo düyməsi 450ms gecikmə ilə işləyir — daxil olmağı gözlə. */
-    private fun signInDemoAndWait() {
-        compose.onNodeWithText("Demo hesabı ilə davam et").performClick()
+
+    /**
+     * D-149: demo düyməsi silindi — testlər seed-li engine inyeksiya edir
+     * (QoshulApp(engineOverride)). signInDemo köhnə profil dəyərlərini
+     * burada bərpa edir (D-050 semantikası: onboarding keçilib, dolu profil).
+     */
+    private fun seededEngine(): AppEngine {
+        val e = AppEngine()
+        e.setProfileCreation(
+            "Demo", "İstifadəçi", java.time.LocalDate.of(2000, 1, 1),
+            gdr = "", bioText = "Qoshul demo — UI test seed.", photos = 1,
+        )
+        e.setInterests(listOf("Qəhvə", "Yürüş", "Stolüstü oyunlar", "Foto-gəzinti"))
+        e.signIn()
+        return e
+    }
+
+    /** Engine hazır + onboarding keçilib — „Sənin üçün" gözlə. */
+    private fun signInWithSeededEngine() {
+        compose.setContent { QoshulTheme { QoshulApp(engineOverride = seededEngine()) } }
         compose.waitUntil(timeoutMillis = 10_000) {
             try {
                 compose.onNodeWithText("Sənin üçün").fetchSemanticsNode()
@@ -58,10 +76,8 @@ class CreateEventFlowTest {
 
     @Test
     fun `tam axin - yarad sheet doldurulur ve tedbir yaranir`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-
-        // 1) demo hesabı ilə daxil ol (vahid hardcoded hesab, D-050)
-        signInDemoAndWait()
+        // D-149: seed-li engine inyeksiyası (demo düyməsi silindi)
+        signInWithSeededEngine()
         compose.onNodeWithText("Sənin üçün").assertIsDisplayed()
 
         // 2) mərkəzi Yarat düyməsi → sheet açılır (əvvəl BURADA NPE)
@@ -87,8 +103,7 @@ class CreateEventFlowTest {
 
     @Test
     fun `kateqoriya filtri ile 1-2 tedbirli siyahida crash olmamalidir`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
 
         // Tədbirlər tabı (dəqiq match — banner "Tədbirlər bölməsində" eyniləşdirməsin deyil)
         compose.onNodeWithText("Tədbirlər").performClick()
@@ -108,8 +123,7 @@ class CreateEventFlowTest {
 
     @Test
     fun `tedbir detali sheeti crash-siz acilir`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
 
         compose.onNodeWithText("Tədbirlər").performClick()
         compose.waitForIdle()
@@ -130,8 +144,7 @@ class CreateEventFlowTest {
      */
     @Test
     fun `push ekranda geri duymesu routu pop edir - app baglanmir`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
 
         // header-dəki Tərəfdaşlar ikonu → Partners push-ekranı
         compose.onNodeWithContentDescription("Tərəfdaşlar").performClick()
@@ -181,8 +194,7 @@ class CreateEventFlowTest {
      */
     @Test
     fun `yarat sheetinde tarix etiketi ve capacity yazimi duzgundur`() {
-        compose.setContent { QoshulTheme { QoshulApp() } }
-        signInDemoAndWait()
+        signInWithSeededEngine()
 
         compose.onNodeWithContentDescription("Yarat").performClick()
         compose.waitForIdle()

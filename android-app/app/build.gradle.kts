@@ -37,18 +37,33 @@ android {
         versionCode = 51
         versionName = "0.51.0"
         vectorDrawables { useSupportLibrary = true }
-        // — M1: Supabase konfiqi (D-078/D-079) —
+        // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
+        // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
+        // D-149: CI-də native.yml SUPABASE_URL/SUPABASE_ANON_KEY/BACKEND_MODE
+        // ötürür; secret qoyulmayınca PLACEHOLDER qalır → BackendConfig MOCK-a
+        // düşür (crash yoxdur — D-079 səssiz fallback prinsipi).
         buildConfigField(
             "String", "SUPABASE_URL",
-            "\"" + (localProps.getProperty("SUPABASE_URL") ?: "PLACEHOLDER_SUPABASE_URL") + "\"",
+            "\"" + (localProps.getProperty("SUPABASE_URL")
+                ?: System.getenv("SUPABASE_URL") ?: "PLACEHOLDER_SUPABASE_URL") + "\"",
         )
         buildConfigField(
             "String", "SUPABASE_ANON_KEY",
-            "\"" + (localProps.getProperty("SUPABASE_ANON_KEY") ?: "PLACEHOLDER_SUPABASE_ANON_KEY") + "\"",
+            "\"" + (localProps.getProperty("SUPABASE_ANON_KEY")
+                ?: System.getenv("SUPABASE_ANON_KEY") ?: "PLACEHOLDER_SUPABASE_ANON_KEY") + "\"",
         )
         buildConfigField(
             "String", "BACKEND_MODE",
-            "\"" + (localProps.getProperty("BACKEND_MODE") ?: "MOCK") + "\"",
+            "\"" + (localProps.getProperty("BACKEND_MODE")
+                ?: System.getenv("BACKEND_MODE") ?: "MOCK") + "\"",
+        )
+        // D-150: Google native sign-in — WEB client ID (CredentialManager
+        // setServerClientId). Android client ID (paket+SHA-1) Google Cloud-da
+        // qalır, kodda YOX; Supabase client_id siyahısında WEB ID birinci.
+        buildConfigField(
+            "String", "GOOGLE_WEB_CLIENT_ID",
+            "\"" + (localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+                ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "") + "\"",
         )
         // — D-108/D-109: xəritə backend seçimi — GOOGLE ƏSAS (direktiv
         // 2026-11-09: „google ilə dəyişdirib“). MAP_BACKEND mənbəyi:
@@ -176,6 +191,13 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.cio)
     implementation(libs.kotlinx.serialization.json)
+
+    // D-150: Google native sign-in — Credential Manager (modern API;
+    // köhnə GoogleSignInClient deprecated və bəzən null idToken verir —
+    // supabase-kt #442). googleid = GetGoogleIdOption/GoogleIdTokenCredential.
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.google.identity.googleid)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

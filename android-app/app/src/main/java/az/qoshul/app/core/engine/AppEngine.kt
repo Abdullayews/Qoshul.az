@@ -62,7 +62,15 @@ import kotlinx.coroutines.launch
  * Bütün məntiq qaydaları ROL (docs/product-spec.md) + D-026 ilə eynidir.
  */
 class AppEngine(
-    val dataSource: QoshulDataSource = FakeQoshulDataSource,
+    /**
+     * Məlumat mənbəyi. D-149: SUPABASE rejimində başlanğıc istifadəçi/sosial
+     * məlumat BOŞDUR — data serverdən gəlir (fake seed oxunmur); MOCK
+     * rejimində deterministik [FakeQoshulDataSource] (CI/test axını dəyişmir).
+     */
+    val dataSource: QoshulDataSource = if (
+        az.qoshul.app.core.backend.BackendConfig.mode ==
+        az.qoshul.app.core.backend.BackendMode.SUPABASE
+    ) ServerSeedDataSource else FakeQoshulDataSource,
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
     /**
@@ -403,37 +411,19 @@ class AppEngine(
 
     // ═════════════════════════ Auth ═════════════════════════
 
+    /**
+     * Giriş tamamlandı — UI-ni imza vəziyyətinə keçirir. D-149: real
+     * GoTrue axını (SupabaseAuth) uğurdan sonra məhz bunu çağırır;
+     * MOCK rejimində lokal simulyasiya eyni qapıdan keçir (testlər).
+     */
     fun signIn() {
         signedInV = true
         emit()
     }
 
-    /**
-     * PLACEHOLDER rejimi (D-050): vahid hardcoded demo hesabı — bir toxunuşla
-     * dolu profil. Onboarding keçilir (qeydiyyat XP + demo host adoptu + günlük
-     * giriş), bütün funksiyalar dərhal görünür. Yalnız PLACEHOLDER rejimində
-     * çağırılmalı (AuthScreen qapısı təmin edir).
-     */
-    fun signInDemo() {
-        val demo = AppConfig.DemoAccount
-        firstNameV = demo.FIRST_NAME
-        lastNameV = demo.LAST_NAME
-        profileNameV = demo.FULL_NAME
-        cityV = demo.CITY
-        bioV = demo.BIO
-        statusV = "student"
-        universityV = "Bakı Dövlət Universiteti"
-        languagesV = listOf("Azərbaycan dili", "İngilis dili")
-        interestsV = listOf("Qəhvə", "Yürüş", "Stolüstü oyunlar", "Foto-gəzinti")
-        goalsV = listOf("Yeni tanışlıqlar", "Hobbi paylaşmaq")
-        groupSizeV = "Kiçik qrup (3–6)"
-        budgetV = "10 AZN-ə qədər"
-        birthDateV = java.time.LocalDate.of(2000, 1, 1)
-        photoCountV = 1
-        signedInV = true
-        if (!onboardedV) finishOnboarding()
-        emit()
-    }
+    // D-149: signInDemo() SİLİNDİ — vahid hardcoded demo hesabı (D-050
+    // qalığı, demo@qoshul.az sabitləri) istifadəçi APK-sında görünmür.
+    // Real axın: SupabaseAuth.signUp/signIn/signInWithGoogle → signIn().
 
     fun signOut() {
         signedInV = false

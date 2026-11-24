@@ -123,6 +123,12 @@ jobs:
           # D-109: repo secret-i qoyulanda CI build-ləri də Google xəritə
           # ilə qurulur; secret yoxdursa boşdur → maplibre fallback.
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          # D-149: SUPABASE rejimi — secret-lər qoyulanda APK canlı serverə
+          # qoşulur; yoxdursa PLACEHOLDER → BackendConfig MOCK (build yaşıl).
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BACKEND_MODE: ${{ secrets.BACKEND_MODE }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: ./gradlew testDebugUnitTest --no-daemon
 
       - name: Test nəticələri (artifact)
@@ -183,6 +189,12 @@ jobs:
           # D-109: Google xəritə açarı CI-dən (repo secret MAPS_API_KEY);
           # yoxdursa APK maplibre fallback ilə qurulur — build yaşıl qalır.
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          # D-149: SUPABASE rejimi — secret qoyulanda release APK canlı
+          # serverə qoşulur (vəkil imza D-148 qoruyur). Yoxdursa MOCK.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          BACKEND_MODE: ${{ secrets.BACKEND_MODE }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: APK imza yoxlaması (D-148 — release sertifikatı ilə imzalanmalı)

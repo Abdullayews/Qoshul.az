@@ -35,6 +35,12 @@ supabaseKt = "3.9.0"        # umbrella (postgrest/realtime/storage/functions 3.9
 gotrueKt = "2.6.1"          # auth modulu ayrıca versiya xətti (head 2.7.0-beta-1 — beta götürülür)
 ktorCio = "3.6.1"           # CIO engine — əlavə native asılılıq YOX (M1)
 serializationJson = "1.12.0"
+# — D-150: Google native sign-in (Credential Manager, 2026-11-24) —
+# credentials 1.6.0 / googleid 1.2.1 son stable (dl.google.com metadata
+# ilə təsdiq; googleid Maven Central deyil, Google Maven-da — google()
+# repo-da hazır). play-services-auth fallback API 13- (bizim minSdk 24).
+androidxCredentials = "1.6.0"
+googleIdentityGoogleid = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -72,6 +78,10 @@ supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt"
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKt" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
+# D-150: Google native sign-in — Credential Manager + Google ID
+androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidxCredentials" }
+androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "androidxCredentials" }
+google-identity-googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleIdentityGoogleid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
