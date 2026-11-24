@@ -192,8 +192,8 @@ jobs:
           set -euo pipefail
           APK="app/build/outputs/apk/release/app-release.apk"
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          ACTUAL_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | grep -oP 'SHA-1 digest: \K[0-9a-f:]+' | head -1)
-          EXPECTED_SHA1="24:6b:e9:42:be:eb:c6:f4:b4:7d:d2:76:59:4d:54:97:3b:42:68:d0"
+          ACTUAL_SHA1=$("$APKSIGNER" verify --print-certs "$APK" | grep -oP 'SHA-1 digest: \K[0-9a-f:]+' | head -1 | tr -d ':' )
+          EXPECTED_SHA1="246be942beebc6f4b47dd276594d54973b4268d0"
           echo "APK SHA-1: $ACTUAL_SHA1"
           [ -n "$ACTUAL_SHA1" ] || { echo "XƏTA: APK imzası oxuna bilmədi!"; exit 1; }
           [ "$ACTUAL_SHA1" = "$EXPECTED_SHA1" ] || {
