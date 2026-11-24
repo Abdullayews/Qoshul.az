@@ -11,6 +11,8 @@ keys/
 fcm-*.json
 *.jks
 *.keystore
+# D-148: release imza konfiqi (keystore yolu + parollar) — CI secret-dən yazılır
+android-app/key.properties
 
 # --- M5 (D-085): self-host runtime vəziyyəti (volumes) ---
 infra/selfhost/volumes/db/data/

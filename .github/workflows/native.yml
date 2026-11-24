@@ -145,12 +145,55 @@ jobs:
           if-no-files-found: ignore
           overwrite: true
 
+      - name: Daimi imza keystore-u (D-148)
+        # Secret-dən keystore + key.properties yazılır; fingerprint DOĞRULANIR
+        # (uyğunsuzluq = build dərhal xəta verir — OAuth qeydiyyatı korlanmasın).
+        # Secret yoxdursa (fork/PR) debug imzası fallback — main-də heç vaxt.
+        env:
+          QOSHUL_KEYSTORE_B64: ${{ secrets.QOSHUL_KEYSTORE_B64 }}
+          QOSHUL_STORE_PASS: ${{ secrets.QOSHUL_STORE_PASS }}
+          QOSHUL_KEY_PASS: ${{ secrets.QOSHUL_KEY_PASS }}
+          QOSHUL_KEY_ALIAS: qoshul-release
+          QOSHUL_EXPECTED_SHA1: "24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0"
+        run: |
+          if [ -z "$QOSHUL_KEYSTORE_B64" ]; then
+            echo "WARN: QOSHUL_KEYSTORE_B64 secret yoxdur — debug imzası ilə davam (PR/fork)."
+            exit 0
+          fi
+          set -euo pipefail
+          KS="$HOME/qoshul-release.jks"
+          echo "$QOSHUL_KEYSTORE_B64" | base64 -d > "$KS"
+          cat > android-app/key.properties <<EOF
+          storeFile=$KS
+          storePassword=$QOSHUL_STORE_PASS
+          keyAlias=$QOSHUL_KEY_ALIAS
+          keyPassword=$QOSHUL_KEY_PASS
+          EOF
+          ACTUAL_SHA1=$(keytool -list -v -keystore "$KS" -alias "$QOSHUL_KEY_ALIAS" \
+            -storepass "$QOSHUL_STORE_PASS" 2>/dev/null | grep -oP 'SHA1: \K[0-9A-F:]+')
+          echo "Aktual SHA-1:    $ACTUAL_SHA1"
+          echo "Gözlənilən SHA-1: $QOSHUL_EXPECTED_SHA1"
+          [ "$ACTUAL_SHA1" = "$QOSHUL_EXPECTED_SHA1" ] || {
+            echo "XƏTA: fingerprint uyğunsuzluğu — secret-dəki keystore D-148 sertifikatı deyil!"; exit 1; }
+          echo "OK: daimi D-148 sertifikatı təsdiqləndi."
+
       - name: Release APK (R8 + resource shrink)
         env:
           # D-109: Google xəritə açarı CI-dən (repo secret MAPS_API_KEY);
           # yoxdursa APK maplibre fallback ilə qurulur — build yaşıl qalır.
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK imza yoxlaması (D-148 — release sertifikatı ilə imzalanmalı)
+        run: |
+          set -euo pipefail
+          APK="android-app/app/build/outputs/apk/release/app-release.apk"
+          ACTUAL_SHA1=$(keytool -printcert -jarfile "$APK" | grep -oP 'SHA1: \K[0-9A-F:]+' | head -1)
+          EXPECTED_SHA1="24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0"
+          echo "APK SHA-1: $ACTUAL_SHA1"
+          [ "$ACTUAL_SHA1" = "$EXPECTED_SHA1" ] || {
+            echo "XƏTA: APK daimi D-148 sertifikatı ilə imzalanmayıb!"; exit 1; }
+          echo "OK: APK daimi sertifikatla imzalanıb — update axını təhlükəsizdir."
 
       - name: APK artifaktı
         uses: actions/upload-artifact@v4

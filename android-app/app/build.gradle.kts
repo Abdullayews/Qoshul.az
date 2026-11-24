@@ -12,6 +12,25 @@ val localProps = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 
+// D-148: daimi release imza konfiqi — key.properties (CI secret-dən yazılır,
+// .gitignore-dadır; lokal build-də yoxdursa debug imzası fallback qalır).
+// Bu, hər APK-nın EYNİ sertifikatla çıxmasını təmin edir → Android update
+// axını (INSTALL_FAILED_UPDATE_INCOMPATIBLE yox) + Google Cloud OAuth
+// klienti üçün sabit SHA-1 fingerprint.
+fun releaseKeyStoreOrNull(): com.android.build.gradle.internal.dsl.SigningConfig? {
+    val f = rootProject.file("key.properties")
+    if (!f.exists()) return null
+    val p = Properties().apply { f.inputStream().use { load(it) } }
+    val storeFile = p.getProperty("storeFile") ?: return null
+    if (!java.io.File(storeFile).exists()) return null
+    return signingConfigs.create("release").apply {
+        storeFile = java.io.File(storeFile)
+        storePassword = p.getProperty("storePassword")
+        keyAlias = p.getProperty("keyAlias")
+        keyPassword = p.getProperty("keyPassword")
+    }
+}
+
 android {
     namespace = "az.qoshul.app"
     compileSdk = 37
@@ -20,8 +39,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 50
-        versionName = "0.50.0"
+        versionCode = 51
+        versionName = "0.51.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079) —
         buildConfigField(
@@ -59,14 +78,15 @@ android {
 
     buildTypes {
         release {
-            // Beta mərhələsi: debug imzası ilə birbaşa quraşdırma (D-016 keystore mərhələsi gələcəkdə)
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // D-148: daimi release imzası (key.properties varsa); yoxdursa
+            // lokal build üçün debug fallback qalır. CI-də secret həmişə var.
+            signingConfig = releaseKeyStoreOrNull() ?: signingConfigs.getByName("debug")
             // MapLibre nüvə .so ~13.4 MB/ABI (D-048): release-da real telefon ABI-ları;
             // x86_64 (yalnız emulator) buraxılır — debug variantında qalır.
             // Play-də app bundle per-device çatdırır; birbaşa APK üçün universal phone build.
