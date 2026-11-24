@@ -52,6 +52,10 @@ class CreateSheetTapAllTest {
         )
         e.setInterests(listOf("Qəhvə", "Yürüş", "Stolüstü oyunlar", "Foto-gəzinti"))
         e.signIn()
+        // signInDemo pariteti: onboarding KEÇİLMƏLİDİR (finishOnboarding
+        // onboardedV=true edir + qeydiyyat XP + günlük giriş) — yoxsa
+        // QoshulApp OnboardingScreen göstərir və "Sənin üçün" heç vaxt gəlmir
+        e.finishOnboarding()
         return e
     }
 
