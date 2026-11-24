@@ -1,3 +1,4 @@
+import java.io.File
 import java.util.Properties
 
 plugins {
@@ -22,7 +23,7 @@ val releaseKeyProps: Properties? = run {
     if (!f.exists()) return@run null
     val p = Properties().apply { f.inputStream().use { load(it) } }
     val sf = p.getProperty("storeFile") ?: return@run null
-    if (!java.io.File(sf).exists()) null else p
+    if (!File(sf).exists()) null else p
 }
 
 android {
@@ -82,7 +83,7 @@ android {
             // lokal build üçün debug fallback qalır. CI-də secret həmişə var.
             signingConfig = (releaseKeyProps?.let { props ->
                 signingConfigs.create("qoshulRelease").apply {
-                    storeFile = java.io.File(props.getProperty("storeFile"))
+                    storeFile = File(props.getProperty("storeFile"))
                     storePassword = props.getProperty("storePassword")
                     keyAlias = props.getProperty("keyAlias")
                     keyPassword = props.getProperty("keyPassword")
