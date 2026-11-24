@@ -163,6 +163,10 @@ cd ../.. && scripts/migrate_selfhost.sh                    # migrations (idempot
 fayllar redaktə olunmur, yeni dəyişiklik yeni faylla gəlir. `scripts/lint_sql.py`
 struktur lint-i aparır (CI-də məcburidir).
 
+**Test datası:** `supabase/testdata/` — MOCK→SUPABASE keçidi üçün 100 dolu
+test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
+detallar `supabase/testdata/README.md`-də.
+
 ### 2) qoshul-service — axum mikroservisi (M4, D-082)
 
 **Quraşdırma:** Rust stable tələb olunur.
