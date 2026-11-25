@@ -83,6 +83,8 @@ sealed interface Route {
     data object Quiz : Route
     /** D-112: profil redaktə ekranı (ad, soyad, profil şəkli seçimi). */
     data object ProfileEdit : Route
+    /** D-155 (master-spec §9): Tapşırıqlar Mərkəzi — Novice/Daily/Advanced. */
+    data object TaskCenter : Route
     data class VenueDetail(val venueId: String) : Route
 }
 

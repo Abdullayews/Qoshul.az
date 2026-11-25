@@ -228,7 +228,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                         } else {
                             error =
                                 "Google girişi hələ konfiqurasiya olunmayıb " +
-                                    "(GOOGLE_WEB_CLIENT_ID). İndi e-poçt və ya " +
+                                    "(GOOGLE ID). İndi e-poçt və ya " +
                                     "təsdiq kodu ilə daxil ola bilərsən."
                         }
                     }

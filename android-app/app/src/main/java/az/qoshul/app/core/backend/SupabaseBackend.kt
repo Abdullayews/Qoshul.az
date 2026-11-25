@@ -8,6 +8,16 @@ import az.qoshul.app.core.safety.Safety
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.russhwolf.settings.Settings
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.request.header
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
@@ -22,6 +32,9 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.gotrue.SettingsSessionManager
+import io.github.jan.supabase.gotrue.SessionSource
+import io.github.jan.supabase.gotrue.user.UserInfo
+import io.github.jan.supabase.gotrue.user.UserSession
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -54,6 +67,18 @@ import java.util.UUID
  * klientə heç vaxt düşmür.
  */
 object SupabaseBackend {
+
+    /** D-155: M4 verify cavabı (Google axını). */
+    @Serializable
+    data class M4GoogleUser(val id: String = "", val email: String = "")
+
+    @Serializable
+    data class M4GoogleSession(
+        val access_token: String,
+        val refresh_token: String,
+        val expires_in: Long = 3600,
+        val user: M4GoogleUser = M4GoogleUser(),
+    )
 
     /** JVM testləri üçün açıq (şəbəkə çağırışı YOXDUR — yalnız konstruksiya). */
     val client: SupabaseClient? = runCatching {
@@ -126,21 +151,30 @@ object SupabaseBackend {
     }
 
     /**
-     * Google native sign-in (D-150) — Credential Manager (modern API;
-     * köhnə GoogleSignInClient deprecate + supabase-kt #442 null token).
+     * Google native sign-in (D-150 → D-155) — Credential Manager.
+     *
+     * D-155 (2026-11-25, „konfiqurasiya xətası“ diaqnozu): Google rəsmi
+     * sənədlərinə görə setServerClientId yalnız WEB tipli ID qəbul edir;
+     * istifadəçinin yaratdığı ANDROID tipli ID burada DEVELOPER_ERROR
+     * verirdi. Həll: Credential Manager ilə aud=ANDROID_ID token alınır,
+     * doğrulamani M4 servisi edir (Google JWKS RS256 + nonce), sessiya
+     * GoTrue admin API ilə açılır → importSession.
      *
      * Nonce qaydası: raw nonce (UUID) → SHA-256 HEX → Google-a HASHED gedir
-     * (setNonce), Supabase-ə RAW gedir — GoTrue raw-u hash edib token-in
-     * nonce claim-i ilə yoxlayır (replay qoruması).
+     * (setNonce), M4-ə RAW gedir — server hash edib token-in nonce claim-i
+     * ilə yoxlayır (replay qoruması).
      *
-     * @param serverClientId WEB client ID (Google Cloud „Web application“
-     *   tipli OAuth klienti). Android klienti (paket+SHA-1) Google Cloud-da
-     *   qalır, kodda olmur; Supabase client_id siyahısında WEB ID birinci.
+     * @param serverClientId ANDROID client ID (Google Cloud „Android“ tipli
+     *   OAuth klienti, paket+SHA-1 ilə). Web klient gələcəkdə yaradılarsa
+     *   bu axın dəyişməz qalır — M4 aud siyahısına WEB ID də qəbul edir.
      */
     suspend fun signInWithGoogle(context: Context, serverClientId: String) {
         val rawNonce = UUID.randomUUID().toString()
         val hashedNonce = sha256Hex(rawNonce)
 
+        // D-155: Credential Manager Android klient ID-si ilə işləyir —
+        // token-in aud-i bu ID olur; doğrulamanı bizim M4 servisi edir
+        // (Google JWKS), GoTrue-a admin API ilə sessiya açılır.
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(serverClientId)
@@ -156,10 +190,61 @@ object SupabaseBackend {
         val googleIdToken = GoogleIdTokenCredential
             .createFrom(result.credential.data).idToken
 
-        requireClient().auth.signInWith(IDToken) {
-            idToken = googleIdToken
-            provider = Google
-            nonce = rawNonce
+        // M4 verify → {access_token, refresh_token, expires_in, user}
+        val session = m4VerifyGoogleToken(googleIdToken, rawNonce)
+
+        // Sessiyanı Supabase klientinə import et — RLS/realtime/refresh
+        // hamısı normal Supabase sessiyası kimi işləyir.
+        requireClient().auth.importSession(
+            UserSession(
+                accessToken = session.access_token,
+                refreshToken = session.refresh_token,
+                providerRefreshToken = null,
+                providerToken = null,
+                expiresIn = session.expires_in,
+                tokenType = "bearer",
+                user = UserInfo(
+                    id = session.user.id,
+                    email = session.user.email,
+                    aud = "authenticated",
+                    role = "authenticated",
+                ),
+                type = "m4_google",
+                expiresAt = kotlinx.datetime.Instant.fromEpochSeconds(
+                    System.currentTimeMillis() / 1000 + session.expires_in
+                ),
+            ),
+            false,
+            SessionSource.External,
+        )
+    }
+
+    /** D-155: M4 /auth/google/verify çağırışı (ktor CIO — əlavə native asılılıq YOX). */
+    private suspend fun m4VerifyGoogleToken(
+        idToken: String,
+        rawNonce: String,
+    ): M4GoogleSession {
+        val http = HttpClient(CIO)
+        try {
+            val body = buildJsonObject {
+                put("id_token", idToken)
+                put("nonce", rawNonce)
+            }
+            val resp = http.post(BackendConfig.m4Url + "/auth/google/verify") {
+                header("apikey", BackendConfig.supabaseAnonKey)
+                header("Content-Type", "application/json")
+                setBody(body.toString())
+            }
+            val text = resp.bodyAsText()
+            if (!resp.status.isSuccess()) {
+                val desc = runCatching {
+                    Json.parseToJsonElement(text).jsonObject["error_description"]?.toString()
+                }.getOrNull() ?: "HTTP ${resp.status.value}"
+                throw IllegalStateException("Google doğrulama alınmadı: $desc")
+            }
+            return Json { ignoreUnknownKeys = true }.decodeFromString(text)
+        } finally {
+            http.close()
         }
     }
 

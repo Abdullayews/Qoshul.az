@@ -403,6 +403,24 @@ resources:
                               type.googleapis.com/envoy.config.route.v3.FilterConfig
                             disabled: true
 
+
+                      - name: m4-qoshul-service
+                        match:
+                          prefix: /m4/
+                        route:
+                          cluster: qoshul-m4
+                          prefix_rewrite: /
+                          timeout: 30s
+                        request_headers_to_add:
+                          - header:
+                              key: X-Forwarded-Prefix
+                              value: /m4/
+                            append_action: ADD_IF_ABSENT
+                        typed_per_filter_config:
+                          envoy.filters.http.basic_auth:
+                            '@type': >-
+                              type.googleapis.com/envoy.config.route.v3.FilterConfig
+                            disabled: true
                       - name: rest-v1-openapi-protected
                         match:
                           path: /rest/v1/
@@ -1241,6 +1259,11 @@ resources:
                             - url_path:
                                 path:
                                   prefix: /auth/v1/
+                            # D-155: M4 (Google id_token dogrulama) — app
+                            # anon key ile cagirir; token ozu auth mehsuludur.
+                            - url_path:
+                                path:
+                                  prefix: /m4/
                             - url_path:
                                 path:
                                   prefix: /rest/v1/

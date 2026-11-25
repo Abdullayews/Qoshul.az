@@ -288,18 +288,82 @@ object Taxonomy {
         "stability" to "Emosional sabitlik",
     )
 
-    /** Şəxsiyyət testi sualları — (sual to (ölçü to revers)). */
+    /**
+     * Şəxsiyyət testi sualları — (sual to (ölçü to revers)).
+     *
+     * D-155 (master-spec §9): „Səthi 10 suallıq test ləğv edilir. Əvəzində
+     * 50–100 sualdan ibarət psixometrik model inteqrasiya olunur.“ →
+     * 60 sual, 5 ölçü × 12 (IPIP qısaldılmış paradiqması əsasında):
+     * openness, conscientiousness, extraversion, agreeableness, stability.
+     * UX (spec §9): hər səhifədə 6 sual, „Növbəti“ ilə irəliləmə —
+     * [PersonalityQuizScreen] pagination qayğısına qalır.
+     */
     val personalityQuestions: List<Pair<String, Pair<String, Boolean>>> = listOf(
+        // ── Ekstroversiya (12) ──
         "Yeni insanlarla tanış olmaq mənə enerji verir." to ("extraversion" to false),
         "Böyük məclislərdə özümü yorğun hiss edirəm." to ("extraversion" to true),
         "Söhbəti adətən mən başladıram." to ("extraversion" to false),
+        "Tək qalmağı daha çox sevirəm." to ("extraversion" to true),
+        "Şən məclislərin ruhuyam." to ("extraversion" to false),
+        "Diqqət mərkəzində olmaq məni narahat edir." to ("extraversion" to true),
+        "Yeni tanışlıqlar üçün ilk addımı mən atıram." to ("extraversion" to false),
+        "Uzun müddət tək olduqda canım sıxılır." to ("extraversion" to false),
+        "Səs-küylü yerdə tez yoruluram." to ("extraversion" to true),
+        "Dostlarıma tez-tez zəng edib danışıram." to ("extraversion" to false),
+        "Naməlum insanlarla söhbətə girmək mənə çətin gəlir." to ("extraversion" to true),
+        "Qrupa yeni daxil olanda özümü rahat hiss edirəm." to ("extraversion" to false),
+        // ── Açıqlıq (12) ──
         "Yeni və qeyri-adi şeyləri sınamağı xoşlayıram." to ("openness" to false),
         "İncəsənət və musiqi məni dərindən maraqlandırır." to ("openness" to false),
+        "Rotina bağlı həyatı mənə darıxdırıcı gəlir." to ("openness" to false),
+        "Müəyyən olunmuş qaydalarla yaşamaq məni rahatladır." to ("openness" to true),
+        "Fərqli mədəniyyətlər haqqında oxumağı sevirəm." to ("openness" to false),
+        "Abstrakt ideyalar məni real hadisələrdən az maraqlandırır." to ("openness" to true),
+        "Təxəyyülüm güclüdür, hadisələri canlı təsəvvür edirəm." to ("openness" to false),
+        "Praktik şeylər nəzəri müzakirələrdən daha vacibdir." to ("openness" to true),
+        "Yeni yeməkləri sınamaqdan məmnun oluram." to ("openness" to false),
+        "Rutin işləri təkrar etmək məni yormur." to ("openness" to true),
+        "Şeir və ədəbiyyat mənə toxunur." to ("openness" to false),
+        "Dəyişikliklərə tez uyğunlaşa bilirəm." to ("openness" to false),
+        // ── Məsuliyyətlilik (12) ──
         "Planlarımı vaxtında və dəqiq yerinə yetirirəm." to ("conscientiousness" to false),
         "Görüşlərə adətən gecikirəm." to ("conscientiousness" to true),
+        "İşlərimi son gündə deyil, vaxtında bitirirəm." to ("conscientiousness" to false),
+        "İş masam adətən dağınıq olur." to ("conscientiousness" to true),
+        "Verdiyim sözü hər zaman tuturam." to ("conscientiousness" to false),
+        "Tapşırıqları çox vaxt yarımçıq qoyuram." to ("conscientiousness" to true),
+        "Detallara diqqətliyəm." to ("conscientiousness" to false),
+        "Gündəlik plan yazmağı xoşlamıram." to ("conscientiousness" to true),
+        "Öhdəliklərimi ciddi qəbul edirəm." to ("conscientiousness" to false),
+        "Özümü tələsəndə səhvlər edirəm." to ("conscientiousness" to true),
+        "Gələcək üçün qəti planlarım var." to ("conscientiousness" to false),
+        "Vacib işləri sonrakı günlərə təxirə salıram." to ("conscientiousness" to true),
+        // ── Xoş münasibət (12) ──
         "Başqalarının hisslərinə qarşı həssasam." to ("agreeableness" to false),
         "Mübahisədə güzəştə getməyi bacarıram." to ("agreeableness" to false),
+        "İnsanların niyyətlərindən şübhələnirəm." to ("agreeableness" to true),
+        "Kimsəyə kömək etmək mənə xoş gəlir." to ("agreeableness" to false),
+        "Tənqid edildikdə dərhal müdafiəyə keçirəm." to ("agreeableness" to true),
+        "İnsanların problemlərini dinləməyə vaxt ayırıram." to ("agreeableness" to false),
+        "Əks fikirləri olanlarla çox münaqişə edirəm." to ("agreeableness" to true),
+        "Tanımadığım insanlara da güvənirəm." to ("agreeableness" to false),
+        "Başqalarından asılı olmağı sevmirəm." to ("agreeableness" to true),
+        "Uşaqlara və heyvanlara qarşı mehribanam." to ("agreeableness" to false),
+        "İnsanlara qarşı soyuq olduğumu deyirlər." to ("agreeableness" to true),
+        "Komandada razılıq üçün çalışıram." to ("agreeableness" to false),
+        // ── Emosional sabitlik (12) ──
         "Kiçik stresslərdən asanlıqla özümü topluyam." to ("stability" to false),
+        "Tez əsəbiləşirəm." to ("stability" to true),
+        "Narahatlıq keçirdiyim günlər azdır." to ("stability" to false),
+        "Kiçik problemlər məni uzun müddət narahat edir." to ("stability" to true),
+        "Təzyiq altında soyuqqanlı qalıram." to ("stability" to false),
+        "Bəzən özümü dəyərsiz hiss edirəm." to ("stability" to true),
+        "Gecələr düşüncələrimə görə yuxuya getməyim çətinləşir." to ("stability" to true),
+        "Tənqidi sakit qarşılayıram." to ("stability" to false),
+        "Sıxıntılı anlarda ümidimi itirirəm." to ("stability" to true),
+        "Duyğularımı idarə edə bilirəm." to ("stability" to false),
+        "Hər şeyin pis nəticələnəcəyindən qorxuram." to ("stability" to true),
+        "Qərarlarımdan sonra peşmançılıq keçirmirəm." to ("stability" to false),
     )
 
     // D-115: „biznes ilə əlaəqli yerləri sil“ — maraqlar sosial/hobbi dəstində.

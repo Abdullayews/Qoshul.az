@@ -257,7 +257,7 @@ class AppEngine(
         profileCompleted = profileCompletedV,
         mapVisibility = mapVisibilityV, showDistance = showDistanceV,
         designColor = designColorV, designMode = designModeV,
-        xp = xpV, earnedBadges = earnedBadgesV.toSet(), loginStreak = loginStreakV,
+        xp = xpV, awardedKeys = xpEventIds.toSet(), earnedBadges = earnedBadgesV.toSet(), loginStreak = loginStreakV,
         venueXp = venueXp, discountXpTotal = venueXp.values.sumOf { it.balance },
         xpCard = xpCardV, xpCardVenueId = xpCardVenueIdV,
         events = eventsV.toList(), joined = joinedV.toSet(), pending = pendingV.toSet(),
@@ -357,6 +357,8 @@ class AppEngine(
      */
     fun setPersonality(result: PersonalityResult) {
         personalityV = result
+        // D-155 TaskCenter: 16P testi tapşırığı (Novice tier)
+        award("personality-set", XpRules.PHONE_VERIFY_XP)
         completeProfileFull()
     }
 
@@ -1429,6 +1431,8 @@ data class AppUiState(
     val designMode: DesignMode,
     // XP 1
     val xp: Int,
+    /** D-155 TaskCenter: verilmiş XP açarları (prefiks uyğunluğu ilə yoxlanır). */
+    val awardedKeys: Set<String> = emptySet(),
     val earnedBadges: Set<String>,
     val loginStreak: Int,
     // XP 2

@@ -16,6 +16,7 @@
 pub mod admin;
 pub mod config;
 pub mod fcm;
+pub mod google_auth;
 pub mod jobs;
 pub mod supabase;
 
@@ -33,6 +34,11 @@ pub struct AppState {
     pub fcm: Arc<fcm::FcmSender>,
     pub admin_token: String,
     pub cfg: Config,
+    /// D-155: Google id_token doğrulayıcı (JWKS) — GOOGLE_ANDROID_CLIENT_ID
+    /// PLACEHOLDER-dırsa None → endpoint 503 qaytarır (degrade, crash YOX).
+    pub google: Option<Arc<google_auth::GoogleVerifier>>,
+    /// D-155: GoTrue admin API (supabase-auth daxili ünvanı).
+    pub gotrue_admin: Option<Arc<google_auth::GoTrueAdmin>>,
 }
 
 impl AppState {
@@ -82,6 +88,9 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     // İki ayrı sub-router birləşdirilir — route_layer yalnız qorunana düşür.
     let public_routes = Router::new()
         .route("/health", get(health))
+        // D-155: Google Sign-In dogrulama — app'den id_token gelir, JWKS ile
+        // yoxlanilir; auth mehsutunun kendisi token oldugu ucun anonimdir.
+        .route("/auth/google/verify", post(google_auth::verify_google))
         .with_state(state.clone());
     let protected_routes = Router::new()
         .route("/jobs/reminders/run", post(run_reminders_now))

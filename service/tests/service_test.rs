@@ -94,6 +94,8 @@ fn test_state(fake: Arc<FakeBackend>) -> Arc<AppState> {
         fcm: Arc::new(qoshul_service::fcm::FcmSender::new("PLACEHOLDER")),
         admin_token: "test-admin-token".into(),
         cfg: qoshul_service::Config::from_env(),
+        google: None,
+        gotrue_admin: None,
     })
 }
 
@@ -277,6 +279,8 @@ async fn admin_placeholder_qapalı() {
         fcm: Arc::new(qoshul_service::fcm::FcmSender::new("PLACEHOLDER")),
         admin_token: "PLACEHOLDER".into(),
         cfg: qoshul_service::Config::from_env(),
+        google: None,
+        gotrue_admin: None,
     });
     let (s, _) = get_json(
         build_router(st.clone()),

@@ -172,53 +172,39 @@ struktur lint-i aparır (CI-də məcburidir).
 test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
 detallar `supabase/testdata/README.md`-də.
 
-### 1b) Google Sign-In — aktivləşdirmə (D-150/D-151/D-154)
+### 1b) Google Sign-In — M4 verifikasiya axını (D-150/151/154/155)
 
-**Hazırkı vəziyyət (D-154):** Google düyməsi girişdə həmişə görünür və
-Credential Manager (Google-un öz hesab seçici pəncərəsi) axını hazırdır.
-Google Cloud-da **Android tipli** OAuth klient yaradılıb:
-
-- Client ID: `572326155287-duq6g55u7oaupke4anshk89lqrns0i12.apps.googleusercontent.com`
-- Paket adı: `az.qoshul.app`
-- İmzalama SHA-1 (release, daimi D-148 sertifikatı):
-  `24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0`
-
-Bu ID artıq **hər yerdə qurulub**: CI secret `GOOGLE_WEB_CLIENT_ID`
-(APK BuildConfig-inə düşür) + serverdə `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`
-(`docker compose up -d auth` ilə tətbiq edildi). `/auth/v1/token?grant_type=id_token`
-endpoint-i token parse mərhələsinə çatır — yəni provider zənciri açıqdır.
-
-**Google Console-da yoxlanılması lazım olan 2 şey:**
-
-1. Android klientin SHA-1-i yuxarıdakı dəyərlə eynidirmı
-   (*Credentials → Android klient → SHA-1 certificate fingerprints*).
-   Fərqlidirsə — yeniləyin (dəyişiklik dərhal təsir edir, APK yenidən
-   qurmaq lazım deyil).
-2. Android klient həmin Google Cloud layihəsindədir və *Google Identity*
-   (Sign In) API aktivdir.
-
-**Niyə hələ də Web klient lazımdır (tam uyğunluq üçün):** Supabase rəsmi
-sənədi `setServerClientId` üçün **Web application** tipli ID tövsiyə edir.
-Android ID ilə Credential Manager işləyir (aud = Android ID), GoTrue isə
-`GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID` siyahısında aud axtarır — hazırda Android
-ID siyahıda olduğundan axın bağlıdır. Ən yaxşı praktika (Supabase tövsiyəsi):
+**Hazırkı arxitektura (D-155, 2026-11-25):** istifadəçi Google Cloud-da
+ANDROID tipli OAuth klient yaratdı (SHA-1 imza ilə). Google-un rəsmi
+sənədlərinə görə Credential Manager `setServerClientId` yalnız WEB tipli
+ID qəbul edir — Android ID birbaşa qoyulanda klient „konfiqurasiya xətası“
+(DEVELOPER_ERROR) verirdi. Həll: doğrulamanı öz M4 mikroservisimiz edir:
 
 ```
-GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=<WEB_ID>,<ANDROID_ID>
+app → Credential Manager (aud = Android ID) → id_token
+app → POST https://supabase.qoshul.com/m4/auth/google/verify
+m4  → Google JWKS (RS256) imza + iss + aud + exp + nonce yoxlaması
+m4  → GoTrue admin API: istifadəçi tap/yaarat (email_confirm=true)
+m4  → generate_link (magiclink) → sessiya JWT → app importSession
 ```
 
-Web klient yaradılanda (`Credentials → Create credentials → OAuth client ID →
-Web application`; Authorized redirect URI:
-`https://supabase.qoshul.com/auth/v1/callback`) onun ID-sini siyahının
-**birinci** mövqeyinə əlavə edin, `GOOGLE_WEB_CLIENT_ID` CI secret-ini
-yeniləyin və APK-nı yenidən buraxın — klient `setServerClientId`-ə Web ID
-göndərəcək, Android ID isə Google tərəfindən APK doğrulaması üçün
-Google Cloud-da qalır (kodda olmur).
+Konfiqurasiya:
 
-Supabase GoTrue `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS` artıq
-`https://supabase.qoshul.com/auth/v1/callback` — dəyişməyin.
+1. **APK**: CI secret `GOOGLE_WEB_CLIENT_ID` = Android klient ID
+   (BuildConfig → `setServerClientId` — aud bu ID üçün buraxılır).
+2. **Server (m4)**: `service/.env.m4` → `GOOGLE_ANDROID_CLIENT_ID`
+   (vergüllü siyahı dəstəklənir — Web ID gələndə əlavə olunar).
+3. **Envoy**: `/m4/` prefix → `qoshul-m4:8080` cluster (lds.template.yaml +
+   cds.yaml repo-da; RBAC apikey siyahısında `/m4/` prefix-i açıqdır).
+4. **Google Cloud Console**: Android klientdə SHA-1 =
+   `24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0`
+   (daimi D-148 sertifikatı) qeydə alınmalıdır; Google Identity API aktivdir.
 
-Email + şifrə və email-OTP yolları Google-dan asılı deyil — istənilən halda işləyir.
+Nonce qorunması: raw nonce UUID → SHA-256 hash Google-a, raw M4-ə gedir —
+server hash edib token `nonce` claim-i ilə müqayisə edir (replay qoruması).
+Canlı test: fake imza → 401 `InvalidSignature`; xətalı aud → 401.
+
+Email + şifrə və email-OTP yolları Google-dan asılı deyil — həmişə işləyir.
 
 ### 2) qoshul-service — axum mikroservisi (M4, D-082)
 

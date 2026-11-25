@@ -28,6 +28,9 @@ import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsVolleyball
 import androidx.compose.material.icons.filled.Star
@@ -101,6 +104,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var distanceKm by remember { mutableStateOf(10) }
     var openNow by remember { mutableStateOf(false) }
     var withDiscount by remember { mutableStateOf(false) }
+    // D-155 (master-spec §8): müstəqil lay sistemi — İnsanlar/Hadisələr/Məkanlar.
+    // Sadə məsafə filtrindən çıxarılaraq 3 ana laya ayrılır; Məkanlar layı
+    // aktiv olanda sürətli alt-filtrlər (İndi açıqdır / Endirim var) açılır.
+    var mapLayer by remember { mutableStateOf(MapLayer.ALL) }
     var selected by remember { mutableStateOf<MapPin?>(null) }
     var reserveVenue by remember { mutableStateOf<Partner?>(null) }
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
@@ -219,7 +226,18 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             st.mapVisibility == MapVisibility.EVERYONE ||
                 (st.mapVisibility == MapVisibility.FRIENDS && st.friendships[it.id] == "accepted")
         }.map { MapPin.PersonP(it) }
-    val pins = venuePins + eventPins + peoplePins
+    // D-155: lay filtri — pin kompozisiyası seçilən laya görə
+    val pins = when (mapLayer) {
+        MapLayer.PEOPLE -> peoplePins
+        MapLayer.EVENTS -> eventPins
+        MapLayer.VENUES -> venuePins
+        MapLayer.ALL -> venuePins + eventPins + peoplePins
+    }
+
+    // D-155: lay seçici çipləri (İnsanlar/Hadisələr/Məkanlar) — kateqoriya
+    // filtrləri sadəcə Məkanlar/Hamısı laylarında görünür (spec §8).
+    val layerVisible = mapLayer == MapLayer.ALL || mapLayer == MapLayer.VENUES
+    val showEventLayerChips = mapLayer == MapLayer.ALL || mapLayer == MapLayer.EVENTS
 
     // D-089: xəritə filtr ikonları (əvvəl inline siyahı idi) + D-110 izahları
     val mapCatIcons = linkedMapOf(
@@ -300,6 +318,27 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             luminance = 0.5f,
         ) {
             Column(Modifier.padding(10.dp)) {
+                // D-155 (master-spec §8): müstəqil lay seçici — İnsanlar /
+                // Hadisələr / Məkanlar (+ Hamısı). Lay seçimi pinləri filtrləyir;
+                // kateqoriya/məsafə qutuları yalnız uyğun laylarda göstərilir.
+                Row {
+                    MapLayer.entries.forEach { layer ->
+                        if (layer != MapLayer.ALL) {
+                            GlassFilterChip(
+                                layer.label,
+                                when (layer) {
+                                    MapLayer.PEOPLE -> Icons.Filled.Groups
+                                    MapLayer.EVENTS -> Icons.Filled.Event
+                                    MapLayer.VENUES -> Icons.Filled.Storefront
+                                    MapLayer.ALL -> Icons.Filled.Public
+                                },
+                                mapLayer == layer,
+                            ) { mapLayer = if (mapLayer == layer) MapLayer.ALL else layer }
+                            Spacer(Modifier.width(7.dp))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(9.dp))
                 // D-110: iki sürüşən filtr zolağı → iki SELECTOR BOX (etiketli
                 // qutu; panellər PickHostOverlay-də — root Box-da, aşağıda)
                 Row {
@@ -558,3 +597,11 @@ private fun Modifier.androidxChipBg(active: Boolean): Modifier = this.then(
             RoundedCornerShape(Q.rMd.dp),
         )
 )
+
+/** D-155 (master-spec §8): xəritə ana layları — müstəqil idarəetmə. */
+enum class MapLayer(val label: String) {
+    ALL("Hamısı"),
+    PEOPLE("İnsanlar"),
+    EVENTS("Hadisələr"),
+    VENUES("Məkanlar"),
+}

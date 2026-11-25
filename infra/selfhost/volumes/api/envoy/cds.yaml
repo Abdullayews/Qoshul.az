@@ -228,3 +228,27 @@ resources:
           max_connections: 10000
           max_pending_requests: 10000
           max_requests: 10000
+  - '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: qoshul-m4
+    connect_timeout: 5s
+    type: STRICT_DNS
+    dns_refresh_rate: 5s
+    dns_failure_refresh_rate:
+      base_interval: 1s
+      max_interval: 1s
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: qoshul-m4
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: qoshul-m4
+                    port_value: 8080
+    circuit_breakers:
+      thresholds:
+        - priority: DEFAULT
+          max_connections: 10000
+          max_pending_requests: 10000
+          max_requests: 10000

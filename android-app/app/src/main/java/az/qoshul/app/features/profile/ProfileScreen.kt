@@ -2,6 +2,7 @@ package az.qoshul.app.features.profile
 
 import androidx.compose.foundation.Image
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -79,6 +81,7 @@ import az.qoshul.app.core.ui.ViewHeading
 import az.qoshul.app.core.ui.imagePaint
 import az.qoshul.app.features.auth.QoshulTextField
 import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.Psychology
 import az.qoshul.app.features.events.EventCard
 import az.qoshul.app.features.events.EventDetailSheet
@@ -200,7 +203,7 @@ fun ProfileScreen(
                 CommunityBanner(
                     icon = Icons.Filled.Psychology,
                     title = "Şəxsiyyət testi",
-                    subtitle = "10 sual · 2 dəqiqə. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 Qoşa Coin.",
+                    subtitle = "60 sual · psixometrik model. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 Qoşa Coin.",
                     onClick = { nav.push(Route.Quiz) },
                     trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
@@ -290,6 +293,21 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(6.dp))
             XpBar(progress = prog.pct / 100f, height = 4.dp)
+            Spacer(Modifier.height(10.dp))
+            // D-155 (master-spec §9): Tapşırıqlar Mərkəzi giriş —
+            // 3 səviyyə (Novice/Daily/Advanced), mükafat Qoşa Coin.
+            OutlinedButton(
+                onClick = { nav.push(Route.TaskCenter) },
+                modifier = Modifier.fillMaxWidth().height(46.dp),
+                shape = RoundedCornerShape(Q.rPill),
+                border = BorderStroke(1.dp, Q.border),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Q.card, contentColor = Q.foreground),
+            ) {
+                Icon(Icons.Filled.TaskAlt, null, modifier = Modifier.height(18.dp), tint = Q.primaryText)
+                Spacer(Modifier.width(8.dp))
+                Text("Tapşırıqlar Mərkəzi", style = T.button)
+            }
         }
         // tablar
         item {

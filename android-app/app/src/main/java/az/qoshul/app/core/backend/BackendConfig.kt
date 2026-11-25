@@ -22,6 +22,14 @@ object BackendConfig {
     val supabaseUrl: String get() = az.qoshul.app.BuildConfig.SUPABASE_URL
     val supabaseAnonKey: String get() = az.qoshul.app.BuildConfig.SUPABASE_ANON_KEY
 
+    /**
+     * D-155 (master-spec §4.1 — Google SSO): M4 mikroservisi bazası.
+     * SUPABASE_URL (https://supabase.qoshul.com) üzərindən /m4/ prefix-i
+     * Envoy ilə qoshul-m4 clusterinə yönlənir (google id_token doğrulama).
+     * SUPABASE_URL qurulmayıbsa M4 də yoxdur.
+     */
+    val m4Url: String get() = supabaseUrl.trimEnd('/') + "/m4"
+
     /** "https://…" ilə başlayır və PLACEHOLDER deyil. */
     fun isUsableUrl(url: String): Boolean =
         url.startsWith("https://") && !url.contains("PLACEHOLDER") && url.contains(".")

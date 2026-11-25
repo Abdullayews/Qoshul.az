@@ -92,7 +92,7 @@ fun PersonalityQuizScreen(engine: AppEngine, nav: NavState) {
                 modifier = Modifier.fillMaxSize(),
             ) { s ->
                 when {
-                    s < 0 -> Intro(onStart = { step = 0 })
+                    s < 0 -> Intro(questions.size, onStart = { step = 0 })
                     s < questions.size -> {
                         val (text, _) = questions[s]
                         QuestionStep(
@@ -122,7 +122,7 @@ fun PersonalityQuizScreen(engine: AppEngine, nav: NavState) {
 // ═══════════════════ Görünümlər ═══════════════════
 
 @Composable
-private fun Intro(onStart: () -> Unit) {
+private fun Intro(questionCount: Int, onStart: () -> Unit) {
     StaggerIn(0) {
         // D-063: şaquli mərkəzləşmə — intro məzmunu ekranın mərkəzində;
         // altdan 90dp — nav pill zonası hesabına vizual mərkəzə düzəliş
@@ -133,7 +133,7 @@ private fun Intro(onStart: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Psychology, null, tint = Q.primaryText, modifier = Modifier.height(56.dp))
                 Spacer(Modifier.height(20.dp))
-                Text("10 sual · 2 dəqiqə", style = T.h1.copy(textAlign = TextAlign.Center))
+                Text("$questionCount sual · 10 dəqiqə", style = T.h1.copy(textAlign = TextAlign.Center))
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "Cavablarına görə dominant cəhətini tapırıq. Nəticə yalnız sənin " +

@@ -19,11 +19,39 @@ async fn main() {
         .filter(|v| !v.is_empty())
         .unwrap_or_else(|| "PLACEHOLDER".into());
 
+    // D-155: Google Sign-In (master-spec §4.1). GOOGLE_ANDROID_CLIENT_ID
+    // qurulmayibsa None — /auth/google/verify 503 qaytarir, servis ise davam.
+    let google_android_client_id =
+        std::env::var("GOOGLE_ANDROID_CLIENT_ID").unwrap_or_default();
+    let google = if google_android_client_id.is_empty()
+        || google_android_client_id == "PLACEHOLDER"
+    {
+        None
+    } else {
+        Some(Arc::new(qoshul_service::google_auth::GoogleVerifier::new(
+            &google_android_client_id,
+        )))
+    };
+    // GoTrue admin: SUPABASE_URL=http://api-gw:8000 oldugundan auth servisine
+    // birbasa (http://supabase-auth:9999) gedirik — Envoy'e ehtiyac yoxdur.
+    let gotrue_admin = if cfg.supabase_ready() {
+        let auth_base = std::env::var("GOTRUE_ADMIN_URL")
+            .unwrap_or_else(|_| "http://supabase-auth:9999".into());
+        Some(Arc::new(qoshul_service::google_auth::GoTrueAdmin::new(
+            &auth_base,
+            &cfg.service_role_key,
+        )))
+    } else {
+        None
+    };
+
     let state = Arc::new(AppState {
         db,
         fcm,
         admin_token,
         cfg: cfg.clone(),
+        google,
+        gotrue_admin,
     });
 
     // Job dövrü (cron əvəzinə interval — hər tur idempotentdir)

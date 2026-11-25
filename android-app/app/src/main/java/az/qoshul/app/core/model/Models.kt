@@ -305,12 +305,58 @@ typealias LocalDate = java.time.LocalDate
 
 data class BadgeDef(val id: String, val name: String, val description: String)
 
+// ═════════════════════════ Task Center (master-spec §9, D-155) ═════════════════════════
+
+/**
+ * Vizual Tapşırıqlar Mərkəzi — 3 dərəcəli iyerarxiya:
+ *   Novice (onboarding) · Daily (gündəlik) · Advanced (irəli).
+ * Mükafatlar „Qoşa Coin“ (XP) ilə — XpRules dəyərləri ilə sinxron.
+ */
+enum class TaskTier(val label: String, val hint: String) {
+    NOVICE("Novice — Başlanğıc", "Onboarding və profil doldurulması"),
+    DAILY("Daily — Gündəlik", "Gündəlik aktivliyin saxlanılması"),
+    ADVANCED("Advanced — İrəli", "Yüksək sosial aktivlik"),
+}
+
+data class TaskDef(
+    val id: String,
+    val tier: TaskTier,
+    val title: String,
+    val rewardXp: Int,
+    /** Award açarları — engine.award() idempotentdir (bir dəfə verilir). */
+    val awardKey: String,
+)
+
+/** Tapşırıq kataloqu — mükafatlar XpRules sabitləridir (spec cədvəli). */
+val taskDefs = listOf(
+    // ── Novice: profil doldurulması (+50 planı spec-də; bizim iqtisadiyyatda
+    //    qeydiyyat+profil ayrı-ayrı verilir — spec ilə uyğunlaşdırılmış) ──
+    TaskDef("profile-photo", TaskTier.NOVICE, "Profil şəklini yüklə", XpRules.PROFILE_COMPLETE_XP, "profile-full"),
+    TaskDef("test-16p", TaskTier.NOVICE, "16Personalities testini keç", XpRules.PHONE_VERIFY_XP, "personality-set"),
+    // ── Daily: gündəlik aktivlik (+10 planı; login+streak sistemi birləşdirilir) ──
+    TaskDef("daily-login", TaskTier.DAILY, "Hər gün proqrama daxil ol", XpRules.DAILY_LOGIN_XP, "login"),
+    TaskDef("streak-7", TaskTier.DAILY, "7 günlük seriya tamamla", XpRules.STREAK_BONUS_XP, "streak-7"),
+    TaskDef("browse-event", TaskTier.DAILY, "Bir tədbirə bax və qoşul", XpRules.JOIN_XP, "join"),
+    // ── Advanced: yüksək sosial aktivlik (+100 planı; təşkilatçılıq) ──
+    TaskDef("host-event", TaskTier.ADVANCED, "Həftədə 2 tədbir təşkil et", XpRules.HOSTING_XP, "hosting"),
+    TaskDef("checkin-event", TaskTier.ADVANCED, "Real tədbir iştirakını təsdiqlə", XpRules.CHECK_IN_XP, "check-in"),
+    TaskDef("invite-friend", TaskTier.ADVANCED, "Dostunu dəvət et", XpRules.INVITE_XP, "invite"),
+)
+
+/**
+ * Gərginləşdirilmiş Nailiyyətlər (spec §9): nişanlar yalnız həqiqi sosial
+ * aktivlikdən sonra kiliddən çıxır — kateqoriyalara görə tələb sayı artırılıb.
+ */
 val badgeDefs = listOf(
     BadgeDef("firstEvent", "İlk tədbir", "İlk tədbirinə qoşul"),
-    BadgeDef("tenEvents", "10 tədbir", "10 tədbirdə iştirak et"),
+    BadgeDef("threeEvents", "3 tədbir", "3 tədbirdə iştirak et (birincidən sonra)"),
+    BadgeDef("tenEvents", "10 tədbir", "10 tədbirdə iştirak et — real check-in ilə"),
+    BadgeDef("host", "Təşkilatçı", "3 tədbir təşkil et və tamamla"),
     BadgeDef("traveler", "Səyyah", "Başqa şəhərdə tədbirə qoşul"),
     BadgeDef("nightOwl", "Gecə quşu", "Axşam 20:00-dan sonra check-in"),
     BadgeDef("verified", "Təsdiqlənmiş", "Telefon nömrəsini təsdiqlə"),
+    BadgeDef("social-10", "Sosial", "10 yeni matç qazan"),
+    BadgeDef("reviewer", "Tənqidçi", "3 məkana şərh yaz"),
 )
 
 // ═════════════════════════ Assistant ═════════════════════════
