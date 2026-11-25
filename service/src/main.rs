@@ -19,15 +19,21 @@ async fn main() {
         .filter(|v| !v.is_empty())
         .unwrap_or_else(|| "PLACEHOLDER".into());
 
-    // D-155: Google Sign-In (master-spec §4.1). GOOGLE_ANDROID_CLIENT_ID
-    // qurulmayibsa None — /auth/google/verify 503 qaytarir, servis ise davam.
-    let google_android_client_id = std::env::var("GOOGLE_ANDROID_CLIENT_ID").unwrap_or_default();
-    let google = if google_android_client_id.is_empty() || google_android_client_id == "PLACEHOLDER"
-    {
+    // D-156: Google Sign-In (master-spec §4.1). GOOGLE_CLIENT_IDS vergüllü
+    // aud siyahısıdır (web_id,android_id — hər ikisi optional, istənilən biri
+    // tək başına da işləyir). 28444 diaqnozu: setServerClientId yalnız WEB
+    // tipli ID qəbul edir → WEB ID /config ilə APK-ya dinamik ötürülür.
+    let google_client_ids = std::env::var("GOOGLE_CLIENT_IDS")
+        .or_else(|_| std::env::var("GOOGLE_ANDROID_CLIENT_ID"))
+        .unwrap_or_default();
+    let google_web_client_id = std::env::var("GOOGLE_WEB_CLIENT_ID")
+        .ok()
+        .filter(|v| !v.is_empty() && v != "PLACEHOLDER");
+    let google = if google_client_ids.is_empty() || google_client_ids == "PLACEHOLDER" {
         None
     } else {
         Some(Arc::new(qoshul_service::google_auth::GoogleVerifier::new(
-            &google_android_client_id,
+            &google_client_ids,
         )))
     };
     // GoTrue admin: SUPABASE_URL=http://api-gw:8000 oldugundan auth servisine
@@ -49,6 +55,7 @@ async fn main() {
         admin_token,
         cfg: cfg.clone(),
         google,
+        google_web_client_id,
         gotrue_admin,
     });
 

@@ -34,9 +34,12 @@ pub struct AppState {
     pub fcm: Arc<fcm::FcmSender>,
     pub admin_token: String,
     pub cfg: Config,
-    /// D-155: Google id_token doğrulayıcı (JWKS) — GOOGLE_ANDROID_CLIENT_ID
+    /// D-155: Google id_token doğrulayıcı (JWKS) — GOOGLE_CLIENT_IDS
     /// PLACEHOLDER-dırsa None → endpoint 503 qaytarır (degrade, crash YOX).
     pub google: Option<Arc<google_auth::GoogleVerifier>>,
+    /// D-156: WEB tipli klient ID — /config ilə APK-ya dinamik ötürülür
+    /// (istifadəçi Console-da ID yaratdıqda yeni APK tələb olunmur).
+    pub google_web_client_id: Option<String>,
     /// D-155: GoTrue admin API (supabase-auth daxili ünvanı).
     pub gotrue_admin: Option<Arc<google_auth::GoTrueAdmin>>,
 }
@@ -91,6 +94,9 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         // D-155: Google Sign-In dogrulama — app'den id_token gelir, JWKS ile
         // yoxlanilir; auth mehsutunun kendisi token oldugu ucun anonimdir.
         .route("/auth/google/verify", post(google_auth::verify_google))
+        // D-156: dinamik klient konfiqi — google_web_client_id APK-ya
+        // build-time deyil, run-time ötürülür (28444 xətası çözümü).
+        .route("/config", get(google_auth::public_config))
         .with_state(state.clone());
     let protected_routes = Router::new()
         .route("/jobs/reminders/run", post(run_reminders_now))

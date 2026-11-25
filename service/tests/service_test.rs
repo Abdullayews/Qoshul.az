@@ -95,6 +95,7 @@ fn test_state(fake: Arc<FakeBackend>) -> Arc<AppState> {
         admin_token: "test-admin-token".into(),
         cfg: qoshul_service::Config::from_env(),
         google: None,
+        google_web_client_id: None,
         gotrue_admin: None,
     })
 }
@@ -280,6 +281,7 @@ async fn admin_placeholder_qapalı() {
         admin_token: "PLACEHOLDER".into(),
         cfg: qoshul_service::Config::from_env(),
         google: None,
+        google_web_client_id: None,
         gotrue_admin: None,
     });
     let (s, _) = get_json(

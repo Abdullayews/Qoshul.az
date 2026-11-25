@@ -86,18 +86,43 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     // D-151: vahid SupabaseBackend (app-scope, sessiya persistence ilə).
     val isServer = BackendConfig.isConfigured
 
-    /** D-150: Google Credential Manager axını — WEB client ID BuildConfig-dən. */
+    /**
+     * D-150 → D-156: Google Credential Manager axını. WEB client ID m4
+     * /config-dən dinamik gəlir (serverdə dəyişilir, APK yenilənmir);
+     * uğursuzsa BuildConfig dəyəri. 28444 = Console-da Web klient ID
+     * hələ yaradılmayıb — istifadəçiyə dəqiq deyilir, nə edəcəyi var.
+     */
     fun googleSignIn() {
         if (!SupabaseBackend.googleAvailable) return
         scope.launch {
             busy = true; error = null
             try {
-                SupabaseBackend.signInWithGoogle(context, az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                SupabaseBackend.fetchGoogleConfig()
+                val clientId = BackendConfig.activeGoogleClientId ?: run {
+                    error = "Google girişi hələ konfiqurasiya olunmayıb " +
+                        "(Web klient ID gözlənilir). İndi e-poçt və ya " +
+                        "təsdiq kodu ilə daxil ola bilərsən."
+                    busy = false
+                    return@launch
+                }
+                SupabaseBackend.signInWithGoogle(context, clientId)
                 engine?.signIn() ?: onSignedIn()
                 busy = false
             } catch (t: Throwable) {
                 busy = false
-                error = t.message?.take(160) ?: "Google girişi alınmadı. Bir az sonra yenidən cəhd et."
+                val msg = t.message ?: ""
+                error = when {
+                    msg.contains("28444") || msg.contains("console is not set up", ignoreCase = true) ->
+                        "Google konsolunda „Web application“ tipli OAuth klient ID " +
+                            "hələ yaradılmayıb (xəta 28444). Yaradılan kimi bu düymə " +
+                            "avtomatik işləyəcək — APK yenilənməsi lazım deyil."
+                    msg.contains("DEVELOPER_ERROR", ignoreCase = true) || msg.contains("10") && msg.contains("ApiException") ->
+                        "Google konsolunda Web klient ID düzgün qurulmayıb " +
+                            "(DEVELOPER_ERROR). Paket adı və SHA-1 imzasını yoxla."
+                    else -> msg.take(160).ifBlank {
+                        "Google girişi alınmadı. Bir az sonra yenidən cəhd et."
+                    }
+                }
             }
         }
     }

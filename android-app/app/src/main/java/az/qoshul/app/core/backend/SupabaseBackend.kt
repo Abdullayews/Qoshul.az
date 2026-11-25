@@ -10,6 +10,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.header
@@ -18,6 +19,7 @@ import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
@@ -172,9 +174,9 @@ object SupabaseBackend {
         val rawNonce = UUID.randomUUID().toString()
         val hashedNonce = sha256Hex(rawNonce)
 
-        // D-155: Credential Manager Android klient ID-si ilə işləyir —
-        // token-in aud-i bu ID olur; doğrulamanı bizim M4 servisi edir
-        // (Google JWKS), GoTrue-a admin API ilə sessiya açılır.
+        // D-156 (28444 xətası): setServerClientId yalnız WEB tipli ID
+        // qəbul edir. serverClientId parametri WEB ID olmalıdır — dinamik
+        // olaraq m4 /config-dən gəlir (fetchGoogleConfig).
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
             .setServerClientId(serverClientId)
@@ -190,33 +192,65 @@ object SupabaseBackend {
         val googleIdToken = GoogleIdTokenCredential
             .createFrom(result.credential.data).idToken
 
-        // M4 verify → {access_token, refresh_token, expires_in, user}
-        val session = m4VerifyGoogleToken(googleIdToken, rawNonce)
+        // Kanonik yol (D-156): GoTrue IDToken grant — GoTrue client_id
+        // siyahısında WEB ID birincidir; ən təmiz axın (Supabase rəsmi).
+        // Uğursuzsa (GoTrue hələ WEB ID tanımırsa) → M4 verify fallback
+        // (öz JWKS doğrulamamız — aud siyahısında hər iki ID ola bilər).
+        try {
+            requireClient().auth.signInWith(IDToken) {
+                idToken = googleIdToken
+                provider = Google
+                nonce = rawNonce
+            }
+        } catch (e: Exception) {
+            val session = m4VerifyGoogleToken(googleIdToken, rawNonce)
+            requireClient().auth.importSession(
+                UserSession(
+                    accessToken = session.access_token,
+                    refreshToken = session.refresh_token,
+                    providerRefreshToken = null,
+                    providerToken = null,
+                    expiresIn = session.expires_in,
+                    tokenType = "bearer",
+                    user = UserInfo(
+                        id = session.user.id,
+                        email = session.user.email,
+                        aud = "authenticated",
+                        role = "authenticated",
+                    ),
+                    type = "m4_google",
+                    expiresAt = kotlinx.datetime.Instant.fromEpochSeconds(
+                        System.currentTimeMillis() / 1000 + session.expires_in
+                    ),
+                ),
+                false,
+                SessionSource.External,
+            )
+        }
+    }
 
-        // Sessiyanı Supabase klientinə import et — RLS/realtime/refresh
-        // hamısı normal Supabase sessiyası kimi işləyir.
-        requireClient().auth.importSession(
-            UserSession(
-                accessToken = session.access_token,
-                refreshToken = session.refresh_token,
-                providerRefreshToken = null,
-                providerToken = null,
-                expiresIn = session.expires_in,
-                tokenType = "bearer",
-                user = UserInfo(
-                    id = session.user.id,
-                    email = session.user.email,
-                    aud = "authenticated",
-                    role = "authenticated",
-                ),
-                type = "m4_google",
-                expiresAt = kotlinx.datetime.Instant.fromEpochSeconds(
-                    System.currentTimeMillis() / 1000 + session.expires_in
-                ),
-            ),
-            false,
-            SessionSource.External,
-        )
+    /**
+     * D-156: M4 /config — dinamik Google WEB klient ID (28444 həlli).
+     * APK yeniləmədən sonra da ID serverdən gəlir; uğursuzluqda səssizcə
+     * BuildConfig dəyərinə qalır (null isə googleReady=false).
+     */
+    suspend fun fetchGoogleConfig() {
+        val http = HttpClient(CIO)
+        try {
+            val resp = http.get(BackendConfig.m4Url + "/config") {
+                header("apikey", BackendConfig.supabaseAnonKey)
+            }
+            if (resp.status.isSuccess()) {
+                val el = Json.parseToJsonElement(resp.bodyAsText()).jsonObject
+                BackendConfig.adoptGoogleWebClientId(
+                    (el["google_web_client_id"] as? JsonPrimitive)?.content
+                )
+            }
+        } catch (_: Exception) {
+            // Şəbəkə xətası — sessiya açıq deyil, sadəcə BuildConfig qalır
+        } finally {
+            http.close()
+        }
     }
 
     /** D-155: M4 /auth/google/verify çağırışı (ktor CIO — əlavə native asılılıq YOX). */
@@ -257,10 +291,9 @@ object SupabaseBackend {
         client?.auth?.signOut()
     }
 
-    /** Google düyməsi görünmə şərti — konfiqurasiya tamdır + WEB client ID var. */
+    /** Google düyməsi görünmə şərti (D-156): dinamik — m4 /config VEYA BuildConfig. */
     val googleAvailable: Boolean
-        get() = BackendConfig.isConfigured &&
-            BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()
+        get() = BackendConfig.isConfigured && BackendConfig.googleReady
 
     // ── RPC (Postgrest) — sessiya JWT-si avtomatik gedir ──
 

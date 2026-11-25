@@ -30,6 +30,32 @@ object BackendConfig {
      */
     val m4Url: String get() = supabaseUrl.trimEnd('/') + "/m4"
 
+    /**
+     * D-156 (28444 xətası): setServerClientId yalnız WEB tipli klient ID
+     * qəbul edir. WEB ID artıq APK-ya build-time deyil, M4 /config-dən
+     * RUN-TIME oxunur — istifadəçi Console-da ID yaratdıqda yeni APK
+     * buraxmağa ehtiyac qalmır (yalnız server env yenilənir).
+     */
+    @Volatile var googleWebClientId: String? = null
+        private set
+
+    /** WEB ID m4-dən gəlibsə yadda saxla (app start + retry-lərdə). */
+    fun adoptGoogleWebClientId(id: String?) {
+        if (!id.isNullOrBlank() && id != "null") googleWebClientId = id
+    }
+
+    /** Google düyməsi göstərilsinmi? (BuildConfig ID VEYA m4-dən gələn ID). */
+    val googleReady: Boolean
+        get() = googleWebClientId != null || (
+            az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank() &&
+            !az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.contains("PLACEHOLDER")
+        )
+
+    /** Aktiv WEB ID: dinamik (m4) üstünlük təşkil edir, yoxsa BuildConfig. */
+    val activeGoogleClientId: String?
+        get() = googleWebClientId ?: az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID
+            .takeIf { it.isNotBlank() && !it.contains("PLACEHOLDER") }
+
     /** "https://…" ilə başlayır və PLACEHOLDER deyil. */
     fun isUsableUrl(url: String): Boolean =
         url.startsWith("https://") && !url.contains("PLACEHOLDER") && url.contains(".")

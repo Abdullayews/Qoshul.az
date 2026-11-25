@@ -76,12 +76,14 @@ impl std::fmt::Display for GoogleAuthError {
 }
 
 impl GoogleVerifier {
-    pub fn new(android_client_id: &str) -> Self {
+    pub fn new(client_ids: &str) -> Self {
         Self {
             http: reqwest::Client::new(),
             cache: Mutex::new(None),
-            // vergüllü siyahı — Web ID gələndə əlavə olunacaq (D-154 strukturu)
-            audiences: android_client_id
+            // D-156: vergüllü siyahı — GOOGLE_CLIENT_IDS=web_id,android_id.
+            // aud yoxlaması siyahının HAMSINA qarşı aparılır (jsonwebtoken
+            // set_audience Vec qəbul edir) — hər iki tipli token keçər.
+            audiences: client_ids
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty() && s != "PLACEHOLDER")
@@ -537,6 +539,26 @@ pub async fn verify_google(
         )
             .into_response(),
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HTTP endpoint: GET /config (D-156)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Klient üçün dinamik konfiqurasiya — APK yenidən buraxmadan Google Web
+/// klient ID-ni dəyişmək mümkün olur (istifadəçi Console-da ID yaratdıqda
+/// yalnız server env-i yenilənir).
+pub async fn public_config(State(st): State<Arc<AppState>>) -> axum::response::Response {
+    let web_id = st.google_web_client_id.clone().unwrap_or_default();
+    (
+        StatusCode::OK,
+        Json(json!({
+            "google_web_client_id": if web_id.is_empty() { Value::Null } else { json!(web_id) },
+            "service": "qoshul-m4",
+            "version": env!("CARGO_PKG_VERSION"),
+        })),
+    )
+        .into_response()
 }
 
 #[cfg(test)]

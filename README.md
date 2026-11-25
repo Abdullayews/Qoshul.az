@@ -172,37 +172,50 @@ struktur lint-i aparır (CI-də məcburidir).
 test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
 detallar `supabase/testdata/README.md`-də.
 
-### 1b) Google Sign-In — M4 verifikasiya axını (D-150/151/154/155)
+### 1b) Google Sign-In — D-156 (28444 xətasının həlli)
 
-**Hazırkı arxitektura (D-155, 2026-11-25):** istifadəçi Google Cloud-da
-ANDROID tipli OAuth klient yaratdı (SHA-1 imza ilə). Google-un rəsmi
-sənədlərinə görə Credential Manager `setServerClientId` yalnız WEB tipli
-ID qəbul edir — Android ID birbaşa qoyulanda klient „konfiqurasiya xətası“
-(DEVELOPER_ERROR) verirdi. Həll: doğrulamanı öz M4 mikroservisimiz edir:
+**Diaqnoz (2026-11-25, real cihaz testi):** Credential Manager xətası
+**28444 — "Developer console is not set up correctly"**. Səbəb:
+`setServerClientId` **yalnız WEB tipli** klient ID qəbul edir
+(Google rəsmi sənədləri: „Your server's client ID, not your Android
+client ID“). Android tipli ID qoyulanda Google Play services axını
+başlatmır — sorğu serverə heç çatmır.
 
+**Həll — 2 komponent:**
+
+1. **Console-da Web klient ID yaratmaq (yalnız sahib edə bilər):**
+   - console.cloud.google.com → layihə → „APIs & Services → Credentials“
+   - „+ Create Credentials → OAuth client ID“ → **Web application**
+   - Heç bir Restriction lazım deyil (redirect URI boş qala bilər —
+     native axın IDToken grant istifadə edir, redirect istifadə olunmur)
+   - Yaradılan `XXXX.apps.googleusercontent.com` ID-ni **serverə yazın:
+     `/home/ubuntu/Qoshul.az/service/.env.m4` → `GOOGLE_WEB_CLIENT_ID=…`**
+     (və `GOOGLE_CLIENT_IDS=web_id,android_id` — vergüllü) sonra
+     `docker compose -f docker-compose.m4.yml -p selfhost up -d && docker network connect supabase_default qoshul-m4`
+   - Supabase GoTrue üçün: `.env` → `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=web_id,android_id`
+     (WEB ID birinci!) → `docker compose restart supabase-auth`
+
+2. **APK artıq dinamikdir (v0.55.1+):** WEB ID APK-ya build-time yazılmır —
+   app açılışında `GET /m4/config` → `google_web_client_id` oxunur
+   (`BackendConfig.adoptGoogleWebClientId`). Console-da ID yaradıldıqdan
+   sonra **yalnız server env yenilənir, yeni APK lazım DEYİL.**
+
+**Axın (kanonik + fallback):**
 ```
-app → Credential Manager (aud = Android ID) → id_token
-app → POST https://supabase.qoshul.com/m4/auth/google/verify
-m4  → Google JWKS (RS256) imza + iss + aud + exp + nonce yoxlaması
-m4  → GoTrue admin API: istifadəçi tap/yaarat (email_confirm=true)
-m4  → generate_link (magiclink) → sessiya JWT → app importSession
+app → /m4/config → WEB ID (dinamik)
+app → Credential Manager (serverClientId = WEB ID) → id_token
+app → GoTrue signInWith(IDToken)            ← kanonik (Supabase rəsmi)
+     └ uğursuzsa → POST /m4/auth/google/verify  ← M4 fallback
+        (Google JWKS RS256 + nonce → GoTrue admin sessiya)
 ```
 
-Konfiqurasiya:
+M4 `GOOGLE_CLIENT_IDS` vergüllü aud siyahısıdır — WEB ID gələndə
+`web_id,android_id` yazılaraq hər iki token növü qəbul edilir.
 
-1. **APK**: CI secret `GOOGLE_WEB_CLIENT_ID` = Android klient ID
-   (BuildConfig → `setServerClientId` — aud bu ID üçün buraxılır).
-2. **Server (m4)**: `service/.env.m4` → `GOOGLE_ANDROID_CLIENT_ID`
-   (vergüllü siyahı dəstəklənir — Web ID gələndə əlavə olunar).
-3. **Envoy**: `/m4/` prefix → `qoshul-m4:8080` cluster (lds.template.yaml +
-   cds.yaml repo-da; RBAC apikey siyahısında `/m4/` prefix-i açıqdır).
-4. **Google Cloud Console**: Android klientdə SHA-1 =
-   `24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0`
-   (daimi D-148 sertifikatı) qeydə alınmalıdır; Google Identity API aktivdir.
-
-Nonce qorunması: raw nonce UUID → SHA-256 hash Google-a, raw M4-ə gedir —
-server hash edib token `nonce` claim-i ilə müqayisə edir (replay qoruması).
-Canlı test: fake imza → 401 `InvalidSignature`; xətalı aud → 401.
+Google Cloud-da mövcud Android klientdə SHA-1 =
+`24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0` qeydə
+alınıb (daimi D-148 sertifikatı) — Google Play Services axını üçün bu,
+APK imzası ilə eynidir.
 
 Email + şifrə və email-OTP yolları Google-dan asılı deyil — həmişə işləyir.
 
