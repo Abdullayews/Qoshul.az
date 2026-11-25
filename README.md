@@ -172,23 +172,51 @@ struktur lint-i aparır (CI-də məcburidir).
 test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
 detallar `supabase/testdata/README.md`-də.
 
-### 1b) Google Sign-In — aktivləşdirmə (D-150/D-151)
+### 1b) Google Sign-In — aktivləşdirmə (D-150/D-151/D-154)
 
-D-152: Google düyməsi girişdə HƏMİŞƏ görünür. `GOOGLE_WEB_CLIENT_ID`
-dolana qədər düymə basılanda aydın təlimat çıxır (e-poçt/OTP həmişə işləyir).
-ID-ni aktivləşdirmək üçün:
+**Hazırkı vəziyyət (D-154):** Google düyməsi girişdə həmişə görünür və
+Credential Manager (Google-un öz hesab seçici pəncərəsi) axını hazırdır.
+Google Cloud-da **Android tipli** OAuth klient yaradılıb:
 
-1. **Google Cloud Console** → yeni layihə (və ya mövcud) → *APIs & Services → Credentials*.
-2. **Android OAuth klienti** yaradın: paket `az.qoshul.app` + imzalama SHA-1
-   (release SHA-1: `keytool -list -v -keystore qoshul-release.jks`).
-3. **Web application OAuth klienti** yaradın — onun Client ID-si = `GOOGLE_WEB_CLIENT_ID`
-   (Android klienti deyil!). Bu ID:
-   - CI secret `GOOGLE_WEB_CLIENT_ID` (və ya local.properties eyni açarla);
-   - serverdə `infra/selfhost/.env` → `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`
-     (indi `PLACEHOLDER_...` dur) + `GOTRUE_EXTERNAL_GOOGLE_SECRET` (Web klientin
-     secret-i) → `docker compose up -d supabase-auth` ilə yenidən başladın.
-4. Supabase GoTrue `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS` artıq
-   `https://supabase.qoshul.com/auth/v1/callback` — dəyişməyin.
+- Client ID: `572326155287-duq6g55u7oaupke4anshk89lqrns0i12.apps.googleusercontent.com`
+- Paket adı: `az.qoshul.app`
+- İmzalama SHA-1 (release, daimi D-148 sertifikatı):
+  `24:6B:E9:42:BE:EB:C6:F4:B4:7D:D2:76:59:4D:54:97:3B:42:68:D0`
+
+Bu ID artıq **hər yerdə qurulub**: CI secret `GOOGLE_WEB_CLIENT_ID`
+(APK BuildConfig-inə düşür) + serverdə `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`
+(`docker compose up -d auth` ilə tətbiq edildi). `/auth/v1/token?grant_type=id_token`
+endpoint-i token parse mərhələsinə çatır — yəni provider zənciri açıqdır.
+
+**Google Console-da yoxlanılması lazım olan 2 şey:**
+
+1. Android klientin SHA-1-i yuxarıdakı dəyərlə eynidirmı
+   (*Credentials → Android klient → SHA-1 certificate fingerprints*).
+   Fərqlidirsə — yeniləyin (dəyişiklik dərhal təsir edir, APK yenidən
+   qurmaq lazım deyil).
+2. Android klient həmin Google Cloud layihəsindədir və *Google Identity*
+   (Sign In) API aktivdir.
+
+**Niyə hələ də Web klient lazımdır (tam uyğunluq üçün):** Supabase rəsmi
+sənədi `setServerClientId` üçün **Web application** tipli ID tövsiyə edir.
+Android ID ilə Credential Manager işləyir (aud = Android ID), GoTrue isə
+`GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID` siyahısında aud axtarır — hazırda Android
+ID siyahıda olduğundan axın bağlıdır. Ən yaxşı praktika (Supabase tövsiyəsi):
+
+```
+GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=<WEB_ID>,<ANDROID_ID>
+```
+
+Web klient yaradılanda (`Credentials → Create credentials → OAuth client ID →
+Web application`; Authorized redirect URI:
+`https://supabase.qoshul.com/auth/v1/callback`) onun ID-sini siyahının
+**birinci** mövqeyinə əlavə edin, `GOOGLE_WEB_CLIENT_ID` CI secret-ini
+yeniləyin və APK-nı yenidən buraxın — klient `setServerClientId`-ə Web ID
+göndərəcək, Android ID isə Google tərəfindən APK doğrulaması üçün
+Google Cloud-da qalır (kodda olmur).
+
+Supabase GoTrue `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS` artıq
+`https://supabase.qoshul.com/auth/v1/callback` — dəyişməyin.
 
 Email + şifrə və email-OTP yolları Google-dan asılı deyil — istənilən halda işləyir.
 
