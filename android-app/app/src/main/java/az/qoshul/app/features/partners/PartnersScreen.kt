@@ -95,7 +95,7 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
         LazyColumn(
             modifier = mod.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
+                start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
             ),
         ) {
             item {
@@ -110,8 +110,8 @@ fun PartnersScreen(engine: AppEngine, nav: NavState, onOpenCreateAtVenue: (az.qo
                 item {
                     CommunityBanner(
                         icon = Icons.Filled.Handshake,
-                        title = "Görüş təşkil et — XP qazan",
-                        subtitle = "Tərəfdaş məkanda tədbir yarat: qoşulma +10, check-in +40 XP.",
+                        title = "Görüş təşkil et — Qoşa Coin qazan",
+                        subtitle = "Tərəfdaş məkanda tədbir yarat: qoşulma +10, check-in +40 Qoşa Coin.",
                         onClick = { onOpenCreateAtVenue(firstVenue) },
                         trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                     )
@@ -213,9 +213,9 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
 
     SheetScaffold(onDismiss = onDismiss) {
         Column(Modifier.padding(horizontal = 20.dp)) {
-            Text("Biznes rejimi — XP endirimi", style = T.eventTitle)
+            Text("Biznes rejimi — Coin endirimi", style = T.eventTitle)
             Spacer(Modifier.height(4.dp))
-            Text("Müştərinin dinamik XP kodunu oxu, hesabı yaz — endirim avtomatik hesablanır.",
+            Text("Müştərinin dinamik Coin kodunu oxu, hesabı yaz — endirim avtomatik hesablanır.",
                 style = T.chipXs.copy(color = Q.mutedFg))
             Spacer(Modifier.height(16.dp))
             if (acct == null) {
@@ -253,7 +253,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     "Kod oxunmadı: müştərinin XP kartı bu obyekt üçün etibarlı " +
-                                        "deyil və ya vaxtı bitib. Müştəri „Profil → XP kartım“ səhifəsindən " +
+                                        "deyil və ya vaxtı bitib. Müştəri „Profil → Qoşa kartım“ səhifəsindən " +
                                         "bu obyekt üçün yeni kod almalıdır (60 saniyəlik, tək istifadəlik).",
                                     style = T.chipXs.copy(color = Q.destructive),
                                 )
@@ -272,7 +272,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     ) {
                         Icon(Icons.Filled.QrCodeScanner, null, modifier = Modifier.size(17.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Müştəri XP kodunu oxu", style = T.button)
+                        Text("Müştəri Coin kodunu oxu", style = T.button)
                     }
                 }
                 1 -> {
@@ -291,14 +291,14 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             ) { Icon(Icons.Filled.Person, null, tint = Q.primaryFg, modifier = Modifier.size(18.dp)) }
                             Spacer(Modifier.width(11.dp))
                             Column(Modifier.weight(1f)) {
-                                Text("${st.profileName} (demo müştəri)",
+                                Text("${st.profileName}",
                                     style = T.h3)
                                 Text("Kod təsdiqləndi · ${acct.venueName} bazası",
                                     style = T.chipXs.copy(color = Q.mutedFg))
                             }
                             val bal = countUpAsState(acct.balance)
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("$bal XP", style = T.titleLg.copy(color = Q.primaryText))
+                                Text("$bal Qoşa Coin", style = T.titleLg.copy(color = Q.primaryText))
                                 Text("balans", style = T.metaSm)
                             }
                         }
@@ -329,14 +329,14 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                     // A1 (M0): xətalar TYPED — "hesap" tipo-orfoqrafiyası
                     // səssiz udulurdu; indi hər yolun öz izahatı var.
                     val errText = when (p.error) {
-                        SpendError.INSUFFICIENT_BALANCE -> "Balansda kifayət qədər XP yoxdur — " +
+                        SpendError.INSUFFICIENT_BALANCE -> "Balansda kifayət qədər Qoşa Coin yoxdur — " +
                             "yalnız hesabda olan qədər istifadə oluna bilər."
                         SpendError.BILL_BELOW_MIN -> "Hesab minimum ${acct.config.minBillAzn} ₼ olmalıdır (obyekt qaydası)."
                         SpendError.CAP_EXCEEDED -> "Endirim hesabın ${acct.config.maxDiscountPercent}%-i həddini aşır — " +
-                            String.format(java.util.Locale.US, "%.2f", p.discount) + " ₼-dən çox ola bilməz. Daha az XP yaz."
-                        SpendError.INVALID_INPUT -> "Məbləğ və XP düzgün daxil edilməyib."
-                        SpendError.NO_ACCOUNT -> "Bu obyektin XP hesabı tapılmadı."
-                        SpendError.BAD_CONFIG -> "Bu obyektin XP məzənnəsi düzgün qurulmayıb — obyektlə əlaqə saxlayın."
+                            String.format(java.util.Locale.US, "%.2f", p.discount) + " ₼-dən çox ola bilməz. Daha az Coin yaz."
+                        SpendError.INVALID_INPUT -> "Məbləğ və Coin düzgün daxil edilməyib."
+                        SpendError.NO_ACCOUNT -> "Bu obyektin Coin hesabı tapılmadı."
+                        SpendError.BAD_CONFIG -> "Bu obyektin Coin məzənnəsi düzgün qurulmayıb — obyektlə əlaqə saxlayın."
                         else -> ""
                     }
                     QoshulTextField(value = bill,
@@ -355,7 +355,7 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             imeAction = ImeAction.Done,
                         ))
                     Spacer(Modifier.height(4.dp))
-                    Text("Xərclənəcək XP", style = T.label)
+                    Text("Xərclənəcək Coin", style = T.label)
                     Spacer(Modifier.height(14.dp))
                     Column(
                         Modifier
@@ -431,17 +431,17 @@ fun BusinessModeSheet(engine: AppEngine, onDismiss: () -> Unit) {
                             Spacer(Modifier.height(6.dp))
                             Text(
                                 if (last != null)
-                                    "${acct.venueName} bazasından ${last.amount} XP xərcləndi. " +
+                                    "${acct.venueName} bazasından ${last.amount} Coin xərcləndi. " +
                                         "Hər iki tərəfə receipt göndərildi — əməliyyat ledger'də izlənilir."
                                 else
-                                    "${acct.venueName} bazasından XP xərcləndi. " +
+                                    "${acct.venueName} bazasından Coin xərcləndi. " +
                                         "Hər iki tərəfə receipt göndərildi.",
                                 style = T.chipXs.copy(color = Q.mutedFg), textAlign = TextAlign.Center,
                             )
                             Spacer(Modifier.height(16.dp))
                             if (last != null) {
-                                ReceiptRow("İştirak edən XP", "${last.amount} XP")
-                                ReceiptRow("Qalıq balans", "${last.balanceAfter} XP")
+                                ReceiptRow("İştirak edən Coin", "${last.amount} Qoşa Coin")
+                                ReceiptRow("Qalıq balans", "${last.balanceAfter} Qoşa Coin")
                                 ReceiptRow("Ledger qeydi", last.id)
                             }
                             Spacer(Modifier.height(16.dp))

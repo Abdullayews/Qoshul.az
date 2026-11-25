@@ -142,7 +142,7 @@ private fun Intro(onStart: () -> Unit) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Nəticə profili tamamlayır: şəkil + bio + maraqlar varsa +30 XP.",
+                    "Nəticə profili tamamlayır: şəkil + bio + maraqlar varsa +30 Qoşa Coin.",
                     style = T.meta.copy(textAlign = TextAlign.Center),
                 )
                 Spacer(Modifier.height(28.dp))

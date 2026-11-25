@@ -1,5 +1,6 @@
 package az.qoshul.app
 
+import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.AssistantParse
@@ -145,7 +146,7 @@ class WhatIfSafetyTest {
 
     // ── AppEngine — naməlum ID-lər heç vaxt çökmür ──
 
-    private val engine = AppEngine()
+    private val engine = AppEngine(dataSource = FakeQoshulDataSource)
 
     @Test fun `naməlum məkanda xərcləmə null qaytarır`() {
         assertNull(engine.spendVenueXp("no-such-venue", 100, 50.0))

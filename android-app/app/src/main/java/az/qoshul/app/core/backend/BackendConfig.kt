@@ -1,28 +1,22 @@
 package az.qoshul.app.core.backend
 
 /**
- * M1 (D-078): backend rejimi — D-050 ikili rejimin genişləndirilməsi.
+ * D-151 (2026-11-25, direktiv: „demo məntiqi heç olmasın“): MOCK rejimi
+ * TAMAMLANIŞI SİLİNDİ — tətbiq yalnız Supabase server rejimində işləyir.
  *
- *  - [MOCK]     — cari davranış: FakeData + AppEngine lokal simulyasiyası
- *                 (offline-first). Standard CI/test rejimi.
- *  - [SUPABASE] — tətbiq Supabase layihəsinə qoşulur: mutasiyalar
- *                 [SyncSink] üzərindən serverə güzgülənir (intent → RPC),
- *                 qaydaları server tərəfdə SQL funksiyaları ZORLAYIR
- *                 (qayda 8/9 — supabase/README.md §4).
- */
-enum class BackendMode { MOCK, SUPABASE }
-
-/**
- * BuildConfig → rejim qərarı. PLACEHOLDER dəyərlər (D-079: istifadəçi
- * hələ verməyib) AVTOMATİK MOCK-a düşür — crash yoxdur, səssiz geri çəkilir.
+ * Konfiqurasiya (BuildConfig): SUPABASE_URL, SUPABASE_ANON_KEY,
+ * BACKEND_MODE="SUPABASE" (local.properties → env/CI secret → PLACEHOLDER).
+ *
+ * PLACEHOLDER qaldıqda (məs. fork build) [SupabaseBackend.client] null
+ * olur — tətbiq açılır, amma xəta aydın görünür ([describe] ayarlarda
+ * göstərilir); SƏSSİZ DEMO FALLBACK YOXDUR.
  */
 object BackendConfig {
 
-    val mode: BackendMode by lazy {
-        val configured = az.qoshul.app.BuildConfig.BACKEND_MODE.equals("SUPABASE", true) &&
-            isUsableUrl(az.qoshul.app.BuildConfig.SUPABASE_URL) &&
+    /** Server konfiqurasiyası tamdırmı? (URL + anon key real dəyərdir) */
+    val isConfigured: Boolean by lazy {
+        isUsableUrl(az.qoshul.app.BuildConfig.SUPABASE_URL) &&
             isUsableKey(az.qoshul.app.BuildConfig.SUPABASE_ANON_KEY)
-        if (configured) BackendMode.SUPABASE else BackendMode.MOCK
     }
 
     val supabaseUrl: String get() = az.qoshul.app.BuildConfig.SUPABASE_URL
@@ -36,11 +30,8 @@ object BackendConfig {
     fun isUsableKey(key: String): Boolean =
         !key.contains("PLACEHOLDER") && key.count { it == '.' } >= 2 && key.length > 40
 
-    /** Yekun qərar mətni (log/UI üçün). */
-    fun describe(): String = when (mode) {
-        BackendMode.MOCK ->
-            "MOCK (offline demo; SUPABASE_URL/ANON_KEY local.properties faylında qurulanda " +
-                "BACKEND_MODE=SUPABASE ilə server rejiminə keçir)"
-        BackendMode.SUPABASE -> "SUPABASE (${supabaseUrl})"
-    }
+    /** Ayarlar → "Haqqında" alt mətni (konfiqurasiya şəffaflığı). */
+    fun describe(): String =
+        if (isConfigured) "Server rejimi ($supabaseUrl)"
+        else "Konfiqurasiya tamamlanmayıb (SUPABASE_URL/ANON_KEY)"
 }

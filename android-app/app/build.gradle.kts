@@ -34,8 +34,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 51
-        versionName = "0.51.0"
+        versionCode = 52
+        versionName = "0.52.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
@@ -188,6 +188,8 @@ dependencies {
     // supabase-kt = core (SupabaseClient); modullar ayrıca (CI fəslindən):
     implementation(libs.supabase.kt)
     implementation(libs.supabase.gotrue)
+    // D-151: sessiya persistence (SettingsStorage)
+    implementation(libs.multiplatform.settings)
     implementation(libs.supabase.postgrest)
     implementation(libs.ktor.client.cio)
     implementation(libs.kotlinx.serialization.json)

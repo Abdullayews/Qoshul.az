@@ -213,6 +213,8 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     }.map { MapPin.Event(it) }
     val peoplePins = engine.matchCandidates
         .filter { it.distanceKm <= distanceKm }
+        // D-151 (spec 4.2): bloklanmış istifadəçilər xəritədə görünmür
+        // (matchCandidates artıq blok filtri aparır — cəmi 2qat qoruma)
         .filter {
             st.mapVisibility == MapVisibility.EVERYONE ||
                 (st.mapVisibility == MapVisibility.FRIENDS && st.friendships[it.id] == "accepted")

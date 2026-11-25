@@ -118,7 +118,9 @@ class XpCardCode private constructor(
             now: LocalDateTime,
             codeSource: () -> Int = { mockCode(now) },
         ): XpCardCode {
-            val raw = ((codeSource() % 1_000_000) + 1_000_000) % 1_000_000
+            // D-151: 4 rəqəmli təhlükəsizlik kodu (spec §7) — mod 10^4.
+            // 42 → "0042"; 1_999_999 → 9999. padStart FALLBACK_CODE_DIGITS ilə.
+            val raw = ((codeSource() % 10_000) + 10_000) % 10_000
             val code = raw.toString().padStart(XpRules.FALLBACK_CODE_DIGITS, '0')
             return XpCardCode(
                 nonce = "QSHUL-XP-$code-${raw % 97}",
@@ -130,7 +132,7 @@ class XpCardCode private constructor(
         /** Mock deterministik kod (B5 sənədi: crypto-random DEYİL — M1-də əvəz olunur). */
         private fun mockCode(now: LocalDateTime): Int {
             val seed = (now.nano / 1000) xor nonceSeq++.hashCode()
-            return (seed and 0x7FFFFFFF) % 1_000_000
+            return (seed and 0x7FFFFFFF) % 10_000
         }
     }
 }

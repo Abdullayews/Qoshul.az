@@ -71,7 +71,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
         Column(mod.fillMaxSize()) {
             LazyColumn(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
+                    start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
                 ),
             ) {
                 item {
@@ -86,8 +86,8 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                         Icon(Icons.Filled.Toll, null, tint = Q.primaryText, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.padding(6.dp))
                         Text(
-                            "Kuponlar obyektin Endirim XP balansından alınır — D-026 ayrı baza " +
-                                "qaydası (Xankəndi XP-si yalnız Xankəndidə işləyir)",
+                            "Kuponlar obyektin Endirim Coin balansından alınır — D-026 ayrı baza " +
+                                "qaydası (Xankəndi Coin-i yalnız Xankəndidə işləyir)",
                             style = T.bodySmSemi.copy(color = Q.primaryText),
                         )
                     }
@@ -111,7 +111,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                     label = o.label,
                                     requirement = if (o.autoByLevel)
                                         "Səviyyə: ${XpRules.rankNames[o.minRankIndex]}+ (avtomatik aktiv)"
-                                    else "${o.xpPrice} XP · balansın: ${st.venueXp[o.venueId]?.balance ?: 0} XP",
+                                    else "${o.xpPrice} Qoşa Coin · balansın: ${st.venueXp[o.venueId]?.balance ?: 0} Qoşa Coin",
                                     autoByLevel = o.autoByLevel,
                                     unlocked = o.unlockedFor(st.rankIndex),
                                     action = if (o.autoByLevel) {
@@ -134,7 +134,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                                                 colors = ButtonDefaults.buttonColors(
                                                     containerColor = Q.primary, contentColor = Q.primaryFg,
                                                     disabledContainerColor = Q.muted, disabledContentColor = Q.mutedFg),
-                                            ) { Text("XP ilə al", style = T.button) }
+                                            ) { Text("Qoşa Coin ilə al", style = T.button) }
                                         }
                                     },
                                 )
@@ -146,7 +146,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                         item {
                             EmptyState(
                                 icon = Icons.Filled.ConfirmationNumber,
-                                text = "Hələ kuponun yoxdur.\n„Endirimlər“ siyahısından XP ilə al.",
+                                text = "Hələ kuponun yoxdur.\n„Endirimlər“ siyahısından Qoşa Coin ilə al.",
                             )
                         }
                     } else {
@@ -195,7 +195,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
                 item {
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Vaxtı bitən istifadə olunmamış kupon üçün XP geri qaytarılmır.",
+                        "Vaxtı bitən istifadə olunmamış kupon üçün Qoşa Coin geri qaytarılmır.",
                         textAlign = TextAlign.Center, style = T.meta,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -230,12 +230,12 @@ private fun Modifier.androidxBannerBg(): Modifier = this.then(
 /** N2 (M0): typed alış xətasının istifadəçiyə görünən mətni. */
 private fun buyErrorText(error: SpendError, offer: CouponOffer): String = when (error) {
     SpendError.OFFER_NOT_FOUND -> "Təklif tapılmadı."
-    SpendError.AUTO_ONLY -> "Bu endirim səviyyə ilə avtomatik açılır — XP ilə alınmır."
+    SpendError.AUTO_ONLY -> "Bu endirim səviyyə ilə avtomatik açılır — Qoşa Coin ilə alınmır."
     SpendError.LEVEL_LOCKED ->
         "Bu endirim üçün səviyyə çatmır — ${XpRules.rankNames[offer.minRankIndex]}+ lazımdır."
-    SpendError.NO_ACCOUNT -> "Bu obyektin XP hesabı tapılmadı."
+    SpendError.NO_ACCOUNT -> "Bu obyektin Coin hesabı tapılmadı."
     SpendError.INSUFFICIENT_BALANCE ->
-        "Balansda kifayət qədər XP yoxdur — yalnız hesabda olan qədər istifadə oluna bilər."
+        "Balansda kifayət qədər Qoşa Coin yoxdur — yalnız hesabda olan qədər istifadə oluna bilər."
     else -> "Kupon alınmadı."
 }
 

@@ -117,6 +117,18 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
     val sync = remember { az.qoshul.app.core.backend.BackendSync.create(scope) }
     val engine = engineOverride ?: remember { AppEngine(scope = scope, sync = sync) }
     val st by engine.state.collectAsStateWithLifecycle()
+
+    // D-151: SESSİYA BƏRPASI — restart-dan sonra login qalır (SettingsStorage);
+    // serverdən data oxunur (demo data mənbəyi yoxdur). Yalnız istehsal
+    // engine-ində (test engineOverride gəlirsə keçilir).
+    if (engineOverride == null) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            if (az.qoshul.app.core.backend.SupabaseBackend.isSignedIn()) {
+                engine.signIn()
+                engine.refreshFromServer()
+            }
+        }
+    }
     val nav = rememberNavState()
     val focus = remember { MapFocusState() }
     val chatFocus = remember { ChatFocusState() }

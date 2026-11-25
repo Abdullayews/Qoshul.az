@@ -96,7 +96,7 @@ import kotlinx.coroutines.launch
  * 0) 3 slaydlıq tanışlıq (Kəşf et / Qoşul / Qazan) + "Keç"
  * 1) Profil: ad, doğum tarixi (18+), cins (ist.), şəkil 1–6, bio 150
  * 2) Maraqlar: 9 kateqoriya, min 3, maks 8
- * 3) İcazələr: məkan + bildirişlər (rdd mümkün) → finishOnboarding (+50 XP)
+ * 3) İcazələr: məkan + bildirişlər (rdd mümkün) → finishOnboarding (+50 Qoşa Coin)
  */
 @Composable
 fun OnboardingScreen(engine: AppEngine) {
@@ -137,7 +137,7 @@ private fun WelcomeStep(onNext: () -> Unit) {
         Triple(Icons.Filled.GroupAdd, "Qoşul",
             "Tədbirlərə qoşul, stol rezerv et, qrup söhbətlərində tanış olduğun insanlarla plan et."),
         Triple(Icons.Filled.EmojiEvents, "Qazan",
-            "Hər addımda XP qazan. XP ilə səviyyə qalx və partnyor məkanlarda endirim kuponları al."),
+            "Hər addımda Qoşa Coin qazan. Qoşa Coin ilə səviyyə qalx və partnyor məkanlarda endirim kuponları al."),
     )
     val pager = rememberPagerState { slides.size }
     val scope = rememberCoroutineScope()
@@ -561,8 +561,8 @@ private fun PermissionsStep(engine: AppEngine) {
         CommunityBanner(
             icon = Icons.Filled.EmojiEvents,
             title = "Hazırsan!",
-            subtitle = "Qeydiyyatı tamamladıqda +${XpRules.REGISTRATION_XP} XP qazanacaqsan. " +
-                "Sonra profilini 100% doldurub əlavə +${XpRules.PROFILE_COMPLETE_XP} XP qazana bilərsən.",
+            subtitle = "Qeydiyyatı tamamladıqda +${XpRules.REGISTRATION_XP} Qoşa Coin qazanacaqsan. " +
+                "Sonra profilini 100% doldurub əlavə +${XpRules.PROFILE_COMPLETE_XP} Qoşa Coin qazana bilərsən.",
         )
         Spacer(Modifier.height(10.dp))
         Button(

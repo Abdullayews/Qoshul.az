@@ -1,5 +1,8 @@
 package az.qoshul.app.features.settings
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.border
@@ -66,7 +69,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.BuildConfig
-import az.qoshul.app.core.data.AppConfig
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.theme.Q
@@ -97,6 +99,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     var showPhone by remember { mutableStateOf(false) }
     // D-115: şirkət hesabı dialoqu
     var showCompany by remember { mutableStateOf(false) }
+    var showTerms by remember { mutableStateOf(false) }
     // D-131: Biznes rejimi sheet-i (şirkət dialoqundan açılır)
     var businessOpen by remember { mutableStateOf(false) }
     var cityOpen by remember { mutableStateOf(false) }
@@ -109,7 +112,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
         LazyColumn(
             modifier = mod.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
+                start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
             ),
         ) {
             item { SectionLabel("Hesab") }
@@ -126,18 +129,18 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     RowItem(Icons.Filled.WorkspacePremium, "Səviyyə", st.rank)
                     DividerLine()
                     // D-056: dost dəvəti — INVITE_XP (+100) əvvəl heç bir UI-a bağlı deyildi
-                    NavRow(Icons.Filled.People, "Dostunu dəvət et", value = "+${XpRules.INVITE_XP} XP") {
+                    NavRow(Icons.Filled.People, "Dostunu dəvət et", value = "+${XpRules.INVITE_XP} Qoşa Coin") {
                         inviteOpen = true
                     }
                     DividerLine()
                     RowItem(
-                        Icons.Filled.Tune, "Məlumat rejimi", AppConfig.modeLabel,
-                        valueColor = if (AppConfig.isPlaceholder) Q.accentFg else Q.primaryText,
+                        Icons.Filled.Tune, "Server statusu",
+                        az.qoshul.app.core.backend.BackendConfig.describe(),
                     )
                     DividerLine()
                     NavRow(
                         Icons.Filled.VerifiedUser, "Hesabı təsdiqlə (telefon)",
-                        if (st.phoneVerified) "Təsdiqlənmiş (+${XpRules.PHONE_VERIFY_XP} XP)"
+                        if (st.phoneVerified) "Təsdiqlənmiş (+${XpRules.PHONE_VERIFY_XP} Qoşa Coin)"
                         else "Təsdiq edilməyib",
                         valueColor = if (st.phoneVerified) Q.primaryText else androidx.compose.ui.graphics.Color.Unspecified,
                     ) { if (!st.phoneVerified) showPhone = true }
@@ -158,7 +161,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             item {
                 Text(
                     "Dəqiq koordinatın heç kimə göstərilmir — yalnız təxmini məsafə. " +
-                        "XP-nin müddəti yoxdur — balans = qazanma − xərcləmə.",
+                        "Qoşa Coin-in müddəti yoxdur — balans = qazanma − xərcləmə.",
                     style = T.chipXs.copy(color = Q.mutedFg),
                     modifier = Modifier.padding(bottom = 6.dp),
                 )
@@ -205,7 +208,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     NavRow(Icons.Filled.Language, "Dil", null, subtitle = "Azərbaycan dili")
                     DividerLine()
                     NavRow(Icons.Filled.Info, "Haqqında (v${BuildConfig.VERSION_NAME})", null,
-                        subtitle = "Native (Compose) — ${AppConfig.modeLabel}")
+                        subtitle = "Native (Compose) — ${az.qoshul.app.core.backend.BackendConfig.describe()}")
                     DividerLine()
                     // D-117: xəritə krediti — xəritə üzərindəki SDK atribusiya
                     // zolağı gizlədilib (overlay ləğv); OSM/OpenFreeMap lisenziya
@@ -214,7 +217,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         value = "© OpenStreetMap contributors",
                         subtitle = "OpenFreeMap × OpenMapTiles tile-ları")
                     DividerLine()
-                    NavRow(Icons.Filled.Description, "Şərtlər və məxfilik", null)
+                    NavRow(Icons.Filled.Description, "Şərtlər və məxfilik", null) { showTerms = true }
                 }
             }
             item {
@@ -251,8 +254,11 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = {
-                        engine.signOut()
-                        nav.popAll()
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            runCatching { az.qoshul.app.core.backend.SupabaseBackend.signOut() }
+                            engine.signOut()
+                            nav.popAll()
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(Q.rPill),
@@ -434,13 +440,13 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 Column {
                     Text(
                         "Telefon nömrəni əlavə et və SMS kodunu yaz. Təsdiq " +
-                            "„Təsdiqlənmiş“ nişanı + ${XpRules.PHONE_VERIFY_XP} XP verir.",
+                            "„Təsdiqlənmiş“ nişanı + ${XpRules.PHONE_VERIFY_XP} Qoşa Coin verir.",
                         style = T.bodySm,
                     )
                     Spacer(Modifier.height(12.dp))
                     QoshulTextField(value = code,
                         onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) code = it },
-                        hint = "6 rəqəmli kod (demo: istənilən)",
+                        hint = "SMS kodu",
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number,
                             imeAction = ImeAction.Done,
@@ -469,15 +475,23 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             title = { Text("Hesabı silmək?") },
             text = {
                 Text(
-                    "Bütün məlumatların (profil, tədbirlər, söhbətlər, XP və kuponlar) " +
+                    "Bütün məlumatların (profil, tədbirlər, söhbətlər, Qoşa Coin və kuponlar) " +
                         "GDPR və yerli qanunvericiliyə əsasən silinəcək. Bu əməliyyat geri " +
-                        "qaytarıla bilməz.\n\nDemo: backend mərhələsində aktivləşəcək.",
+                        "qaytarıla bilməz. Hesab silinəndə sessiya ləğv olunur və bütün " +
+                        "lokal məlumatlar təmizlənir.",
                     style = T.bodyXs,
                 )
             },
             confirmButton = {
                 Button(
-                    onClick = { showDelete = false },
+                    onClick = {
+                        showDelete = false
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            runCatching { az.qoshul.app.core.backend.SupabaseBackend.signOut() }
+                            engine.signOut()
+                            nav.popAll()
+                        }
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Q.destructive, contentColor = Q.destructiveFg),
                 ) { Text("Sil") }
@@ -500,12 +514,12 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             text = {
                 Text(
                     if (invited)
-                        "Dəvət göndərildi (+${XpRules.INVITE_XP} XP hesabına düşdü. " +
+                        "Dəvət göndərildi (+${XpRules.INVITE_XP} Qoşa Coin hesabına düşdü. " +
                             "Dostun qoşulanda tədbirləri birlikdə planlayın!"
                     else
-                        "Qoshul.az-ı dostlarınla bölüş — hər dəvət sənə +${XpRules.INVITE_XP} XP " +
+                        "Qoshul.az-ı dostlarınla bölüş — hər dəvət sənə +${XpRules.INVITE_XP} Qoşa Coin " +
                             "gətirir (bir dəfə). Paylaş:\n\n\"Qoshul.az — Bakıda və bütün Azərbaycanda " +
-                            "maraq görüşləri, endirim XP-si və yeni tanışlıqlar.\"",
+                            "maraq görüşləri, endirim Coin-ləri və yeni tanışlıqlar.\"",
                     style = T.subtitle.copy(lineHeight = 21.sp),
                 )
             },
@@ -520,11 +534,79 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Q.primary, contentColor = Q.primaryFg),
-                    ) { Text("Paylaş (+${XpRules.INVITE_XP} XP)", style = T.button) }
+                    ) { Text("Paylaş (+${XpRules.INVITE_XP} Qoşa Coin)", style = T.button) }
                 }
             },
             dismissButton = {
                 TextButton(onClick = { inviteOpen = false }) { Text("İmtina", style = T.button) }
+            },
+        )
+    }
+
+    // — P0 spec (master-spec 4.3): Şərtlər və məxfilik hüquqi mətnləri —
+    // GDPR + AR qanunvericiliyi, məkan məlumatları razılığı, davranış qaydaları.
+    if (showTerms) {
+        AlertDialog(
+            onDismissRequest = { showTerms = false },
+            title = { Text("Şərtlər və məxfilik") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text("İstifadə Şərtləri", style = T.bodyBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Qoshul.az sosial əlaqə platformasıdır. Hesab yaradaraq " +
+                            "18+ olduğunuzu, profil məlumatlarının dəqiq olduğunu və " +
+                            "tətbiqin icazə verdiyi fəaliyyətlər üçün məsuliyyəti " +
+                            "öz üzərinizə götürürsünüz. Platforma yalnız tanışlıq və " +
+                            "birgə fəaliyyət məqsədilə istifadə oluna bilər; ticarət, " +
+                            "reklam və saxta profil fəaliyyəti qadağandır. " +
+                            "İhlal halında hesab məhdudlaşdırıla bilər.",
+                        style = T.bodyXs.copy(lineHeight = 16.sp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("Məxfilik (GDPR və AR qanunvericiliyi)", style = T.bodyBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Şəxsi məlumatlarınız (ad, e-poçt, şəhər, maraqlar) yalnız " +
+                            "platformanın əsas funksiyaları üçün işlənir və üçüncü " +
+                            "tərəflərlə bölüşülmür. Azərbaycan Respublikasının " +
+                            "\u201CŞəxsi məlumatlar haqqında\u201D Qanunu və GDPR Article 5 " +
+                            "(qanunilik, minimallaşdırma, dəqiqlik, saxlama məhdudiyyəti) " +
+                            "prinsiplərinə uyğun işlənir. Hesabınızı sildikdə məlumatlarınız " +
+                            "30 gün ərzində tam silinir. Məlumat surəti üçün: support@qoshul.az.",
+                        style = T.bodyXs.copy(lineHeight = 16.sp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("Məkan məlumatlarının emalı", style = T.bodyBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Xəritə funksiyası üçün təxmini mövqeniz işlənir. Mövqe " +
+                            "məlumatı yalnız tədbir yaxınlıq filtri və iştirak " +
+                            "doğrulaması üçün istifadə olunur; dəqiq ünvan heç vaxt " +
+                            "başqa istifadəçiyə göstərilmir. İstənilən vaxt " +
+                            "\u201CXəritədə görünmə\u201D tənzimindən bağlaya bilərsiniz.",
+                        style = T.bodyXs.copy(lineHeight = 16.sp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("İctimai tədbirlərdə davranış qaydaları", style = T.bodyBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Tədbirlərdə hörmətli davranış, razılaşdırılmam fiziki " +
+                            "təmas və zorakılıq yasaqdır. Təşkilatçı tədbiri ləğv " +
+                            "və ya iştirakçını çıxara bilər. Təhlükəsizlik " +
+                            "məsləhətləri üçün \u201Cİlk görüş məsləhətləri\u201D bölməsinə baxın. " +
+                            "Narahatçılıq yaradan davranışı report edin — moderasiya " +
+                            "komandası 24 saat ərzində baxır.",
+                        style = T.bodyXs.copy(lineHeight = 16.sp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTerms = false }) { Text("Bağla", style = T.button) }
             },
         )
     }
@@ -542,12 +624,10 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             text = {
                 Text(
                     "Şirkət hesabı tərəfdaş məkanlar üçündür: tədbir hostu, stol " +
-                        "rezervasiyaları, endirim kuponları və obyekt XP hesabatı " +
+                        "rezervasiyaları, endirim kuponları və obyekt Coin hesabatı " +
                         "bir paneldən idarə olunur.\n\nTərəfdaş olmaq üçün: " +
                         "qoshul.az/partners ünvanından müraciət et — komanda " +
-                        "obyektini təsdiqləyib hesabı aktivləşdirəcək.\n\nBeta " +
-                        "demoda Biznes rejimini (müştəri XP kodunu oxu → hesab → " +
-                        "endirim) birbaşa sınaya bilərsən.",
+                        "obyektini təsdiqləyib hesabı aktivləşdirəcək.",
                     style = T.subtitle.copy(lineHeight = 21.sp),
                 )
             },

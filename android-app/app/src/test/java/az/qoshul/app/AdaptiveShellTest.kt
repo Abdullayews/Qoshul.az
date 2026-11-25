@@ -78,7 +78,7 @@ class AdaptiveShellTest {
     }
 
     private fun shell() {
-        val engine = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
         compose.setContent {
             QoshulTheme { AppShell(engine = engine, nav = NavState(), onOpenCreate = {}) }

@@ -251,7 +251,7 @@ private fun ForYouView(
     // 6+10dp ritm axtarış sətrinin bottom-16dp-də qorunub).
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
+            start = 0.dp, end = 0.dp, top = 0.dp, bottom = 132.dp
         ),
     ) {
         item(key = "feedTabs") { tabs() }
@@ -456,7 +456,7 @@ private fun ForYouView(
                             OfferMiniCard(
                                 label = o.label,
                                 venueLine = if (o.autoByLevel) "${o.venueName} · səviyyən ilə açıq"
-                                else "${o.venueName} · ${o.xpPrice} XP",
+                                else "${o.venueName} · ${o.xpPrice} Qoşa Coin",
                                 onClick = { nav.push(Route.Coupons) },
                             )
                         }
@@ -470,7 +470,7 @@ private fun ForYouView(
                 CommunityBanner(
                     icon = Icons.Filled.School,
                     title = "Eyni maraqlar, yeni tanışlıqlar",
-                    subtitle = "Sevdiyin məkanlarda görüş, əlavə XP qazan.",
+                    subtitle = "Sevdiyin məkanlarda görüş, əlavə Qoşa Coin qazan.",
                     onClick = { nav.push(Route.Partners) },
                     trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )

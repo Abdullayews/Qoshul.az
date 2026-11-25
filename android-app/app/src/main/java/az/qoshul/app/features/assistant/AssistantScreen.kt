@@ -90,7 +90,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
         if (st.assistantMsgs.isNotEmpty()) listState.animateScrollToItem(st.assistantMsgs.size - 1)
     }
 
-    PushScreenScaffold(title = "Qoshul köməkçisi", onBack = { nav.pop() }) { mod ->
+    PushScreenScaffold(title = "Qoşa — köməkçi", onBack = { nav.pop() }) { mod ->
         Column(mod.fillMaxSize()) {
             LazyColumn(
                 state = listState,
@@ -117,7 +117,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Köməkçi tədbir tapır, fikir verir və yaratma sheetini açır.",
+                                "Qoşa sənin üçün tədbir tapır, fikir verir və yaratma sheetini açır.",
                                 style = T.meta.copy(color = Q.mutedFg),
                             )
                             Spacer(Modifier.height(14.dp))
@@ -139,7 +139,7 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                 // qorunur (əvvəl body-hash kompoziti typing-də partlayırdı)
                 itemsIndexed(st.assistantMsgs, key = { _, m -> m.id }) { _, m ->
                     ChatBubble(
-                        sender = if (m.mine) "Sən" else "Köməkçi",
+                        sender = if (m.mine) "Sən" else "Qoşa",
                         body = parseAssistantEvent(m.body).text,
                         mine = m.mine,
                     )

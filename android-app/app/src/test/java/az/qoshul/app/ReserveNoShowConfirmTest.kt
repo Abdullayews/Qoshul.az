@@ -36,7 +36,7 @@ class ReserveNoShowConfirmTest {
     val compose = createComposeRule()
 
     private fun newEngine(): AppEngine {
-        val engine = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
         return engine
     }

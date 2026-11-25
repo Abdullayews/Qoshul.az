@@ -87,7 +87,7 @@ class XpRulesTest {
         assertEquals(50, XpRules.ORGANIZER_XP)
         assertEquals(25, XpRules.TAGGED_PARTICIPANT_XP)
         assertEquals(60, XpRules.XP_CARD_TTL_SECONDS)
-        assertEquals(6, XpRules.FALLBACK_CODE_DIGITS)
+        assertEquals(4, XpRules.FALLBACK_CODE_DIGITS) // D-151: spec — 4 rəqəmli kod
         assertEquals(3, XpRules.NO_SHOW_LIMIT)
         assertEquals(7, XpRules.NO_SHOW_RESTRICTION_DAYS)
     }
@@ -95,7 +95,7 @@ class XpRulesTest {
 
 class XpEngineTest {
 
-    private fun engine() = AppEngine()
+    private fun engine() = AppEngine(dataSource = FakeQoshulDataSource)
 
     // ── XP mühərriki (idempotent) ──
 
@@ -172,7 +172,7 @@ class XpEngineTest {
         e.setProfileName("Dost")
         e.finishActivity(mafiya, listOf("p1"))
         assertTrue(e.state.value.notifications.any {
-            it.type == NotifType.LEVEL_UP && it.title.contains("Endirim XP")
+            it.type == NotifType.LEVEL_UP && it.title.contains("Endirim Qoşa Coin")
         })
     }
 
@@ -194,14 +194,6 @@ class XpEngineTest {
         e.finishOnboarding()
         assertTrue(e.state.value.onboarded)
         assertTrue(e.state.value.xp >= 320 + 50 + 5) // registration + daily login
-    }
-
-    @Test fun `demo mafiya host-u profil adı ilə əvəz olunur`() {
-        val e = engine()
-        e.setProfileCreation("Aysel", "Əliyeva", LocalDate.of(2000, 1, 1))
-        e.finishOnboarding()
-        val mafiya = e.state.value.events.first { it.id == "e-mafiya" }
-        assertEquals("Aysel Əliyeva", mafiya.host)
     }
 
     // ── Match (ROL D) ──
@@ -786,19 +778,19 @@ class XpEngineTest {
     @Test fun `B5 XP kartı kod injeksiya olunur, N7 fallback rəqəm sayı`() {
         val now = LocalDateTime.of(2026, 11, 7, 12, 0)
         val card = XpCardCode.fresh(now) { 42 }
-        assertEquals("000042", card.fallbackCode)
+        assertEquals("0042", card.fallbackCode)
         assertEquals(XpRules.FALLBACK_CODE_DIGITS, card.fallbackCode.length)
-        assertTrue(card.nonce.startsWith("QSHUL-XP-000042-"))
+        assertTrue(card.nonce.startsWith("QSHUL-XP-0042-"))
         assertTrue(card.isValid(now))
         assertFalse(card.isValid(now.plusSeconds(61)))
         assertEquals(60, card.secondsLeft(now))
-        val card2 = XpCardCode.fresh(now) { 1_999_999 } // mod 1e6 → 999999
-        assertEquals("999999", card2.fallbackCode)
+        val card2 = XpCardCode.fresh(now) { 1_999_999 } // mod 1e4 (D-151) → 9999
+        assertEquals("9999", card2.fallbackCode)
     }
 
     @Test fun `A2 frozen clock — günlük giriş və şənbə təklifi clock-dan`() {
         val t0 = LocalDateTime.of(2026, 11, 7, 10, 0) // şənbə
-        val e = AppEngine(clock = { t0 })
+        val e = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, clock = { t0 })
         val xp0 = e.state.value.xp
         e.dailyLogin() // default = clock()
         assertEquals(xp0 + 5, e.state.value.xp)

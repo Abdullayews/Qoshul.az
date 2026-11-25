@@ -142,7 +142,7 @@ fun EventDetailSheet(
                 ) {
                     Icon(Icons.Filled.WorkspacePremium, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Tədbiri bitir və XP payla (+${XpRules.ORGANIZER_XP})", style = T.button)
+                    Text("Tədbiri bitir və Qoşa Coin payla (+${XpRules.ORGANIZER_XP})", style = T.button)
                 }
             } else if (engine.isActivityFinished(event.id)) {
                 Spacer(Modifier.height(8.dp))
@@ -155,7 +155,7 @@ fun EventDetailSheet(
                 ) {
                     Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Aktivite bitib — XP paylandı (+${XpRules.ORGANIZER_XP} təşkilatçı)", style = T.button)
+                    Text("Aktivite bitib — Coin paylandı (+${XpRules.ORGANIZER_XP} təşkilatçı)", style = T.button)
                 }
             }
 
@@ -171,7 +171,7 @@ fun EventDetailSheet(
                     ) {
                         Icon(Icons.Filled.CheckCircle, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Check-in edilib (+${XpRules.CHECK_IN_XP} XP qazanıldı)", style = T.button)
+                        Text("Check-in edilib (+${XpRules.CHECK_IN_XP} Qoşa Coin qazanıldı)", style = T.button)
                     }
                 } else {
                     Button(
@@ -182,7 +182,7 @@ fun EventDetailSheet(
                     ) {
                         Icon(Icons.Filled.WhereToVote, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Yerində check-in et (+${XpRules.CHECK_IN_XP} XP)", style = T.button)
+                        Text("Yerində check-in et (+${XpRules.CHECK_IN_XP} Qoşa Coin)", style = T.button)
                     }
                 }
             }
@@ -217,7 +217,7 @@ fun EventDetailSheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Check, null, tint = Q.primaryText, modifier = Modifier.size(12.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Rəyin üçün təşəkkürlər! (+${XpRules.REVIEW_XP} XP)",
+                    Text("Rəyin üçün təşəkkürlər! (+${XpRules.REVIEW_XP} Qoşa Coin)",
                         style = T.bodySm.copy(color = Q.mutedFg))
                 }
             }
@@ -336,7 +336,7 @@ private fun FactsGrid(e: QoshulEvent) {
         add(Icons.Filled.Event to "${e.date}, ${e.time}")
         add(Icons.Filled.Group to "${e.spotsLeft} boş yer")
         add(Icons.Filled.LocationOn to e.location)
-        add(Icons.Filled.EmojiEvents to "+${XpRules.JOIN_XP} XP qoşulma")
+        add(Icons.Filled.EmojiEvents to "+${XpRules.JOIN_XP} Qoşa Coin qoşulma")
         add(Icons.Filled.Payments to (e.price?.let { "$it AZN" } ?: "Pulsuz"))
         e.level?.let { add(Icons.Filled.SignalCellularAlt to it) }
         e.language?.let { add(Icons.Filled.Translate to it) }

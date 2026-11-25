@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.QoshulTheme
 import org.junit.Rule
@@ -45,7 +46,7 @@ class CreateSheetTapAllTest {
      * burada bərpa edir (D-050 semantikası: onboarding keçilib, dolu profil).
      */
     private fun seededEngine(): AppEngine {
-        val e = AppEngine()
+        val e = AppEngine(dataSource = FakeQoshulDataSource)
         e.setProfileCreation(
             "Demo", "İstifadəçi", java.time.LocalDate.of(2000, 1, 1),
             gdr = "", bioText = "Qoshul demo — UI test seed.", photos = 1,

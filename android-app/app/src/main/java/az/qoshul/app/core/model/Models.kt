@@ -232,7 +232,8 @@ object XpRules {
     const val ORGANIZER_XP = 50
     const val TAGGED_PARTICIPANT_XP = 25
     const val XP_CARD_TTL_SECONDS = 60
-    const val FALLBACK_CODE_DIGITS = 6
+    // D-151 (master-spec bölmə 7): iştirakçı təhlükəsizlik kodu 4 rəqəmdir
+    const val FALLBACK_CODE_DIGITS = 4
 
     /** Kəşf peşəkar sıralaması (L.1) — səviyyə etiketi çəkisi. */
     fun proWeight(level: String?): Int = when (level) {

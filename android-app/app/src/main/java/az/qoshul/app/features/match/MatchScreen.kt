@@ -111,15 +111,7 @@ fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit =
                     text = if (st.swipes.isEmpty())
                         "Hazırda yeni kart yoxdur.\nYaxınlıqdakı insanlar burada görünəcək."
                     else "Bu günlük kartlar bitdi.\nYeni insanlar üçün sabah yenidən bax!",
-                    action = if (st.swipes.isNotEmpty()) {
-                        {
-                            OutlinedButton(onClick = { engine.resetSwipes() }) {
-                                Icon(Icons.Filled.Refresh, null, modifier = Modifier.size(15.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Dəsti yenilə (demo)")
-                            }
-                        }
-                    } else null,
+                    action = null,
                 )
             }
         } else {
@@ -196,7 +188,7 @@ fun MatchScreen(engine: AppEngine, nav: NavState, onOpenChat: (Person) -> Unit =
                     Spacer(Modifier.height(6.dp))
                     Text(
                         "${p.fullName} də sənə maraq göstərdi. Söhbəti başla " +
-                            "(+10 XP, gündə max 3).",
+                            "(+10 Qoşa Coin, gündə max 3).",
                         textAlign = TextAlign.Center,
                         style = T.bodySm,
                     )

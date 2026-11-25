@@ -41,7 +41,7 @@ class PartnersBiznesRemovedTest {
     val compose = createComposeRule()
 
     private fun engine(): AppEngine {
-        val e = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val e = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         e.signIn()
         return e
     }
@@ -62,7 +62,7 @@ class PartnersBiznesRemovedTest {
         }
         settle()
         // qalanlar: məkan siyahısı + istifadəçi (host) axını
-        compose.onNodeWithText("Görüş təşkil et — XP qazan").assertIsDisplayed()
+        compose.onNodeWithText("Görüş təşkil et — Qoşa Coin qazan").assertIsDisplayed()
         compose.onNodeWithText("Sevdiyin məkanlar").assertIsDisplayed()
         // ləğv edilənlər: biznes CTA kartları
         assertEquals(
@@ -71,7 +71,7 @@ class PartnersBiznesRemovedTest {
         )
         assertEquals(
             "„Biznes rejimi — XP endirimi ver“ Tərəfdaşlarda olmamalıdır",
-            0, compose.onAllNodesWithText("Biznes rejimi — XP endirimi ver").fetchSemanticsNodes().size,
+            0, compose.onAllNodesWithText("Biznes rejimi — Coin endirimi ver").fetchSemanticsNodes().size,
         )
     }
 
@@ -96,7 +96,7 @@ class PartnersBiznesRemovedTest {
         compose.onNodeWithText("Biznes rejimini aç").performClick()
         settle()
         // BusinessModeSheet açılır — işçi modunun başlığı görünür
-        compose.onNodeWithText("Biznes rejimi — XP endirimi").assertIsDisplayed()
+        compose.onNodeWithText("Biznes rejimi — Coin endirimi").assertIsDisplayed()
         assertEquals("Route stackində Settings qalır", 0, nav.stack.size)
     }
 }

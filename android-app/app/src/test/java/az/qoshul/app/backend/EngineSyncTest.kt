@@ -1,7 +1,6 @@
 package az.qoshul.app.backend
 
 import az.qoshul.app.core.backend.BackendConfig
-import az.qoshul.app.core.backend.NoopSync
 import az.qoshul.app.core.backend.SyncEvent
 import az.qoshul.app.core.backend.SyncSink
 import az.qoshul.app.core.engine.AppEngine
@@ -22,8 +21,13 @@ class EngineSyncTest {
 
     private val frozen: LocalDateTime = LocalDateTime.of(2026, 11, 7, 12, 0)
 
+    // D-151: AppEngine default dataSource = ServerDataSource (istehsal, boş).
+    // Testlər deterministik FakeData fixture-i ilə işləyir (APK-ya düşmür).
     private fun engine(rec: RecordingSync? = RecordingSync()) =
-        AppEngine(clock = { frozen }, sync = rec)
+        AppEngine(
+            dataSource = az.qoshul.app.core.data.FakeQoshulDataSource,
+            clock = { frozen }, sync = rec,
+        )
 
     @Test fun `dailyLogin DailyLoginIntent çıxarır`() {
         val rec = RecordingSync()
@@ -111,8 +115,9 @@ class EngineSyncTest {
     @Test fun `finishActivity GrantVenueXpIntent çıxarır`() {
         val rec = RecordingSync()
         val e = engine(rec)
-        // e-mafiya: past + venueId=v5; host adını bizimkiləşdiririk
-        val past = e.state.value.events.first { it.id == "e-mafiya" && it.venueId != null && it.past }
+        // D-151: demo "e-mafiya" silindi — test fixture-dəki istənilən
+        // past + venueId-li tədbir üzərində eyni axın yoxlanılır.
+        val past = e.state.value.events.first { it.venueId != null && it.past }
         e.setProfileName(past.host)
         val res = e.finishActivity(past, listOf("p1", "p2"))
         assertTrue(res != null)
@@ -132,7 +137,6 @@ class EngineSyncTest {
         val e = AppEngine(clock = { frozen })   // sync YOXDUR (köhnə çağırışlar)
         e.dailyLogin()
         assertTrue(e.state.value.xp > 0)
-        NoopSync.report(SyncEvent.DailyLoginIntent)   // NoopSync heç nə etmirmə? — səssiz
     }
 
     @Test fun `BackendConfig PLACEHOLDER dəyərlərlə MOCK-a düşür`() {

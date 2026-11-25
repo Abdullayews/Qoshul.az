@@ -82,14 +82,19 @@ Qoshul.az/
 └── .github/workflows/      native.yml (Rust fmt/clippy/test + jniLibs + SQL lint + test + APK)
 ```
 
-## ⚙️ Tətbiq: backend rejimləri (D-050)
+## ⚙️ Tətbiq: backend rejimi (D-151)
 
-`android-app/local.properties` (repoya düşmür) vasitəsilə iki rejim:
+`android-app/local.properties` (repoya düşmür) və ya env/CI secret:
 
 | `BACKEND_MODE` | Nə deməkdir |
 |---|---|
-| `MOCK` *(default)* | Bütün funksiyalar demo məlumatla dolu; vahid demo hesabı ilə bir toxunuşla giriş |
-| `SUPABASE` | Real Supabase auth + sync (`SUPABASE_URL` / `SUPABASE_ANON_KEY` da local.properties-də) |
+| `SUPABASE` *(tək rejim)* | Real Supabase auth (email/OTP/Google) + canlı oxu-yazı yolu. `SUPABASE_URL` / `SUPABASE_ANON_KEY` local.properties, env və ya CI secret-dən gəlir |
+| *(boş / PLACEHOLDER)* | Fork build: tətbiq açılır, amma ayarlarda aydın konfiqurasiya xətası görünür. **SƏSSİZ DEMO FALLBACK YOXDUR** (D-151 direktivi: „demo məntiqi heç olmasın“) |
+
+MOCK rejimi və demo data mənbəyi silinib: başlanğıc state boşdur, bütün
+məlumat girişdən sonra `SupabaseReader` ilə serverdən oxunur və
+`AppEngine.applyServerData` ilə tətbiq olunur. JVM testləri üçün
+`app/src/test`-də FakeQoshulDataSource fixture-i qalır (APK-ya düşmür).
 
 ## 🗺️ Tətbiq: xəritə backend-i (D-108/D-109)
 
@@ -166,6 +171,26 @@ struktur lint-i aparır (CI-də məcburidir).
 **Test datası:** `supabase/testdata/` — MOCK→SUPABASE keçidi üçün 100 dolu
 test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
 detallar `supabase/testdata/README.md`-də.
+
+### 1b) Google Sign-In — aktivləşdirmə (D-150/D-151)
+
+Tətbiqdə Google düyməsi iki şərtə görünür: `SupabaseBackend.googleAvailable`
+= Supabase konfiqurasiyası tam **və** `GOOGLE_WEB_CLIENT_ID` doludur.
+Google düyməsi görünmürsə, bu addımları edin:
+
+1. **Google Cloud Console** → yeni layihə (və ya mövcud) → *APIs & Services → Credentials*.
+2. **Android OAuth klienti** yaradın: paket `az.qoshul.app` + imzalama SHA-1
+   (release SHA-1: `keytool -list -v -keystore qoshul-release.jks`).
+3. **Web application OAuth klienti** yaradın — onun Client ID-si = `GOOGLE_WEB_CLIENT_ID`
+   (Android klienti deyil!). Bu ID:
+   - CI secret `GOOGLE_WEB_CLIENT_ID` (və ya local.properties eyni açarla);
+   - serverdə `infra/selfhost/.env` → `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID`
+     (indi `PLACEHOLDER_...` dur) + `GOTRUE_EXTERNAL_GOOGLE_SECRET` (Web klientin
+     secret-i) → `docker compose up -d supabase-auth` ilə yenidən başladın.
+4. Supabase GoTrue `GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS` artıq
+   `https://supabase.qoshul.com/auth/v1/callback` — dəyişməyin.
+
+Email + şifrə və email-OTP yolları Google-dan asılı deyil — istənilən halda işləyir.
 
 ### 2) qoshul-service — axum mikroservisi (M4, D-082)
 

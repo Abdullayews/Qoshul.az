@@ -176,7 +176,7 @@ fun EventsScreen(
         val st by engine.state.collectAsStateWithLifecycle()
         LazyColumn(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
+                start = 0.dp, end = 0.dp, top = 0.dp, bottom = 132.dp
             ),
         ) {
             tabs?.let { t ->
@@ -319,7 +319,7 @@ fun EventsScreen(
                                 if (okJoin) scope.launch {
                                     snackbar.showSnackbar(
                                         if (e.approval) "Sorğun təşkilatçıya göndərildi."
-                                        else "Tədbirə qoşuldun! +${XpRules.JOIN_XP} XP"
+                                        else "Tədbirə qoşuldun! +${XpRules.JOIN_XP} Qoşa Coin"
                                     )
                                 }
                             },
@@ -355,7 +355,7 @@ fun EventsScreen(
                             if (okJoin) scope.launch {
                                 snackbar.showSnackbar(
                                     if (e.approval) "Sorğun təşkilatçıya göndərildi."
-                                    else "Tədbirə qoşuldun! +${XpRules.JOIN_XP} XP"
+                                    else "Tədbirə qoşuldun! +${XpRules.JOIN_XP} Qoşa Coin"
                                 )
                             }
                         },
@@ -367,7 +367,7 @@ fun EventsScreen(
                         CommunityBanner(
                             icon = Icons.Filled.TableRestaurant,
                             title = "Tədbir yoxdur? Məkan rezerv et",
-                            subtitle = "Partnyor məkanlarda stol ayır, QR al və iştirakla XP qazan.",
+                            subtitle = "Partnyor məkanlarda stol ayır, QR al və iştirakla Qoşa Coin qazan.",
                             onClick = { nav.push(Route.Partners) },
                             trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                         )

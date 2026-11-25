@@ -79,8 +79,8 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
             item {
                 ViewHeading(
                     title = "XP kartım",
-                    subtitle = "Endirim XP-ni obyektdə göstər, kassa endirimi alsın. " +
-                        "Hər obyektin XP bazası ayrıdır.",
+                    subtitle = "Endirim Qoşa Coin-ini obyektdə göstər, kassa endirimi alsın. " +
+                        "Hər obyektin Coin bazası ayrıdır.",
                 )
                 Spacer(Modifier.height(16.dp))
             }
@@ -97,7 +97,7 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
                         Icon(Icons.Filled.WorkspacePremium, null, tint = Q.primaryText, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Peşəkarlıq XP: ${st.xp} · ${st.rank}",
+                            Text("Qoşa Coin: ${st.xp} · ${st.rank}",
                                 style = T.metaBold.copy(color = Q.primaryText))
                             Spacer(Modifier.height(2.dp))
                             Text(
@@ -129,7 +129,7 @@ fun XpCardScreen(engine: AppEngine, nav: NavState) {
             item {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "XP-nin müddəti yoxdur — balans qazanma − xərcləmədir. " +
+                    "Qoşa Coin-in müddəti yoxdur — balans qazanma − xərcləmədir. " +
                         "Kamera işləməsə QR altındakı 6 rəqəmli kodu de.",
                     style = T.chipXs.copy(color = Q.mutedFg),
                     textAlign = TextAlign.Center,
@@ -171,8 +171,8 @@ private fun AccountCard(
                 Text(account.config.describe(), style = T.chipXs.copy(color = Q.mutedFg))
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("$bal XP", style = T.titleLg.copy(color = Q.primaryText))
-                Text("Endirim XP", style = T.metaSm)
+                Text("$bal Qoşa Coin", style = T.titleLg.copy(color = Q.primaryText))
+                Text("Endirim Qoşa Coin", style = T.metaSm)
             }
         }
         if (expanded) {
@@ -184,7 +184,7 @@ private fun AccountCard(
             Text("Hərəkətlər (ledger)", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.mutedFg))
             Spacer(Modifier.height(8.dp))
             if (account.recentLedger.isEmpty()) {
-                Text("Hərəkət yoxdur — tədbir keçir, XP qazan.", style = T.chipXs.copy(color = Q.mutedFg))
+                Text("Hərəkət yoxdur — tədbir keçir, Qoşa Coin qazan.", style = T.chipXs.copy(color = Q.mutedFg))
             } else {
                 account.recentLedger.take(4).forEach { e ->
                     Row(Modifier.padding(bottom = 7.dp)) {
@@ -197,7 +197,7 @@ private fun AccountCard(
                         Column {
                             Text(e.note, style = T.bodySm)
                             Text(
-                                (if (e.grant) "+" else "−") + "$e.amount XP · " +
+                                (if (e.grant) "+" else "−") + "$e.amount Qoşa Coin · " +
                                     "%02d.%02d %02d:%02d".format(
                                         e.at.dayOfMonth, e.at.monthValue, e.at.hour, e.at.minute) +
                                     " · qalıq ${e.balanceAfter}",
@@ -254,7 +254,7 @@ private fun DynamicQrSection(account: VenueXpAccount, engine: AppEngine) {
             }
             Spacer(Modifier.width(14.dp))
             Column {
-                Text("Dinamik XP kodu", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.mutedFg))
+                Text("Dinamik Coin kodu", style = T.chipXs.copy(fontWeight = FontWeight.W700, color = Q.mutedFg))
                 Spacer(Modifier.height(4.dp))
                 Text(
                     if (valid)

@@ -112,7 +112,7 @@ fun ProfileScreen(
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             // D-063: alt 128→132dp — bütün tab ekranlarında vahid (Feed/Events 132)
-            start = 20.dp, end = 20.dp, top = 13.dp, bottom = 132.dp
+            start = 0.dp, end = 0.dp, top = 13.dp, bottom = 132.dp
         ),
     ) {
         // redaktə / ayarlar — D-112: redaktə artıq DİALOQ deyil, ayrıca
@@ -200,7 +200,7 @@ fun ProfileScreen(
                 CommunityBanner(
                     icon = Icons.Filled.Psychology,
                     title = "Şəxsiyyət testi",
-                    subtitle = "10 sual · 2 dəqiqə. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 XP.",
+                    subtitle = "10 sual · 2 dəqiqə. Nəticə profilində görünür, şəkil+bio+maraqlar varsa +30 Qoşa Coin.",
                     onClick = { nav.push(Route.Quiz) },
                     trailing = { Icon(Icons.Filled.NorthEast, null, tint = Q.primaryText, modifier = Modifier.height(20.dp)) },
                 )
@@ -249,7 +249,7 @@ fun ProfileScreen(
                     onClick = { nav.push(Route.Reservations) })
                 Spacer(Modifier.width(10.dp))
                 QuickCard(icon = Icons.Filled.QrCode, title = "XP kartım",
-                    value = "${st.discountXpTotal} XP", modifier = Modifier.weight(1f),
+                    value = "${st.discountXpTotal} Qoşa Coin", modifier = Modifier.weight(1f),
                     onClick = { nav.push(Route.XpCard) })
                 Spacer(Modifier.width(10.dp))
                 QuickCard(icon = Icons.Filled.ConfirmationNumber, title = "Kuponlarım",
@@ -273,8 +273,8 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    StatCount(st.xp, "Peşəkar XP")
-                    StatCount(st.discountXpTotal, "Endirim XP")
+                    StatCount(st.xp, "Peşəkarlıq Qoşa Coin")
+                    StatCount(st.discountXpTotal, "Endirim Qoşa Coin")
                     StatCount(st.joined.size, "Tədbir")
                     Stat(st.rank, "Səviyyə")
                 }
@@ -286,7 +286,7 @@ fun ProfileScreen(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(prog.nextName ?: "Maksimum",
                     style = T.chipXs.copy(fontWeight = FontWeight.W600))
-                Text(prog.nextName?.let { "${prog.toNext} XP qalıb" } ?: "", style = T.meta)
+                Text(prog.nextName?.let { "${prog.toNext} Qoşa Coin qalıb" } ?: "", style = T.meta)
             }
             Spacer(Modifier.height(6.dp))
             XpBar(progress = prog.pct / 100f, height = 4.dp)
@@ -302,7 +302,7 @@ fun ProfileScreen(
             item {
                 CommunityBanner(
                     icon = Icons.Filled.EmojiEvents, title = st.rank,
-                    subtitle = "${st.xp} XP topladın. Növbəti görüşə qoşul, yeni səviyyəyə yüksəl!",
+                    subtitle = "${st.xp} Qoşa Coin topladın. Növbəti görüşə qoşul, yeni səviyyəyə yüksəl!",
                 )
             }
             items(badgeDefs, key = { it.id }) { b ->

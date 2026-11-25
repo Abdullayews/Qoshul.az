@@ -599,7 +599,7 @@ fun FinishActivitySheet(
             Spacer(Modifier.height(4.dp))
             Text(
                 "Obyektin statik QR-ı → şəkil paylaş → iştirakçıları taq et → " +
-                    "Endirim XP paylanır (təşkilatçı +${XpRules.ORGANIZER_XP}, " +
+                    "Endirim Qoşa Coin paylanır (təşkilatçı +${XpRules.ORGANIZER_XP}, " +
                     "hər taq +${XpRules.TAGGED_PARTICIPANT_XP}).",
                 style = T.chipXs.copy(color = Q.mutedFg),
             )
@@ -690,9 +690,9 @@ fun FinishActivitySheet(
                         style = T.bodySmBold.copy(color = Q.mutedFg))
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Taq edilməyən iştirakçı XP almır. Hər taq edilənə " +
-                            "+${XpRules.TAGGED_PARTICIPANT_XP} XP, sənə təşkilatçı kimi " +
-                            "+${XpRules.ORGANIZER_XP} XP.",
+                        "Taq edilməyən iştirakçı Qoşa Coin almır. Hər taq edilənə " +
+                            "+${XpRules.TAGGED_PARTICIPANT_XP} Qoşa Coin, sənə təşkilatçı kimi " +
+                            "+${XpRules.ORGANIZER_XP} Qoşa Coin",
                         style = T.chipXs.copy(color = Q.mutedFg),
                     )
                     Spacer(Modifier.height(12.dp))
@@ -731,15 +731,15 @@ fun FinishActivitySheet(
                             .androidxPreviewBg()
                             .padding(12.dp)
                     ) {
-                        XpRow("Sən (təşkilatçı)", "+${XpRules.ORGANIZER_XP} XP", Icons.Filled.WorkspacePremium)
+                        XpRow("Sən (təşkilatçı)", "+${XpRules.ORGANIZER_XP} Qoşa Coin", Icons.Filled.WorkspacePremium)
                         Spacer(Modifier.height(5.dp))
                         XpRow("Taq edilən ${tagged.value.size} iştirakçı",
-                            "+${tagged.value.size * XpRules.TAGGED_PARTICIPANT_XP} XP", Icons.Filled.Groups)
+                            "+${tagged.value.size * XpRules.TAGGED_PARTICIPANT_XP} Qoşa Coin", Icons.Filled.Groups)
                         Spacer(Modifier.height(7.dp))
                         Box(Modifier.fillMaxWidth().height(1.dp).androidxFooterDivider())
                         Spacer(Modifier.height(7.dp))
                         XpRow("Cəmi paylanacaq",
-                            "+${XpRules.ORGANIZER_XP + tagged.value.size * XpRules.TAGGED_PARTICIPANT_XP} XP",
+                            "+${XpRules.ORGANIZER_XP + tagged.value.size * XpRules.TAGGED_PARTICIPANT_XP} Qoşa Coin",
                             Icons.Filled.Toll)
                     }
                     Spacer(Modifier.height(14.dp))
@@ -758,7 +758,7 @@ fun FinishActivitySheet(
                         Icon(Icons.Filled.WorkspacePremium, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            if (tagged.value.isEmpty()) "Ən azı bir iştirakçı taq et" else "Bitir və XP payla",
+                            if (tagged.value.isEmpty()) "Ən azı bir iştirakçı taq et" else "Bitir və Qoşa Coin payla",
                             style = T.button,
                         )
                     }
@@ -767,7 +767,7 @@ fun FinishActivitySheet(
                     // — nəticə —
                     val r = result
                     if (r == null) {
-                        EmptyState(icon = Icons.Filled.WorkspacePremium, text = "XP paylanmadı — yenidən cəhd et.")
+                        EmptyState(icon = Icons.Filled.WorkspacePremium, text = "Coin paylanmadı — yenidən cəhd et.")
                     } else {
                         PopIn {
                             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -782,17 +782,17 @@ fun FinishActivitySheet(
                                 Text(
                                     "${sharedPhotos.value.size} şəkil ${r.venueName}-in biznes hesabına düşdü. " +
                                         "${r.taggedCount} iştirakçı taq edildi — hər birinə " +
-                                        "+${r.perParticipantXp} Endirim XP yazıldı.",
+                                        "+${r.perParticipantXp} Endirim Coin yazıldı.",
                                     style = T.chipXs.copy(color = Q.mutedFg),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                                 )
                                 Spacer(Modifier.height(16.dp))
-                                KvRow("Sənə (təşkilatçı)", "+${r.organizerXp} XP · ${r.venueName} bazası")
-                                KvRow("İştirakçılara", "+${r.participantsTotal} XP (hərəsinə ${r.perParticipantXp})")
-                                KvRow("Yeni balansın", "${acct.balance} XP")
+                                KvRow("Sənə (təşkilatçı)", "+${r.organizerXp} Qoşa Coin · ${r.venueName} bazası")
+                                KvRow("İştirakçılara", "+${r.participantsTotal} Qoşa Coin (hərəsinə ${r.perParticipantXp})")
+                                KvRow("Yeni balansın", "${acct.balance} Qoşa Coin")
                                 Spacer(Modifier.height(14.dp))
                                 Text(
-                                    "XP yalnız ${r.venueName} bazasında keçərlidir — digər obyektdən " +
+                                    "Qoşa Coin yalnız ${r.venueName} bazasında keçərlidir — digər obyektdən " +
                                         "endirim almaq olmaz (ayrı baza qaydası).",
                                     style = T.metaSm,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,

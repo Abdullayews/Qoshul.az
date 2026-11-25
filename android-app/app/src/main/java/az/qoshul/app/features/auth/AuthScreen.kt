@@ -46,8 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import az.qoshul.app.core.backend.BackendConfig
-import az.qoshul.app.core.backend.BackendMode
-import az.qoshul.app.core.backend.SupabaseAuth
+import az.qoshul.app.core.backend.SupabaseBackend
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.theme.OpenSans
@@ -60,18 +59,12 @@ import kotlinx.coroutines.launch
 /**
  * Daxil ol / Qeydiyyat — Flutter auth_screen.dart portu (ROL B, Addım 2).
  *
- * D-149/D-150 (server inteqrasiyası 2026-11-24): MOCK axınları silindi —
- * demoSignIn (D-050 qalığı), „istənilən 6 rəqəm“ OTP mock-u, social()
- * 900ms mock-u və Apple düyməsi (developer hesabı yoxdur). Yerini real
- * GoTrue axınları aldı:
- *
- *  - SUPABASE rejimi: [SupabaseAuth] canlı serverlə işləyir — qeydiyyat
- *    (autoconfirm on → dərhal sessiya), giriş, email OTP, şifrə bərpası,
- *    Google native sign-in (Credential Manager + IDToken grant).
- *  - MOCK rejimi (CI/test): köhnə səssiz lokal axın qalır — [engine]
- *    mühərrik simulyasiyası üçün signIn() çağırır (determinizm qorunur).
- *
- * Qeyd (qayda ③): MOCK rejimi heç bir real təhlükəsizlik iddiası yoxdur.
+ * D-151 (2026-11-25, direktiv: „demo məntiqi heç olmasın“): MOCK/lokal
+ * fallback TAMAMEN SİLİNDİ — yalnız real GoTrue axını var. [SupabaseBackend]
+ * (vahid client, sessiya persistence) üzərindən: qeydiyyat (autoconfirm on →
+ * dərhal sessiya), giriş, email OTP, şifrə bərpası, Google native sign-in
+ * (Credential Manager + IDToken grant). Konfiqurasiya tamamlanmayıbsa
+ * xəta açıq göstərilir (səssiz demo yoxdur).
  */
 private enum class AuthMode { ENTER, UP, FORGOT, CODE }
 
@@ -90,19 +83,16 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // D-149: rejimə görə auth kanalı — MOCK → lokal simulyasiya (testlər),
-    // SUPABASE → real GoTrue client (canlı server).
-    val isServer = BackendConfig.mode == BackendMode.SUPABASE
-    val serverAuth = remember { if (isServer) SupabaseAuth() else null }
+    // D-151: vahid SupabaseBackend (app-scope, sessiya persistence ilə).
+    val isServer = BackendConfig.isConfigured
 
     /** D-150: Google Credential Manager axını — WEB client ID BuildConfig-dən. */
     fun googleSignIn() {
-        val auth = serverAuth ?: return
-        if (az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) return
+        if (!SupabaseBackend.googleAvailable) return
         scope.launch {
             busy = true; error = null
             try {
-                auth.signInWithGoogle(context, az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                SupabaseBackend.signInWithGoogle(context, az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID)
                 engine?.signIn() ?: onSignedIn()
                 busy = false
             } catch (t: Throwable) {
@@ -132,19 +122,9 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             error = "Düzgün e-poçt ünvanı yaz."
             return
         }
-        val auth = serverAuth
-        if (auth == null) {
-            // MOCK (CI/test): səssiz lokal axın — determinizm qorunur
-            scope.launch {
-                busy = true
-                when (mode) {
-                    AuthMode.CODE -> { mode = AuthMode.ENTER; onSignedIn() }
-                    AuthMode.UP -> { mode = AuthMode.ENTER; onSignedIn() }
-                    AuthMode.FORGOT -> { msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi." }
-                    AuthMode.ENTER -> onSignedIn()
-                }
-                busy = false
-            }
+        if (!isServer) {
+            // D-151: konfiqurasiya yoxdursa səssiz demo YOXDUR — açıq xəta
+            error = "Server konfiqurasiyası tamamlanmayıb. Sonra yenidən cəhd et."
             return
         }
         scope.launch {
@@ -152,24 +132,24 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             try {
                 when (mode) {
                     AuthMode.UP -> {
-                        auth.signUp(email, pass, name.ifBlank { null })
+                        SupabaseBackend.signUp(email, pass, name.ifBlank { null })
                         // autoconfirm on → sessiya dərhal açılır
                         engine?.signIn() ?: onSignedIn()
                     }
                     AuthMode.ENTER -> {
-                        auth.signIn(email, pass)
+                        SupabaseBackend.signIn(email, pass)
                         engine?.signIn() ?: onSignedIn()
                     }
                     AuthMode.CODE -> {
                         if (code.length != 6 || code.toIntOrNull() == null) {
                             error = "Kod 6 rəqəmdən ibarət olmalıdır."
                         } else {
-                            auth.verifyOtp(email, code)
+                            SupabaseBackend.verifyOtp(email, code)
                             engine?.signIn() ?: onSignedIn()
                         }
                     }
                     AuthMode.FORGOT -> {
-                        auth.resetPassword(email)
+                        SupabaseBackend.resetPassword(email)
                         msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi."
                     }
                 }
@@ -238,7 +218,7 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         } else {
             // D-150: Google düyməsi — yalnız real rejimdə və WEB client ID olanda.
             // Apple düyməsi silindi (mock idi; Apple developer hesabı yoxdur).
-            if (isServer && az.qoshul.app.BuildConfig.GOOGLE_WEB_CLIENT_ID.isNotBlank()) {
+            if (SupabaseBackend.googleAvailable) {
                 OutlinedButton(
                     onClick = { if (!busy) googleSignIn() },
                     enabled = !busy,
@@ -376,23 +356,43 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     TextButton(onClick = { mode = AuthMode.FORGOT }) {
                         Text("Şifrəni unutmusan?", style = qTextButton())
                     }
+                    TextButton(onClick = {
+                        // D-151: OTP yolu aktivləşdi (əvvəl ölü kod idi)
+                        if (email.contains("@")) {
+                            scope.launch {
+                                busy = true; error = null
+                                try {
+                                    SupabaseBackend.sendEmailOtp(email)
+                                    mode = AuthMode.CODE
+                                } catch (t: Throwable) {
+                                    error = t.message?.take(160)
+                                        ?: "Kod göndərilə bilmədi. E-poçtunu yoxla."
+                                }
+                                busy = false
+                            }
+                        } else {
+                            error = "Əvvəlcə e-poçtunu yaz, sonra kodla davam et."
+                        }
+                    }) {
+                        Text("Kodla daxil ol", style = qTextButton())
+                    }
                     TextButton(onClick = { mode = AuthMode.UP; msg = null }) {
                         Text("Hesabın yoxdur? Qeydiyyatdan keç", style = qTextButton())
                     }
                 }
                 AuthMode.CODE -> {
                     TextButton(onClick = {
-                        // D-149: real OTP yenidən göndərişi (mock silindi)
-                        if (serverAuth != null) {
-                            scope.launch {
-                                busy = true
-                                try { serverAuth.sendEmailOtp(email) }
-                                catch (t: Throwable) {
-                                    error = t.message?.take(160) ?: "Kod göndərilə bilmədi."
-                                }
-                                busy = false
+                        // D-151: real OTP yenidən göndərişi
+                        scope.launch {
+                            busy = true
+                            try {
+                                SupabaseBackend.sendEmailOtp(email)
+                                msg = "Yeni kod göndərildi."
+                            } catch (t: Throwable) {
+                                error = t.message?.take(160) ?: "Kod göndərilə bilmədi."
                             }
-                        } else { msg = "Yeni kod göndərildi." }
+                            busy = false
+                        }
                     }) {
                         Text("Kod gəlmədi? Yenidən göndər", style = qTextButton())
                     }

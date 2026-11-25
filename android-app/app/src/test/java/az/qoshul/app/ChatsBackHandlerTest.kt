@@ -33,7 +33,7 @@ class ChatsBackHandlerTest {
     val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
 
     private fun newEngine(): AppEngine {
-        val engine = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
         return engine
     }
@@ -66,8 +66,10 @@ class ChatsBackHandlerTest {
 
         // 2) Söhbəti aç (siyahı sətri — substring: "N iştirakçı · Tədbir qrupu"
         //    və ya "şəhər · Şəxsi")
+        // D-151: dost sətri formatı "şəhər · Dost/Match · Şəxsi" — substring
+        // "· Şəxsi" hər iki halda unikaldır (tədbir qrupu "Tədbir qrupu" daşıyır).
         val listRowText = if (openEvent) "${ev!!.participants} iştirakçı · Tədbir qrupu"
-        else "${friend!!.city} · Şəxsi"
+        else "${friend!!.city} · "
         compose.onAllNodesWithText(listRowText, substring = true)[0].performClick()
         settle()
         compose.onNodeWithText(openMarker).assertExists()

@@ -39,10 +39,9 @@ class DirectivesAuditTest {
     // ═══════════ D-126: şəhərlər ═══════════
 
     @Test
-    fun `D126 fake data 79 seher daşıyır`() {
-        val src = read("$main/core/data/FakeData.kt")
-        val count = Regex("City\\(\"").findAll(src).count()
-        assertEquals("FakeData-da 79 şəhər olmalıdır", 79, count)
+    fun `D126 Taxonomy 79 seher daşıyır`() {
+        // D-151: FakeData main scope-dan silindi — şəhərlər Taxonomy obyektindədir.
+        assertEquals("Taxonomy-da 79 şəhər olmalıdır", 79, az.qoshul.app.core.data.Taxonomy.cities.size)
     }
 
     @Test

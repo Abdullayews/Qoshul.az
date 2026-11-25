@@ -39,7 +39,7 @@ class UiSmokeTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private fun newEngine() = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+    private fun newEngine() = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
 
     @Test
     fun `brend wordmark render olunur`() {

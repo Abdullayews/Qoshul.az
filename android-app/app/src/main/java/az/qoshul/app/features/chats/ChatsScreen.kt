@@ -37,6 +37,8 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.ChatBubbleOutline
+import az.qoshul.app.core.ui.EmptyState
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -160,6 +162,12 @@ fun ChatsScreen(engine: AppEngine, chatFocus: ChatFocusState? = null) {
                 engine.blockUser(activeFriend.id)
                 activeFriendId = null
             },
+            onUnmatch = {
+                // D-151 (spec 3): uyğunluğu ləğv et — matç+ söhbət silinir,
+                // blok siyahısına düşmür
+                engine.unmatch(activeFriend.id)
+                activeFriendId = null
+            },
             onDelete = {
                 engine.deleteChat(activeFriend.id)
                 activeFriendId = null
@@ -226,13 +234,21 @@ private fun ChatList(
             // UI-7 (D-098): 132→24dp — Söhbətlər tabında nav həmişə GİZLİDİR,
             // ona görə nav üçün rezerv alt padding artıq lazım deyil
             // (D-063 vahid 132dp qaydası yalnız nav-li tablara aiddir)
-            start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
+            start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
         ),
     ) {
         item { ViewHeading(title = "Söhbətlər", subtitle = "Görüşdən əvvəl tanış olaq.") }
-        // D-115 (direktiv: „chat menyusunda yeni söhbətlər burda açılır
-        // yerini sil“): boş vəziyyət placeholder-i LƏĞV — siyahı boşdursa
-        // heç nə göstərilir (başlıq qalır).
+        // D-151 (master-spec bölmə 7): boş vəziyyət estetik EmptyState ilə
+        // göstərilir — D-115 ləğvü spec əsasında geri alındı.
+        if (joinedEvents.isEmpty() && friends.isEmpty()) {
+            item {
+                EmptyState(
+                    icon = Icons.Filled.ChatBubbleOutline,
+                    text = "Hələ söhbət yoxdur.\nTədbirə qoşul və ya match et — " +
+                        "söhbətlər burada açılır.",
+                )
+            }
+        }
         if (joinedEvents.isNotEmpty() || friends.isNotEmpty()) {
             if (joinedEvents.isNotEmpty()) {
                 item {
@@ -321,6 +337,7 @@ private fun ChatView(
     friendActions: Boolean = false,
     quickReplies: List<String> = emptyList(),
     onBlock: () -> Unit = {},
+    onUnmatch: () -> Unit = {},
     onDelete: () -> Unit = {},
     onReport: () -> Unit = {},
 ) {
@@ -386,6 +403,10 @@ private fun ChatView(
                         DropdownMenuItem(
                             text = { Text("Report et") },
                             onClick = { menuOpen = false; onReport() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Uyğunluğu ləğv et") },
+                            onClick = { menuOpen = false; onUnmatch() },
                         )
                         DropdownMenuItem(
                             text = { Text("Blokla") },

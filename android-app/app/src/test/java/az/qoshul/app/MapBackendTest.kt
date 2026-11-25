@@ -45,7 +45,7 @@ class MapBackendTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun newEngine() = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+    private fun newEngine() = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
 
     @Test
     fun `google acar olanda esas backend secilir`() {

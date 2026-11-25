@@ -71,7 +71,7 @@ class SettingsBackTabTest {
 
     @Test
     fun `profilde ayarlara girib cixanda profil qalir`() {
-        val engine = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
         val nav = NavState()
         host(nav, engine)
@@ -100,7 +100,7 @@ class SettingsBackTabTest {
 
     @Test
     fun `her iki yolla geri qayidanda tab qorunur`() {
-        val engine = AppEngine(scope = CoroutineScope(Dispatchers.Unconfined))
+        val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
         val nav = NavState()
         host(nav, engine)

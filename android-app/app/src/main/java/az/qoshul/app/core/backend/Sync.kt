@@ -113,5 +113,16 @@ fun interface SyncSink {
     fun report(event: SyncEvent)
 }
 
-/** MOCK rejimi — heç nə etmir (default; testlər deterministik qalır). */
-val NoopSync: SyncSink = SyncSink { }
+/**
+ * D-151: SyncEvent → RPC xəritəsinin çıxış kontraktı — top-level (həm
+ * [SupabaseBackend], həm MapEvent, həm JVM testləri eyni tipi görür).
+ */
+sealed interface BackendCall {
+    val fn: String
+    val params: kotlinx.serialization.json.JsonObject
+}
+
+/**
+ * D-151: MOCK rejimi silindi — NoopSync yoxdur. Konfiqurasiya tam
+ * olmadıqda [BackendSync.create] boş sink qaytarır (xəta describe()-da).
+ */

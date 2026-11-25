@@ -20,8 +20,9 @@ REPO = "Abdullayews/Qoshul.az"
 def token() -> str:
     url = subprocess.run(["git", "config", "--get", "remote.origin.url"],
                          capture_output=True, text=True).stdout.strip()
-    # URL formatı: https://x-access-token:TOKEN@github.com/...
-    m = re.search(r"https://[^:]+:([^@]+)@", url)
+    # URL formatları: https://x-access-token:TOKEN@github.com/... və ya
+    # https://TOKEN@github.com/... (hər ikisi dəstəklənir)
+    m = re.search(r"https://[^:]+:([^@]+)@", url) or re.search(r"https://([^@]+)@", url)
     return m.group(1) if m else ""
 
 

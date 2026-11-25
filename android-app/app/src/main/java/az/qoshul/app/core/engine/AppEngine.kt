@@ -1,9 +1,7 @@
 package az.qoshul.app.core.engine
 
-import az.qoshul.app.core.data.AppConfig
-import az.qoshul.app.core.data.FakeQoshulDataSource
 import az.qoshul.app.core.data.QoshulDataSource
-import az.qoshul.app.core.data.ServerSeedDataSource
+import az.qoshul.app.core.data.ServerDataSource
 import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.data.dateLabelToIso
 import az.qoshul.app.core.model.ActivityXpResult
@@ -68,10 +66,12 @@ class AppEngine(
      * məlumat BOŞDUR — data serverdən gəlir (fake seed oxunmur); MOCK
      * rejimində deterministik [FakeQoshulDataSource] (CI/test axını dəyişmir).
      */
-    val dataSource: QoshulDataSource = if (
-        az.qoshul.app.core.backend.BackendConfig.mode ==
-        az.qoshul.app.core.backend.BackendMode.SUPABASE
-    ) ServerSeedDataSource else FakeQoshulDataSource,
+    /**
+     * D-151: yalnız server mənbəyi — başlanğıc BOŞ; [applyServerData]
+     * [ServerDataSource] mutable listlərinə serverdən oxunan datanı yazır,
+     * bütün getterlər dataSource üzərindən oxuyur (fake mənbə APK-da YOXDUR).
+     */
+    val dataSource: QoshulDataSource = ServerDataSource,
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
     /**
@@ -145,9 +145,10 @@ class AppEngine(
     // proses-bayrağı əvəzinə (proseslərarası/saat-keçidi düzgün işləyir)
     private var lastLoginDayV: Long? = null
 
-    // — XP 2: Endirim (obyektə-məxsus, D-026) —
-    val venueXp: Map<String, VenueXpAccount> =
-        dataSource.initialVenueXp()
+    // — XP 2: Endirim (obyektə-məxsus, D-026) — serverdən oxunur (D-151) —
+    private val venueXpV: MutableMap<String, VenueXpAccount> =
+        dataSource.initialVenueXp().toMutableMap()
+    val venueXp: Map<String, VenueXpAccount> get() = venueXpV
 
     /**
      * A3 (M0): başlanğıc data invariantları — pozuntu SƏSSİZ deyil, qurulma
@@ -186,8 +187,10 @@ class AppEngine(
     private var xpCardVenueIdV: String? = null
 
     // — tədbirlər —
+    // D-151: başlanğıc BOŞ — applyServerData serverdən oxunan tədbirləri
+    // yazır; "e0" hardcoded demo iştirakı silindi.
     private val eventsV = dataSource.events.toMutableList()
-    private val joinedV = mutableSetOf("e0")
+    private val joinedV = mutableSetOf<String>()
     private val pendingV = mutableSetOf<String>()
     private val savedV = mutableSetOf<String>()
     private val checkedInV = mutableSetOf<String>()
@@ -417,6 +420,83 @@ class AppEngine(
      * GoTrue axını (SupabaseAuth) uğurdan sonra məhz bunu çağırır;
      * MOCK rejimində lokal simulyasiya eyni qapıdan keçir (testlər).
      */
+
+    // ═════════════════════════ D-151: server data tətbiqi ═════════════════════════
+
+    /**
+     * SupabaseReader nəticəsini engine state-inə tətbiq edir — login/
+     * refresh zamanı çağırılır. Demo data mənbəyi YOXDUR: bütün listlər
+     * serverdən gəlir, boş qalırsa UI empty state göstərir.
+     */
+    fun applyServerData(d: az.qoshul.app.core.backend.SupabaseReader.ServerData) {
+        // profil
+        d.myProfile?.let { me ->
+            firstNameV = me.firstName.ifBlank { "Dost" }
+            lastNameV = me.lastName
+            profileNameV = "${me.firstName} ${me.lastName}".trim().ifBlank { "Dost" }
+            cityV = me.city.ifBlank { cityV }
+            bioV = me.bio
+            xpV = me.xp
+            onboardedV = me.onboarded
+            photoCountV = me.photoCount
+        }
+        // listlər — ServerDataSource mutable konteynerlərinə yazılır
+        (dataSource as? ServerDataSource)?.apply {
+            eventsM.clear(); eventsM.addAll(d.events)
+            peopleM.clear(); peopleM.addAll(d.people)
+            partnersM.clear(); partnersM.addAll(d.partners)
+            offersM.clear(); offersM.addAll(
+                d.offers.map { o ->
+                    if (o.venueName.isBlank())
+                        o.copy(venueName = partnersM.firstOrNull { it.id == o.venueId }?.name ?: "")
+                    else o
+                },
+            )
+            notificationsM.clear(); notificationsM.addAll(d.notifications)
+            eventMessagesM.clear(); eventMessagesM.putAll(d.eventMessages)
+            friendMessagesM.clear(); friendMessagesM.putAll(d.friendMessagePeople)
+            venueSlotsM.clear(); venueSlotsM.putAll(d.venueSlots)
+        }
+        // D-151 düzəliş: eventsV konstruktor anında dataSource surətini çəkib
+        // dondururdu — serverdən gələn tədbirlər UI-a çatmırdı. İndi hər
+        // applyServerData-da eventsV yenidən qurulur (upcoming/eventById/
+        // activeEvents getterləri eventsV üzərindən oxuyur).
+        eventsV.clear()
+        eventsV.addAll(
+            (dataSource as? ServerDataSource)?.eventsM?.toList() ?: d.events,
+        )
+        // iştiraklar
+        joinedV.clear(); joinedV.addAll(d.joinedEventIds)
+        pendingV.clear()
+        savedV.clear(); savedV.addAll(d.savedEventIds)
+        checkedInV.clear(); checkedInV.addAll(d.checkedInEventIds)
+        // iştirakçı sayları (JOINED sayı) — eventsV-də participants sahəsi
+        val joinedCount = d.joinedEventIds + d.hostedEventIds
+        eventsV.replaceAll { e -> e.copy(participants = if (e.id in joinedCount) e.participants.coerceAtLeast(1) else e.participants) }
+        // sosial
+        matchesV.clear(); matchesV.addAll(d.matchIds)
+        blockedV.clear(); blockedV.addAll(d.blockedIds)
+        eventMessagesV.clear()
+        d.eventMessages.forEach { (k, v) -> eventMessagesV[k] = v.toMutableList() }
+        friendMessagesV.clear()
+        d.friendMessagePeople.forEach { (k, v) -> friendMessagesV[k] = v.toMutableList() }
+        notificationsV.clear(); notificationsV.addAll(d.notifications)
+        couponsV.clear(); couponsV.addAll(d.coupons)
+        reservationsV.clear(); reservationsV.addAll(d.reservations)
+        venueXpV.clear(); venueXpV.putAll(d.venueXp)
+        emit()
+    }
+
+    /** Serverdən yenidən oxu (pull-to-refresh / re-entry). */
+    fun refreshFromServer() {
+        val s = scope ?: return
+        s.launch {
+            runCatching {
+                applyServerData(az.qoshul.app.core.backend.SupabaseReader.loadAll(now()))
+            }.onFailure { az.qoshul.app.core.safety.Safety.onCaught?.invoke("refresh", it) }
+        }
+    }
+
     fun signIn() {
         signedInV = true
         emit()
@@ -452,20 +532,16 @@ class AppEngine(
         emit()
     }
 
-    /** ROL B axınının sonu: +50 XP, demo host adoptu, günlük giriş, onboarded. A2: default clock-dan. */
+    /** ROL B axınının sonu: +50 XP, günlük giriş, onboarded. A2: default clock-dan. */
     fun finishOnboarding(today: LocalDate = now().toLocalDate()) {
         completeRegistration()
         onboardedV = true
-        adoptDemoHostedEvent()
         dailyLogin(today)
         emit()
     }
 
-    /** D-026 (L.3): demo "Mafiya oyunu gecəsi" host-u real profil adı ilə. */
-    private fun adoptDemoHostedEvent() {
-        val i = eventsV.indexOfFirst { it.id == "e-mafiya" }
-        if (i >= 0) eventsV[i] = eventsV[i].copyWithHost(profileNameV)
-    }
+    // D-151: adoptDemoHostedEvent() SİLİNDİ — "e-mafiya" demo tədbiri
+    // (D-026 qalığı) server data ilə əvəz olundu; host adı serverdən gəlir.
 
     // ═════════════════════════ Profil ═════════════════════════
 
@@ -474,21 +550,18 @@ class AppEngine(
         val parts = name.trim().split(Regex("\\s+"))
         firstNameV = if (parts.isNotEmpty()) parts.first() else name
         lastNameV = if (parts.size > 1) parts.subList(1, parts.size).joinToString(" ") else ""
-        adoptDemoHostedEvent()
         emit()
     }
 
     /**
      * D-112 (profil redaktə ekranı): ad + soyad AYRI sahələr — vahid
-     * profileName törəməsi "Ad Soyad" (boş soyadda yalnız ad). Demo host
-     * adoptu saxlanılır (setProfileName pariteti).
+     * profileName törəməsi "Ad Soyad" (boş soyadda yalnız ad).
      */
     fun setProfileFullName(first: String, last: String) {
         firstNameV = first.trim()
         lastNameV = last.trim()
         profileNameV = listOf(firstNameV, lastNameV)
             .filter { it.isNotEmpty() }.joinToString(" ")
-        adoptDemoHostedEvent()
         emit()
     }
 
@@ -702,11 +775,6 @@ class AppEngine(
         return true
     }
 
-    /** Demo üçün: kart dəstini sıfırla (yalnız mock). */
-    fun resetSwipes() {
-        swipesV.clear()
-        emit()
-    }
 
     // ═════════════════════════ Rezerv (ROL E) ═════════════════════════
 
@@ -975,10 +1043,10 @@ class AppEngine(
 
         notify(
             NotifType.LEVEL_UP,
-            "+${XpRules.ORGANIZER_XP} Endirim XP qazandın",
+            "+${XpRules.ORGANIZER_XP} Endirim Qoşa Coin qazandın",
             "${acct.venueName} · „${e.title}“ bitirildi. Şəkillər obyektin " +
                 "biznes hesabına düşdü; ${taggedIds.size} iştirakçı taq edildi " +
-                "(hər birinə +${XpRules.TAGGED_PARTICIPANT_XP} XP).",
+                "(hər birinə +${XpRules.TAGGED_PARTICIPANT_XP} Qoşa Coin).",
         )
         emit()
         return result
@@ -1032,6 +1100,19 @@ class AppEngine(
         emit()
     }
 
+    /**
+     * D-151 (master-spec bölmə 3): unmatch — uyğunluğu ləğv edir. Profil
+     * aktiv matçlar və təkliflər siyahısından dərhal silinir (StateFlow
+     * real-vaxt yenilənmə), blok siyahısına DÜŞMÜR (yumşaq ləğv).
+     */
+    fun unmatch(personId: String) {
+        matchesV.remove(personId)
+        friendshipsV.remove(personId)
+        friendMessagesV.remove(personId)
+        swipesV[personId] = false
+        emit()
+    }
+
     fun unblockUser(personId: String) {
         report(SyncEvent.BlockIntent(personId, blocked = false))
         blockedV.remove(personId)
@@ -1061,7 +1142,6 @@ class AppEngine(
         report(SyncEvent.MessageIntent("EVENT", eventId, null, text))
         val list = eventMessagesV.getOrPut(eventId) { mutableListOf() }
         list.add(ChatMessage("Sən", text, mine = true))
-        mockReply(list, eventId)
         emit()
     }
 
@@ -1069,24 +1149,7 @@ class AppEngine(
         report(SyncEvent.MessageIntent("PERSONAL", null, personId, text))
         val list = friendMessagesV.getOrPut(personId) { mutableListOf() }
         list.add(ChatMessage("Sən", text, mine = true))
-        mockFriendReply(list, personId) // D-056: şəxsi söhbətdə də cavab gəlir
         emit()
-    }
-
-    /** D-056: şəxsi söhbət mock cavabı — hadisə mockReply pariteti. */
-    private fun mockFriendReply(list: MutableList<ChatMessage>, personId: String) {
-        val scope = scope ?: return // JVM testlərində avtomatik cavab bağlıdır
-        replyJobs += scope.launch {
-            delay(1400)
-            val p = personById(personId) ?: return@launch
-            val replies = listOf(
-                "Razıyam, nə vaxt görüşək?",
-                "Yaxşı fikirdir! Saat dəqiq desən, gələrəm.",
-                "Super — sözə görə!",
-            )
-            list.add(ChatMessage(p.firstName, replies[now().second % replies.size]))
-            emit()
-        }
     }
 
     /** ROL TAB 4: "Söhbəti sil" — şəxsi söhbəti bağlayır (mock). */
@@ -1096,23 +1159,7 @@ class AppEngine(
         emit()
     }
 
-    /** A10 düzəlişi: cavab Job kimi — ləğv edilə bilən, dispose-də exception yox. */
-    private fun mockReply(list: MutableList<ChatMessage>, eventId: String) {
-        val scope = scope ?: return // JVM testlərində avtomatik cavab bağlıdır
-        replyJobs += scope.launch {
-            delay(1200)
-            val e = eventById(eventId)
-            val replies = listOf(
-                "Əla, görüşərik!",
-                "Super, gözləyirəm.",
-                "Razıyam, saat dəqiqdir.",
-            )
-            list.add(ChatMessage(e?.host ?: "İştirakçı", replies[now().second % replies.size]))
-            emit()
-        }
-    }
-
-    /** Test köməkçisi: ləngimiş cavabları gözləmədən işə salır. */
+    /** Test köməkçisi: ləngimiş cavabların gözlənilməməsi üçün (keçidlilik). */
     fun deliverPendingReplies() {
         replyJobs.forEach { it.cancel() }
         replyJobs.clear()
@@ -1151,7 +1198,7 @@ class AppEngine(
                 delay(400)
                 // Yazı simulyasiyası: 24ms-də 2 simvol (Flutter pariteti).
                 var shown = ""
-                assistantMsgsV.add(ChatMessage("Köməkçi", ""))
+                assistantMsgsV.add(ChatMessage("Qoşa", ""))
                 var idx = assistantMsgsV.size - 1
                 while (shown.length < reply.length && assistantBusyV) {
                     // D-061: siyahı paralel dəyişsə (idx artıq keçərsə)
@@ -1170,20 +1217,25 @@ class AppEngine(
             }
         } else {
             // scope yoxdur (JVM test): dərhal tam cavab.
-            assistantMsgsV.add(ChatMessage("Köməkçi", reply))
+            assistantMsgsV.add(ChatMessage("Qoşa", reply))
             assistantBusyV = false
             emit()
         }
     }
 
+    /**
+     * D-151: "Qoşa" köməkçisi — LLM inteqrasiyasına qədər server datası
+     * əsaslı YERLİ köməkçi. Passiv ifadələr ("özün yaz", "özün tap") YOXDUR —
+     * Qoşa təşəbbüsü öz üzərinə götürür, aktiv təkliflər verir. Master spec
+     * bölmə 5-in tələbi.
+     */
     private fun assistantReplyFor(q: String): String {
         val lower = lowercaseAz(q)
         val wantsProposal = listOf("fikri", "fikir", "təklif", "plan", "şənbə", "bazar", "təşkil")
             .any { lower.contains(it) }
         if (wantsProposal) {
-            return "Şənbə üçün əla planım var! Yeni başlayanlar üçün asan yürüş marşrutu, " +
-                "sonrasında isə birlikdə çay. Təklifim aşağıda — bir düymə ilə tədbirə çevirə " +
-                "bilərsən.\n[TƏDBİR]{\"title\":\"Şənbə səhəri Qala yürüşü\",\"category\":\"Yürüş\"," +
+            return "Şənbə üçün hazırladığım plan: səhər yürüş, sonra birlikdə çay. " +
+                "Təklifimi bir düymə ilə tədbirə çevirə bilərsən.\n[TƏDBİR]{\"title\":\"Şənbə səhəri Qala yürüşü\",\"category\":\"Yürüş\"," +
                 "\"date\":\"${nextSaturdayIso()}\",\"time\":\"09:00\",\"capacity\":10," +
                 "\"location\":\"Qala qalası, Bakı\",\"description\":\"Qala qalası ətrafında 5 km asan " +
                 "yürüş + qala divarlarında fotopauza. Sonrasında yaxınlıqdakı kafedə çay.\"," +
@@ -1191,30 +1243,28 @@ class AppEngine(
         }
         if (lower.contains("pulsuz") || lower.contains("ödənişsiz")) {
             val free = upcoming.filter { it.price == null && it.city == cityV }.take(3)
-            if (free.isEmpty()) return "Bu şəhərdə hazırda pulsuz tədbir görmürəm. Amma özün pulsuz tədbir yarada bilərsən!"
+            if (free.isEmpty()) return "Bu şəhərdə pulsuz tədbir yoxdur — sənin üçün birini təşkil edim! " +
+                "Məsələn, parkda səhər qaçışı və ya bulvarda yürüş planlaya bilərəm. \"Fikir al\" yaz, hazırlayım."
             return "Pulsuz tədbirlər bunlardır:\n\n" +
-                free.joinToString("\n") { "• ${it.title} — ${it.date}, ${it.time} (${it.location})" }
+                free.joinToString("\n") { "• ${it.title} — ${it.date}, ${it.time} (${it.location})" } +
+                "\n\nHansını seçsən, dərhal qoşulmağını təşkil edirəm."
         }
         if (lower.contains("idman") || lower.contains("spor")) {
             val sport = upcoming.filter {
                 dataSource.groupOf(it.category) == "İdman" ||
                     dataSource.groupOf(it.category) == "Təbiət"
             }.take(3)
-            if (sport.isEmpty()) return "İdman tədbirləri hələ azdır — ilk idman görüşünü sən yarat!"
+            if (sport.isEmpty()) return "Aktiv idman tədbiri tapmadım — sənin üçün idman görüşü quraşdırım! " +
+                "Padel, qaçış və ya velosiped — hansı maraqlıdır? Dey, dəvətnaməni hazırlayım."
             return "Aktiv idman tədbirləri:\n\n" +
                 sport.joinToString("\n") { "• ${it.title} — ${it.date} ${it.time}, ${it.participants}/${it.capacity} nəfər" }
         }
-        if (lower.contains("gəncə")) {
-            val g = upcoming.filter { it.city == "Gəncə" }
-            if (g.isEmpty()) return "Gəncədə hazırda plan yoxdur — amma e9 pikniki yaxındadır, bax!"
-            return "Gəncədə olan görüşlər:\n\n" +
-                g.joinToString("\n") { "• ${it.title} — ${it.date}, ${it.time}" }
-        }
         val rec = cityEvents.take(2)
-        if (rec.isEmpty()) return "Bu şəhərdə hələ tədbir yoxdur. İlk tədbiri sən yarat — mən kömək edərəm!"
+        if (rec.isEmpty()) return "Bu şəhərdə hələ tədbir yoxdur — birlikdə ilkini təşkil edək! " +
+                "Maraqlarını yaz (məs. \"futbol, kahve\"), mən də tədbiri qurub dəvətnamə göndərim."
         return "Sənin üçün tövsiyələrim:\n\n" +
             rec.joinToString("\n") { "• ${it.title} (${it.category}) — ${it.date} ${it.time}" } +
-            "\n\nHər hansı birini seçmək istəsən, „Sənin üçün“ bölməsində AI seçimi də sınaya bilərsən."
+            "\n\nHər hansı birini seçsən, qoşulmanı dərhal edərəm. \"Sənin üçün\" bölməsindəki AI seçimlərinə də bax."
     }
 
     /** Azərbaycan hərfləri üçün lowercase (I→ı və İ→i xüsusi halları). */
@@ -1237,15 +1287,20 @@ class AppEngine(
         }
     }
 
-    /** "AI ilə seç" (Sənin üçün) — mock tövsiyə səbəbləri. */
+    /** "AI ilə seç" (Sənin üçün) — maraq uyğunluğuna görə sıralama. */
     fun aiRecommendations(): List<Pair<QoshulEvent, String>> {
-        val list = cityEvents.take(3)
-        val reasons = listOf(
-            "Profilindəki maraqlara ən yaxın tədbir.",
-            "Yaxın məsafədədir və yerlər az qalıb.",
-            "Yeni başlayanlar üçün uyğun səviyyə.",
-        )
-        return list.mapIndexed { i, e -> e to reasons.getOrElse(i) { "" } }
+        val scored = cityEvents.map { e ->
+            val group = dataSource.groupOf(e.category)
+            val interestHit = interestsV.any { it.contains(group, ignoreCase = true) }
+            e to (if (interestHit) 2 else 0) + (if (!e.isFull) 1 else 0)
+        }.sortedByDescending { it.second }.take(3)
+        return scored.map { (e, score) ->
+            e to when {
+                score >= 2 -> "Profilindəki maraqlarına uyğundur."
+                score == 1 -> "Yerlər az qalıb — tez qoşul."
+                else -> "Yeni başlayanlar üçün uyğun səviyyə."
+            }
+        }
     }
 
     /** Şəkil/qrup köməkçiləri UI üçün (D-050: mənbəyə yönəldilmiş). */

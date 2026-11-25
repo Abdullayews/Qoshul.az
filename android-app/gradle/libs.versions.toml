@@ -4,6 +4,7 @@
 #   Kotlin:     repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/maven-metadata.xml
 #   Compose BOM: dl.google.com/dl/android/maven2/androidx/compose/compose-bom/maven-metadata.xml
 [versions]
+multiplatformSettings = "1.3.0"
 agp = "9.5.0"              # son stable; Compose 1.12 (BOM 2026.09.00) AGP 9.1+ tələb edir
 kotlin = "2.4.21"         # son stable
 composeBom = "2026.09.00" # son stable BOM
@@ -77,6 +78,8 @@ supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", 
 supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt", version.ref = "gotrueKt" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKt" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
+# D-151: gotrue-kt SettingsStorage — sessiya persistence (restart-da login qalır)
+multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 # D-150: Google native sign-in — Credential Manager + Google ID
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "androidxCredentials" }
