@@ -129,7 +129,7 @@ private fun TaskRow(title: String, reward: Int, done: Boolean) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = T.body)
                 Text(
-                    if (done) "Tamamlandı ✓" else "+$reward Qoşa Coin",
+                    if (done) "Tamamlandı" else "+$reward Qoşa Coin",
                     style = T.meta.copy(
                         color = if (done) Q.primary else Q.mutedFg,
                         fontWeight = FontWeight.W600,

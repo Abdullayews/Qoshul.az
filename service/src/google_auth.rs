@@ -156,7 +156,9 @@ impl GoogleVerifier {
             .to_string();
         let alg = header["alg"].as_str().unwrap_or("RS256").to_string();
         if alg != "RS256" {
-            return Err(GoogleAuthError::InvalidToken(format!("dəstəklənməyən alg: {alg}")));
+            return Err(GoogleAuthError::InvalidToken(format!(
+                "dəstəklənməyən alg: {alg}"
+            )));
         }
 
         // ── imza + standart claim-lər (jsonwebtoken) ──
@@ -186,7 +188,7 @@ impl GoogleVerifier {
             if !raw.is_empty() {
                 let token_nonce = claims["nonce"].as_str().unwrap_or("");
                 let expected = sha256_hex(raw.as_bytes());
-                if !constant_time_eq(&token_nonce, &expected) {
+                if !constant_time_eq(token_nonce, &expected) {
                     return Err(GoogleAuthError::InvalidToken("nonce uyğunsuzluğu".into()));
                 }
             }
@@ -214,7 +216,10 @@ pub(crate) fn constant_time_eq(a: &str, b: &str) -> bool {
     if a.len() != b.len() {
         return false;
     }
-    a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+    a.bytes()
+        .zip(b.bytes())
+        .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+        == 0
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -223,8 +228,8 @@ pub(crate) fn constant_time_eq(a: &str, b: &str) -> bool {
 
 /// GoTrue admin API klienti — yalnız Google axını üçün lazım olan hissə.
 pub struct GoTrueAdmin {
-    pub base: String,          // http://supabase-auth:9999
-    pub service_key: String,   // service_role JWT
+    pub base: String,        // http://supabase-auth:9999
+    pub service_key: String, // service_role JWT
     http: reqwest::Client,
 }
 
@@ -343,7 +348,9 @@ impl GoTrueAdmin {
         }
 
         if user_id.is_empty() {
-            return Err(GoogleAuthError::GoTrue("istifadəçi yaradıla bilmədi".into()));
+            return Err(GoogleAuthError::GoTrue(
+                "istifadəçi yaradıla bilmədi".into(),
+            ));
         }
 
         // ── Addım 3: generate_link → sessiya JWT ──
@@ -416,7 +423,10 @@ impl GoTrueAdmin {
                 .as_str()
                 .unwrap_or(&user_id)
                 .to_string(),
-            email: session["user"]["email"].as_str().unwrap_or(email).to_string(),
+            email: session["user"]["email"]
+                .as_str()
+                .unwrap_or(email)
+                .to_string(),
         })
     }
 }
@@ -463,12 +473,19 @@ pub async fn verify_google(
     let claims = match verifier.verify(&req.id_token, req.nonce.as_deref()).await {
         Ok(c) => c,
         Err(GoogleAuthError::InvalidToken(m)) => {
-            return (StatusCode::UNAUTHORIZED, Json(json!({
-                "error": "INVALID_ID_TOKEN", "error_description": m})))
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({
+                "error": "INVALID_ID_TOKEN", "error_description": m})),
+            )
                 .into_response()
         }
         Err(e) => {
-            return (StatusCode::BAD_GATEWAY, Json(json!({"error": e.to_string()}))).into_response()
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(json!({"error": e.to_string()})),
+            )
+                .into_response()
         }
     };
 
@@ -500,7 +517,10 @@ pub async fn verify_google(
         }
     };
 
-    match gotrue.sign_in_google_user(&email, &name, &picture, &sub).await {
+    match gotrue
+        .sign_in_google_user(&email, &name, &picture, &sub)
+        .await
+    {
         Ok(session) => (
             StatusCode::OK,
             Json(json!({
@@ -511,7 +531,11 @@ pub async fn verify_google(
             })),
         )
             .into_response(),
-        Err(e) => (StatusCode::BAD_GATEWAY, Json(json!({"error": e.to_string()}))).into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"error": e.to_string()})),
+        )
+            .into_response(),
     }
 }
 
