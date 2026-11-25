@@ -216,50 +216,61 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 )
             }
         } else {
-            // D-150: Google düyməsi — yalnız real rejimdə və WEB client ID olanda.
+            // D-152: Google düyməsi HƏMİŞƏ görünür (istifadəçi tələbi: „google
+            // ilə giriş tam silinib, işlək olmalı idi“). WEB client ID yoxdursa
+            // düymə basıland aydın təlimat çıxır — gizlənmir.
             // Apple düyməsi silindi (mock idi; Apple developer hesabı yoxdur).
-            if (SupabaseBackend.googleAvailable) {
-                OutlinedButton(
-                    onClick = { if (!busy) googleSignIn() },
-                    enabled = !busy,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(Q.rPill),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Q.card, contentColor = Q.foreground
-                    ),
-                ) {
-                    Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Google ilə davam et", style = T.button)
-                }
-                // D-063: "və ya" ayırıcısı — xətlərlə balanslı
-                Spacer(Modifier.height(12.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .androidxAuthDivider(),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        "və ya",
-                        style = T.bodySm.copy(color = Q.mutedFg),
-                    )
-                    Spacer(Modifier.width(12.dp))
-                    Box(
-                        Modifier
-                            .weight(1f)
-                            .height(1.dp)
-                            .androidxAuthDivider(),
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = {
+                    if (!busy) {
+                        if (SupabaseBackend.googleAvailable) {
+                            googleSignIn()
+                        } else {
+                            error =
+                                "Google girişi hələ konfiqurasiya olunmayıb " +
+                                    "(GOOGLE_WEB_CLIENT_ID). İndi e-poçt və ya " +
+                                    "təsdiq kodu ilə daxil ola bilərsən."
+                        }
+                    }
+                },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(Q.rPill),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Q.card, contentColor = Q.foreground
+                ),
+            ) {
+                Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Google ilə davam et", style = T.button)
             }
+            // D-063: "və ya" ayırıcısı — xətlərlə balanslı
+            Spacer(Modifier.height(12.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(1.dp)
+                        .androidxAuthDivider(),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "və ya",
+                    style = T.bodySm.copy(color = Q.mutedFg),
+                )
+                Spacer(Modifier.width(12.dp))
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(1.dp)
+                        .androidxAuthDivider(),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
             if (mode == AuthMode.UP) {
                 FormFieldX("Ad və soyad") {
                     QoshulTextField(value = name, onValueChange = { name = it },

@@ -1,6 +1,7 @@
 package az.qoshul.app.core.engine
 
 import az.qoshul.app.core.data.QoshulDataSource
+import az.qoshul.app.core.data.Taxonomy
 import az.qoshul.app.core.data.ServerDataSource
 import az.qoshul.app.core.data.dateLabelFor
 import az.qoshul.app.core.data.dateLabelToIso
@@ -429,7 +430,7 @@ class AppEngine(
      * serverdən gəlir, boş qalırsa UI empty state göstərir.
      */
     fun applyServerData(d: az.qoshul.app.core.backend.SupabaseReader.ServerData) {
-        // profil
+        // profil — D-152: onboarding sahələri və maraqlar da bərpa olunur
         d.myProfile?.let { me ->
             firstNameV = me.firstName.ifBlank { "Dost" }
             lastNameV = me.lastName
@@ -439,6 +440,20 @@ class AppEngine(
             xpV = me.xp
             onboardedV = me.onboarded
             photoCountV = me.photoCount
+            if (me.gender.isNotBlank()) genderV = me.gender
+            if (me.status.isNotBlank()) statusV = me.status
+            if (me.university.isNotBlank()) universityV = me.university
+            if (me.languages.isNotEmpty()) languagesV = me.languages
+            if (me.goals.isNotEmpty()) goalsV = me.goals
+            if (me.groupSize.isNotBlank()) groupSizeV = me.groupSize
+            if (me.budget.isNotBlank()) budgetV = me.budget
+            if (me.availability.isNotEmpty()) availabilityV = me.availability
+            if (me.interests.isNotEmpty()) {
+                // slug → insan-oxunan ad (Taxonomy əks xəritəsi)
+                interestsV = me.interests.map { slug ->
+                    Taxonomy.allCategories.firstOrNull { c -> slugifyCategory(c) == slug } ?: slug
+                }
+            }
         }
         // listlər — ServerDataSource mutable konteynerlərinə yazılır
         (dataSource as? ServerDataSource)?.apply {
@@ -489,7 +504,12 @@ class AppEngine(
 
     /** Serverdən yenidən oxu (pull-to-refresh / re-entry). */
     fun refreshFromServer() {
+        // D-152: yalnız real konfiqurasiyada (istehsal). Test engine-ləri
+        // (FakeData fixture, PLACEHOLDER build) seeded state-i qoruyur —
+        // boş server data ilə üzərinə yazılmır.
         val s = scope ?: return
+        if (!az.qoshul.app.core.backend.BackendConfig.isConfigured) return
+        if (az.qoshul.app.core.backend.SupabaseBackend.client == null) return
         s.launch {
             runCatching {
                 applyServerData(az.qoshul.app.core.backend.SupabaseReader.loadAll(now()))
@@ -497,9 +517,17 @@ class AppEngine(
         }
     }
 
+    /**
+     * Giriş + D-152: dərhal serverdən data yüklə.
+     * ƏVVƏLKİ BUG: signIn() yalnız signedInV=true edirdi — data heç vaxt
+     * yüklənmirdi, istifadəçi boş ekranlar görürdü („Supabase qoşulmayıb“).
+     * Artıq hər giriş yolu (email/OTP/Google/sessiya-bərpası) avtomatik
+     * refresh alır.
+     */
     fun signIn() {
         signedInV = true
         emit()
+        refreshFromServer()
     }
 
     // D-149: signInDemo() SİLİNDİ — vahid hardcoded demo hesabı (D-050
@@ -525,11 +553,26 @@ class AppEngine(
         bioV = bioText
         photoCountV = photos
         emit()
+        // D-152: onboarding addımı serverə PERSIST olunur (restart-da itmir)
+        report(
+            SyncEvent.SaveProfileIntent(
+                firstName = first.ifBlank { null },
+                lastName = last.ifBlank { null },
+                birthDateIso = birth.toString(),
+                gender = gdr.ifBlank { null },
+                bio = bioText.ifBlank { null },
+                photoCount = photos,
+            ),
+        )
     }
 
     fun setInterests(intr: List<String>) {
         interestsV = intr
         emit()
+        // D-152: maraqlar serverdə atomik əvəz olunur (slug-larla)
+        report(
+            SyncEvent.SaveProfileIntent(interests = intr.map { slugifyCategory(it) }),
+        )
     }
 
     /** ROL B axınının sonu: +50 XP, günlük giriş, onboarded. A2: default clock-dan. */
@@ -538,7 +581,27 @@ class AppEngine(
         onboardedV = true
         dailyLogin(today)
         emit()
+        // D-152: onboarded=true serverdə qeyd alınır — restart-dan sonra
+        // istifadəçi bir daha onboarding görmür; şəhər/status və s. də
+        // bu son paketdə göndərilir (boş olmayanlar).
+        report(
+            SyncEvent.SaveProfileIntent(
+                firstName = firstNameV.takeIf { it.isNotBlank() && it != "Dost" },
+                lastName = lastNameV.takeIf { it.isNotBlank() },
+                city = cityV.takeIf { it.isNotBlank() },
+                status = statusV.takeIf { it.isNotBlank() },
+                gender = genderV.takeIf { it.isNotBlank() },
+                bio = bioV.takeIf { it.isNotBlank() },
+                onboarded = true,
+            ),
+        )
     }
+
+    /**
+     * Kategoria adı → slug (serverdə categories.slug FK qaydası; D-152).
+     * Dəqiq xəritə [Taxonomy.slugOf] — seed ilə birebir (89 kateqoriya).
+     */
+    private fun slugifyCategory(name: String): String = Taxonomy.slugOf(name)
 
     // D-151: adoptDemoHostedEvent() SİLİNDİ — "e-mafiya" demo tədbiri
     // (D-026 qalığı) server data ilə əvəz olundu; host adı serverdən gəlir.
@@ -563,17 +626,28 @@ class AppEngine(
         profileNameV = listOf(firstNameV, lastNameV)
             .filter { it.isNotEmpty() }.joinToString(" ")
         emit()
+        // D-152: profil redaktə persistensiya
+        report(
+            SyncEvent.SaveProfileIntent(
+                firstName = firstNameV.takeIf { it.isNotEmpty() },
+                lastName = lastNameV.takeIf { it.isNotEmpty() },
+            ),
+        )
     }
 
     /** D-112: profil şəkli seçimi — imagePaint açarı. */
     fun setAvatar(key: String) {
         avatarV = key
         emit()
+        // D-152: avatar serverdə photo_urls[0] kəimi saxlanılır
+        report(SyncEvent.SetAvatarIntent(key))
     }
 
     fun setCity(name: String) {
         cityV = name
         emit()
+        // D-152: şəhər dəyişimi serverə yazılır
+        report(SyncEvent.SaveProfileIntent(city = name.takeIf { it.isNotBlank() }))
     }
 
     fun setMapVisibility(v: MapVisibility) {

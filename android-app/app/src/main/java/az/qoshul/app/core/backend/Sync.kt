@@ -106,6 +106,38 @@ sealed interface SyncEvent {
 
     /** fn_set_notif_pref. */
     data class NotifPrefIntent(val notifType: String, val enabled: Boolean) : SyncEvent
+
+    /**
+     * fn_save_profile (D-152) — onboarding + profil redaktə persistensiyası.
+     * Bütün sahələr optional-dır: yalnız DƏYİŞƏN sahələr göndərilir;
+     * null = serverdə dəyişməz. [interests] — kateqoriya SLUG-ları
+     * (Taxonomy-dən: "Futbol" → "futbol"). onboarded serverdə yalnız
+     * irəliləyir (geri düşməz).
+     */
+    data class SaveProfileIntent(
+        val firstName: String? = null,
+        val lastName: String? = null,
+        val birthDateIso: String? = null,
+        val gender: String? = null,
+        val bio: String? = null,
+        val photoCount: Int? = null,
+        val city: String? = null,
+        val status: String? = null,
+        val university: String? = null,
+        val workField: String? = null,
+        val languages: List<String>? = null,
+        val goals: List<String>? = null,
+        val personality: Map<String, Int>? = null,
+        val availability: List<String>? = null,
+        val groupSize: String? = null,
+        val budget: String? = null,
+        val onboarded: Boolean? = null,
+        val profileCompleted: Boolean? = null,
+        val interests: List<String>? = null,
+    ) : SyncEvent
+
+    /** fn_set_avatar (D-152) — profil şəkli açarı. */
+    data class SetAvatarIntent(val imageKey: String) : SyncEvent
 }
 
 /** Güzgü çıxışı — implementasiyalar bloklamamalı, heç vaxt atılmamalıdır. */

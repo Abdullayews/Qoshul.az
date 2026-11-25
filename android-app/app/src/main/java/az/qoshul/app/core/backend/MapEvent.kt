@@ -101,13 +101,40 @@ internal fun mapEventImpl(e: SyncEvent): BackendCall? = when (e) {
     is SyncEvent.MessageIntent ->
         rpcCall(
             "fn_send_message", "p_kind" to e.kind,
-            "p_event_id" to e.eventId, "p_recipient_id" to e.personId, "p_body" to e.body,
+            "p_event_id" to e.eventId,
+            "p_recipient_id" to e.personId, // UUID string; null EVENT mesajlarında JsonNull gedir
+            "p_body" to e.body,
         )
     is SyncEvent.InviteIntent -> rpcCall("fn_create_invite")
     is SyncEvent.LocationUpdateIntent ->
         rpcCall("fn_update_location", "p_lat" to e.lat, "p_lng" to e.lng)
     is SyncEvent.NotifPrefIntent ->
         rpcCall("fn_set_notif_pref", "p_notif_type" to e.notifType, "p_enabled" to e.enabled)
+    is SyncEvent.SaveProfileIntent -> rpcCall(
+        "fn_save_profile",
+        "p_first_name" to e.firstName,
+        "p_last_name" to e.lastName,
+        "p_birth_date" to e.birthDateIso,
+        "p_gender" to e.gender,
+        "p_bio" to e.bio,
+        "p_photo_count" to e.photoCount,
+        "p_city" to e.city,
+        "p_status" to e.status,
+        "p_university" to e.university,
+        "p_work_field" to e.workField,
+        "p_languages" to e.languages,
+        "p_goals" to e.goals,
+        "p_personality" to e.personality?.let { p ->
+            kotlinx.serialization.json.buildJsonObject { p.forEach { (k, v) -> put(k, v) } }
+        },
+        "p_availability" to e.availability,
+        "p_group_size" to e.groupSize,
+        "p_budget" to e.budget,
+        "p_onboarded" to e.onboarded,
+        "p_profile_completed" to e.profileCompleted,
+        "p_interests" to e.interests,
+    )
+    is SyncEvent.SetAvatarIntent -> rpcCall("fn_set_avatar", "p_image_key" to e.imageKey)
 }
 
 internal data class RpcCall(
@@ -119,6 +146,10 @@ private fun rpcCall(fn: String, vararg pairs: Pair<String, Any?>): RpcCall {
     val obj = buildJsonObject {
         for ((k, v) in pairs) {
             when (v) {
+                // D-152 qərarı: null açarlar ÇIXARILIR (PostgREST default
+                // parametr dəyərləri tətbiq olunur; köhnə testlərin
+                // kontraktı da bundır). PGRST202 yalnız imza uyğunsuzluğunda
+                // baş verirdi — 0007-də bütün p_* default null-dır.
                 null -> {}
                 is Number -> put(k, v)
                 is Boolean -> put(k, v)

@@ -155,4 +155,31 @@ class SupabaseMapTest {
     @Test fun `claim share intent`() {
         assertEquals("fn_claim_share", fn(SyncEvent.ClaimShareIntent("shr-abc")))
     }
+
+    @Test fun `save profile intent — D-152 fn_save_profile`() {
+        // D-152: onboarding/profil redaktə persistensiyası — yalnız DOLU
+        // sahələr gedir, null-lar çıxarılır (server default null qəbul edir).
+        val c = SupabaseSync.mapEvent(
+            SyncEvent.SaveProfileIntent(
+                firstName = "Aysel", lastName = "Quliyeva",
+                city = "Bakı", onboarded = true,
+                interests = listOf("futbol", "stolustu-tennis"),
+            ))!!
+        assertEquals("fn_save_profile", c.fn)
+        assertEquals("Aysel", c.params["p_first_name"]!!.toString().trim('"'))
+        assertEquals("Bakı", c.params["p_city"]!!.toString().trim('"'))
+        assertEquals("true", c.params["p_onboarded"]!!.toString())
+        // maraqlar SLUG kimi gedir (serverdə categories.slug FK)
+        val ints = c.params["p_interests"]!!.toString()
+        assertTrue(ints.contains("futbol") && ints.contains("stolustu-tennis"))
+        // boş sahələr (null) ÇIXARILIR
+        assertNull(c.params["p_bio"])
+        assertNull(c.params["p_gender"])
+    }
+
+    @Test fun `set avatar intent — fn_set_avatar`() {
+        val c = SupabaseSync.mapEvent(SyncEvent.SetAvatarIntent("coffee"))!!
+        assertEquals("fn_set_avatar", c.fn)
+        assertEquals("coffee", c.params["p_image_key"]!!.toString().trim('"'))
+    }
 }

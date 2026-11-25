@@ -71,7 +71,7 @@ object SupabaseReader {
         val venueSlots: Map<String, List<String>> = emptyMap(),
     )
 
-    /** Mənim profilim (profiles cədvəlim). */
+    /** Mənim profilim (profiles cədvəlim) — D-152: onboarding sahələri + maraqlar. */
     data class MyProfile(
         val id: String,
         val firstName: String,
@@ -81,6 +81,16 @@ object SupabaseReader {
         val xp: Int,
         val onboarded: Boolean,
         val photoCount: Int,
+        val gender: String = "",
+        val status: String = "",
+        val university: String = "",
+        val workField: String = "",
+        val languages: List<String> = emptyList(),
+        val goals: List<String> = emptyList(),
+        val groupSize: String = "",
+        val budget: String = "",
+        val availability: List<String> = emptyList(),
+        val interests: List<String> = emptyList(),
     )
 
     private val DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -265,9 +275,16 @@ object SupabaseReader {
     private suspend fun readMyProfile(): MyProfile? {
         val c = SupabaseBackend.client ?: return null
         val rows: List<JsonObject> = c.postgrest.from("profiles")
-            .select(Columns.raw("id,first_name,last_name,city,bio,xp,onboarded,photo_count"))
+            .select(Columns.raw("id,first_name,last_name,city,bio,xp,onboarded,photo_count," +
+                "gender,status,university,work_field,languages,goals,group_size,budget,availability"))
             .decodeAs()
         val p = rows.firstOrNull() ?: return null
+        // D-152: maraqlar (user_interests) ayrı cədvəldən oxunur
+        val interests: List<String> = runCatching {
+            val irows: List<JsonObject> = c.postgrest.from("user_interests")
+                .select(Columns.raw("category_slug")).decodeAs()
+            irows.mapNotNull { it["category_slug"]?.jsonPrimitive?.contentOrNull }
+        }.getOrElse { emptyList() }
         return runCatching {
             MyProfile(
                 id = p["id"]!!.jsonPrimitive.content,
@@ -278,6 +295,17 @@ object SupabaseReader {
                 xp = p["xp"]?.jsonPrimitive?.intOrNull ?: 0,
                 onboarded = p["onboarded"]?.jsonPrimitive?.booleanOrNull ?: false,
                 photoCount = p["photo_count"]?.jsonPrimitive?.intOrNull ?: 0,
+                gender = p["gender"]?.jsonPrimitive?.contentOrNull ?: "",
+                status = p["status"]?.jsonPrimitive?.contentOrNull ?: "",
+                university = p["university"]?.jsonPrimitive?.contentOrNull ?: "",
+                workField = p["work_field"]?.jsonPrimitive?.contentOrNull ?: "",
+                languages = p["languages"]?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
+                goals = p["goals"]?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
+                groupSize = p["group_size"]?.jsonPrimitive?.contentOrNull ?: "",
+                budget = p["budget"]?.jsonPrimitive?.contentOrNull ?: "",
+                availability = p["availability"]?.jsonArray
+                    ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
+                interests = interests,
             )
         }.getOrNull()
     }

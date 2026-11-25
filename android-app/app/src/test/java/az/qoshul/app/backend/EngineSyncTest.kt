@@ -151,4 +151,22 @@ class EngineSyncTest {
             // normal URL usable-dır
         } else throw AssertionError("real URL usable olmalıdır")
     }
+
+    @Test fun `finishOnboarding SaveProfileIntent çıxarır (D-152)`() {
+        val rec = RecordingSync()
+        val e = engine(rec)
+        e.setProfileCreation("Aysel", "Quliyeva", java.time.LocalDate.of(2000, 5, 10), gdr = "qadın")
+        e.setInterests(listOf("Futbol", "Qəhvə"))
+        e.finishOnboarding()
+        // onboarding boyunca 3 SaveProfileIntent gedir: creation + interests + finish
+        val saves = rec.events.filterIsInstance<SyncEvent.SaveProfileIntent>()
+        assertTrue("ən azı 3 save intent", saves.size >= 3)
+        // finish paketində onboarded=true olmalıdır
+        val finish = saves.last()
+        assertTrue(finish.onboarded == true)
+        assertTrue(finish.firstName == "Aysel")
+        // maraqlar SLUG kimi (server categories.slug FK)
+        val interests = saves[1].interests!!
+        assertTrue(interests.contains("futbol"))
+    }
 }

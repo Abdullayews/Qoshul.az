@@ -174,9 +174,9 @@ detallar `supabase/testdata/README.md`-də.
 
 ### 1b) Google Sign-In — aktivləşdirmə (D-150/D-151)
 
-Tətbiqdə Google düyməsi iki şərtə görünür: `SupabaseBackend.googleAvailable`
-= Supabase konfiqurasiyası tam **və** `GOOGLE_WEB_CLIENT_ID` doludur.
-Google düyməsi görünmürsə, bu addımları edin:
+D-152: Google düyməsi girişdə HƏMİŞƏ görünür. `GOOGLE_WEB_CLIENT_ID`
+dolana qədər düymə basılanda aydın təlimat çıxır (e-poçt/OTP həmişə işləyir).
+ID-ni aktivləşdirmək üçün:
 
 1. **Google Cloud Console** → yeni layihə (və ya mövcud) → *APIs & Services → Credentials*.
 2. **Android OAuth klienti** yaradın: paket `az.qoshul.app` + imzalama SHA-1
