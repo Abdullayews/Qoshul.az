@@ -396,40 +396,80 @@ impl GoTrueAdmin {
             token,
             urlencoding::encode("https://supabase.qoshul.com")
         );
+        // D-158: GoTrue /verify YALNIZ GET qəbul edir (POST → 400 bad_json)
+        // və uğurda 302 redirect qaytarır — Location başlığında (və ya
+        // fallback HTML bədənində) #access_token=...&refresh_token=...
+        // fragment-i olur. JSON gözləmək yanlış idi (köhnə 502-nin səbəbi).
         let resp = self
             .http
-            .post(&verify_url)
+            .get(&verify_url)
             .headers(self.headers())
             .timeout(std::time::Duration::from_secs(10))
             .send()
             .await
             .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
         let status = resp.status();
-        let session: Value = resp
-            .json()
-            .await
-            .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
-        if !status.is_success() {
+        // Location başlığı birincil mənbədir; yoxdursa bədəndəki HTML-dən
+        // href çıxarırıq (browser olmayan klient üçün fallback).
+        let location = resp
+            .headers()
+            .get("location")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+        let html = resp.text().await.unwrap_or_default();
+        if !status.is_success()
+            && status != reqwest::StatusCode::FOUND
+            && status != reqwest::StatusCode::SEE_OTHER
+        {
             return Err(GoogleAuthError::GoTrue(format!(
                 "verify {} → {}",
                 status,
-                session["msg"].as_str().unwrap_or("?")
+                extract_query_param(&html, "msg").unwrap_or_else(|| "?".into())
             )));
         }
+        let redirect_url = location
+            .clone()
+            .or_else(|| extract_href_from_html(&html))
+            .ok_or_else(|| {
+                GoogleAuthError::GoTrue("verify cavabında redirect linki yoxdur".into())
+            })?;
+        // fragment: ...#access_token=...&refresh_token=...&expires_in=...
+        let fragment = redirect_url
+            .split_once('#')
+            .map(|(_, f)| f.to_string())
+            .unwrap_or_default();
+        let params = format!("?{fragment}");
+        let access_token =
+            extract_query_param(&params, "access_token").unwrap_or_default();
+        let refresh_token =
+            extract_query_param(&params, "refresh_token").unwrap_or_default();
+        if access_token.is_empty() || refresh_token.is_empty() {
+            return Err(GoogleAuthError::GoTrue(
+                "verify redirectində access/refresh token yoxdur".into(),
+            ));
+        }
+        let expires_in = extract_query_param(&params, "expires_in")
+            .and_then(|v| v.parse::<i64>().ok())
+            .unwrap_or(3600);
 
         Ok(GoTrueSession {
-            access_token: session["access_token"].as_str().unwrap_or_default().into(),
-            refresh_token: session["refresh_token"].as_str().unwrap_or_default().into(),
-            expires_in: session["expires_in"].as_i64().unwrap_or(3600),
-            user_id: session["user"]["id"]
-                .as_str()
-                .unwrap_or(&user_id)
-                .to_string(),
-            email: session["user"]["email"]
-                .as_str()
-                .unwrap_or(email)
-                .to_string(),
+            access_token,
+            refresh_token,
+            expires_in,
+            user_id,
+            email: email.to_string(),
         })
+    }
+}
+
+/// HTML fallback: `<a href="URL#access_token=...">` içindən URL çıxarır.
+fn extract_href_from_html(html: &str) -> Option<String> {
+    let h = html.split_once("href=\"")?.1;
+    let url = h.split_once('"')?.0;
+    if url.contains("access_token=") {
+        Some(url.to_string())
+    } else {
+        None
     }
 }
 
@@ -624,5 +664,37 @@ mod tests {
     fn gotrue_admin_base_trim() {
         let g = GoTrueAdmin::new("http://supabase-auth:9999/", "key");
         assert_eq!(g.base, "http://supabase-auth:9999");
+    }
+
+    #[test]
+    fn href_extraction_from_verify_html() {
+        // D-158: GoTrue /verify uğurda HTML redirect səhifəsi qaytarır —
+        // `<a href="https://...#access_token=..&refresh_token=..">`
+        let html = "<html><head></head><body><a href=\"https://supabase.qoshul.com#access_token=eyJ.abc&refresh_token=rt1&expires_in=3600\">...</a></body></html>";
+        let url = extract_href_from_html(html).expect("href çıxmalıdır");
+        assert!(url.contains("#access_token="));
+
+        // fragment parçalanması
+        let fragment = url.split_once('#').unwrap().1;
+        let params = format!("?{fragment}");
+        assert_eq!(
+            extract_query_param(&params, "access_token").unwrap(),
+            "eyJ.abc"
+        );
+        assert_eq!(
+            extract_query_param(&params, "refresh_token").unwrap(),
+            "rt1"
+        );
+        assert_eq!(
+            extract_query_param(&params, "expires_in").unwrap(),
+            "3600"
+        );
+    }
+
+    #[test]
+    fn href_extraction_rejects_plain_links() {
+        // access_token olmayan href → None (yanlış_positive qorunması)
+        assert!(extract_href_from_html("<a href=\"https://x.com/just\">t</a>").is_none());
+        assert!(extract_href_from_html("href=\"").is_none());
     }
 }
