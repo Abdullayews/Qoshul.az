@@ -219,6 +219,24 @@ APK imzası ilə eynidir.
 
 Email + şifrə və email-OTP yolları Google-dan asılı deyil — həmişə işləyir.
 
+### 1c) D-157 — Web klient ID quraşdırıldı (2026-11-26)
+
+Google Auth Platform-da **Web application** tipli klient yaradıldı
+(redirect: `https://qoshul.com/redirect`, origin: `https://qoshul.com`;
+native axında redirect istifadə olunmur — yeni UI boş qəbul etmir).
+Quraşdırılmış dəyərlər:
+
+- `.env` (supabase): `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=<web_id>,<android_id>`
+  (WEB birinci — Credential Manager token-inin aud-i WEB ID-dir)
+- `service/.env.m4`: `GOOGLE_WEB_CLIENT_ID=<web_id>`,
+  `GOOGLE_CLIENT_IDS=<web_id>,<android_id>` (vergüllü aud siyahısı)
+- Canlı test: `GET /m4/config` → `google_web_client_id` dolu;
+  GoTrue `token?grant_type=id_token` → „Bad ID token" (provider aktiv,
+  sadəcə saxta token göndərildi) — istifadəçi axını hazır.
+- Mövcud e-poçtlu hesab + Google girişi → **eyni hesab açılır**
+  (M4 email ilə axtarır → yoxdursa yaradır; GoTrue auto-link
+  `email_confirm`li hesablarda dublikat yaratmır).
+
 ### 2) qoshul-service — axum mikroservisi (M4, D-082)
 
 **Quraşdırma:** Rust stable tələb olunur.
