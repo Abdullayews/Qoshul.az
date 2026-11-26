@@ -439,10 +439,8 @@ impl GoTrueAdmin {
             .map(|(_, f)| f.to_string())
             .unwrap_or_default();
         let params = format!("?{fragment}");
-        let access_token =
-            extract_query_param(&params, "access_token").unwrap_or_default();
-        let refresh_token =
-            extract_query_param(&params, "refresh_token").unwrap_or_default();
+        let access_token = extract_query_param(&params, "access_token").unwrap_or_default();
+        let refresh_token = extract_query_param(&params, "refresh_token").unwrap_or_default();
         if access_token.is_empty() || refresh_token.is_empty() {
             return Err(GoogleAuthError::GoTrue(
                 "verify redirectində access/refresh token yoxdur".into(),
@@ -670,7 +668,12 @@ mod tests {
     fn href_extraction_from_verify_html() {
         // D-158: GoTrue /verify uğurda HTML redirect səhifəsi qaytarır —
         // `<a href="https://...#access_token=..&refresh_token=..">`
-        let html = "<html><head></head><body><a href=\"https://supabase.qoshul.com#access_token=eyJ.abc&refresh_token=rt1&expires_in=3600\">...</a></body></html>";
+        let html = concat!(
+            "<html><head></head><body>",
+            "<a href=\"https://supabase.qoshul.com",
+            "#access_token=eyJ.abc&refresh_token=rt1&expires_in=3600\">",
+            "...</a></body></html>"
+        );
         let url = extract_href_from_html(html).expect("href çıxmalıdır");
         assert!(url.contains("#access_token="));
 
