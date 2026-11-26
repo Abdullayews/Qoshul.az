@@ -324,8 +324,17 @@ impl GoTrueAdmin {
                 "admin/users axtarış {status}"
             )));
         }
+        // D-162: bu GoTrue versiyasında ?email= filtri İŞLƏMİR — sorğu
+        // həmişə siyahının ilk user-ini qaytarır. Qayıdan email soruşulanla
+        // müqayisə olunur; uyğün deyilsə user tapılmamış sayılır.
         let mut user_id = body["users"][0]["id"]
             .as_str()
+            .filter(|_| {
+                body["users"][0]["email"]
+                    .as_str()
+                    .map(|e| e.eq_ignore_ascii_case(email))
+                    .unwrap_or(false)
+            })
             .unwrap_or_default()
             .to_string();
 
@@ -396,8 +405,15 @@ impl GoTrueAdmin {
                         "admin/users təkrar axtarış {status}"
                     )));
                 }
+                // D-162: email müqayisəsi burada da (filtri işləmir).
                 user_id = body["users"][0]["id"]
                     .as_str()
+                    .filter(|_| {
+                        body["users"][0]["email"]
+                            .as_str()
+                            .map(|e| e.eq_ignore_ascii_case(email))
+                            .unwrap_or(false)
+                    })
                     .unwrap_or_default()
                     .to_string();
             }
@@ -444,10 +460,16 @@ impl GoTrueAdmin {
         let action_link = body["action_link"].as_str().unwrap_or_default();
         let token = extract_query_param(action_link, "token")
             .ok_or_else(|| GoogleAuthError::GoTrue("action_link-də token yoxdur".into()))?;
+        // D-162: yeni istifadəçi üçün GoTrue type=signup tokeni qaytarır;
+        // magiclink verify edəndə 403 "One-time token not found" verir.
+        // Həll: action_link-in ÖZ type parametrindən istifadə et.
+        let link_type = extract_query_param(action_link, "type")
+            .unwrap_or_else(|| "magiclink".into());
         let verify_url = format!(
-            "{}/verify?token={}&type=magiclink&redirect_to={}",
+            "{}/verify?token={}&type={}&redirect_to={}",
             self.base,
             token,
+            link_type,
             urlencoding::encode("https://supabase.qoshul.com")
         );
         // D-158: GoTrue /verify YALNIZ GET qəbul edir (POST → 400 bad_json)

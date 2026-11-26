@@ -34,9 +34,6 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.gotrue.SettingsSessionManager
-import io.github.jan.supabase.gotrue.SessionSource
-import io.github.jan.supabase.gotrue.user.UserInfo
-import io.github.jan.supabase.gotrue.user.UserSession
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -69,18 +66,6 @@ import java.util.UUID
  * klientə heç vaxt düşmür.
  */
 object SupabaseBackend {
-
-    /** D-155: M4 verify cavabı (Google axını). */
-    @Serializable
-    data class M4GoogleUser(val id: String = "", val email: String = "")
-
-    @Serializable
-    data class M4GoogleSession(
-        val access_token: String,
-        val refresh_token: String,
-        val expires_in: Long = 3600,
-        val user: M4GoogleUser = M4GoogleUser(),
-    )
 
     /** JVM testləri üçün açıq (şəbəkə çağırışı YOXDUR — yalnız konstruksiya). */
     val client: SupabaseClient? = runCatching {
@@ -192,40 +177,16 @@ object SupabaseBackend {
         val googleIdToken = GoogleIdTokenCredential
             .createFrom(result.credential.data).idToken
 
-        // Kanonik yol (D-156): GoTrue IDToken grant — GoTrue client_id
-        // siyahısında WEB ID birincidir; ən təmiz axın (Supabase rəsmi).
-        // Uğursuzsa (GoTrue hələ WEB ID tanımırsa) → M4 verify fallback
-        // (öz JWKS doğrulamamız — aud siyahısında hər iki ID ola bilər).
-        try {
-            requireClient().auth.signInWith(IDToken) {
-                idToken = googleIdToken
-                provider = Google
-                nonce = rawNonce
-            }
-        } catch (e: Exception) {
-            val session = m4VerifyGoogleToken(googleIdToken, rawNonce)
-            requireClient().auth.importSession(
-                UserSession(
-                    accessToken = session.access_token,
-                    refreshToken = session.refresh_token,
-                    providerRefreshToken = null,
-                    providerToken = null,
-                    expiresIn = session.expires_in,
-                    tokenType = "bearer",
-                    user = UserInfo(
-                        id = session.user.id,
-                        email = session.user.email,
-                        aud = "authenticated",
-                        role = "authenticated",
-                    ),
-                    type = "m4_google",
-                    expiresAt = kotlinx.datetime.Instant.fromEpochSeconds(
-                        System.currentTimeMillis() / 1000 + session.expires_in
-                    ),
-                ),
-                false,
-                SessionSource.External,
-            )
+        // D-162: YEGƏNƏ yol — GoTrue IDToken grant (Supabase rəsmi axını),
+        // app → GoTrue birbaşa (m4 aralıq qatı girişdən tam çıxarılıb).
+        // Səbəb: m4 axını 3 dəfə fərqli bug verdi (Bearer 401 → 502;
+        // admin email filtri işləmir → yanlış user; yeni user üçün
+        // type=signup tokeni type=magiclink ilə verify → 403 → 502).
+        // Xəta artıq yox, istifadəçiyə aydın göstərilir (502 sirri bitir).
+        requireClient().auth.signInWith(IDToken) {
+            idToken = googleIdToken
+            provider = Google
+            nonce = rawNonce
         }
     }
 
@@ -248,35 +209,6 @@ object SupabaseBackend {
             }
         } catch (_: Exception) {
             // Şəbəkə xətası — sessiya açıq deyil, sadəcə BuildConfig qalır
-        } finally {
-            http.close()
-        }
-    }
-
-    /** D-155: M4 /auth/google/verify çağırışı (ktor CIO — əlavə native asılılıq YOX). */
-    private suspend fun m4VerifyGoogleToken(
-        idToken: String,
-        rawNonce: String,
-    ): M4GoogleSession {
-        val http = HttpClient(CIO)
-        try {
-            val body = buildJsonObject {
-                put("id_token", idToken)
-                put("nonce", rawNonce)
-            }
-            val resp = http.post(BackendConfig.m4Url + "/auth/google/verify") {
-                header("apikey", BackendConfig.supabaseAnonKey)
-                header("Content-Type", "application/json")
-                setBody(body.toString())
-            }
-            val text = resp.bodyAsText()
-            if (!resp.status.isSuccess()) {
-                val desc = runCatching {
-                    Json.parseToJsonElement(text).jsonObject["error_description"]?.toString()
-                }.getOrNull() ?: "HTTP ${resp.status.value}"
-                throw IllegalStateException("Google doğrulama alınmadı: $desc")
-            }
-            return Json { ignoreUnknownKeys = true }.decodeFromString(text)
         } finally {
             http.close()
         }
