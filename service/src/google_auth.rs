@@ -266,10 +266,20 @@ impl GoTrueAdmin {
     }
 
     fn headers(&self) -> reqwest::header::HeaderMap {
+        // D-160: authorization başlığı MUTLƏQ "Bearer <token>" formatında
+        // olmalıdır — GoTrue admin API Bearer'sız raw token qəbul etmir
+        // (401). Bu, köhnə 502-nin əsl səbəbi idi: bütün admin sorğular 401
+        // alırdı, users boş qayıdırdı və axın "istifadəçi yaradıla bilmədi"
+        // xətası ilə 502 verirdi.
         let mut h = reqwest::header::HeaderMap::new();
         if let Ok(k) = reqwest::header::HeaderValue::from_str(&self.service_key) {
-            h.insert("apikey", k.clone());
-            h.insert("authorization", k);
+            h.insert("apikey", k);
+        }
+        if let Ok(b) = reqwest::header::HeaderValue::from_str(&format!(
+            "Bearer {}",
+            self.service_key
+        )) {
+            h.insert("authorization", b);
         }
         h
     }
@@ -298,10 +308,22 @@ impl GoTrueAdmin {
             .send()
             .await
             .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
+        let status = resp.status();
         let body: Value = resp
             .json()
             .await
             .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
+        if !status.is_success() {
+            // D-160: statusu logla — sükutla boş users oxumaq 502-yə gətirib
+            // çıxarırdı (auth başlığı xətası görünməz qalırdı).
+            eprintln!(
+                "[google-auth] admin/users axtarış {status}: {}",
+                body["msg"].as_str().unwrap_or("?")
+            );
+            return Err(GoogleAuthError::GoTrue(format!(
+                "admin/users axtarış {status}"
+            )));
+        }
         let mut user_id = body["users"][0]["id"]
             .as_str()
             .unwrap_or_default()
@@ -326,12 +348,27 @@ impl GoTrueAdmin {
                 .send()
                 .await
                 .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
-            if resp.status().is_success() {
+            let create_status = resp.status();
+            if create_status.is_success() {
                 let body: Value = resp
                     .json()
                     .await
                     .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
                 user_id = body["id"].as_str().unwrap_or_default().to_string();
+            } else if create_status.as_u16() != 422 {
+                // 422 = email artıq mövcuddur (normal hal); digər xətalar
+                // loglanır — sükutla keçmək diagnozu çətinləşdirirdi.
+                let body: Value = resp
+                    .json()
+                    .await
+                    .unwrap_or_else(|_| json!({"msg": "?"}));
+                eprintln!(
+                    "[google-auth] createUser {create_status}: {}",
+                    body["msg"].as_str().unwrap_or("?")
+                );
+                return Err(GoogleAuthError::GoTrue(format!(
+                    "createUser {create_status}"
+                )));
             }
             // 422 (email mövcuddur) → addım 1-də tapılmamış deməkdir —
             // bu, yalnız list filter uyuşmazlığı ola bilər; bir də axtar.
@@ -345,10 +382,20 @@ impl GoTrueAdmin {
                     .send()
                     .await
                     .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
+                let status = resp.status();
                 let body: Value = resp
                     .json()
                     .await
                     .map_err(|e| GoogleAuthError::GoTrue(e.to_string()))?;
+                if !status.is_success() {
+                    eprintln!(
+                        "[google-auth] admin/users təkrar axtarış {status}: {}",
+                        body["msg"].as_str().unwrap_or("?")
+                    );
+                    return Err(GoogleAuthError::GoTrue(format!(
+                        "admin/users təkrar axtarış {status}"
+                    )));
+                }
                 user_id = body["users"][0]["id"]
                     .as_str()
                     .unwrap_or_default()

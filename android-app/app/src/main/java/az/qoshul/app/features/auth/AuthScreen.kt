@@ -20,12 +20,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GMobiledata
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -245,7 +243,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             // ilə giriş tam silinib, işlək olmalı idi“). WEB client ID yoxdursa
             // düymə basıland aydın təlimat çıxır — gizlənmir.
             // Apple düyməsi silindi (mock idi; Apple developer hesabı yoxdur).
-            OutlinedButton(
+            // D-161: rəsmi Google brand stili — ağ fon, G loqosu, boz örtük.
+            androidx.compose.material3.Button(
                 onClick = {
                     if (!busy) {
                         if (SupabaseBackend.googleAvailable) {
@@ -261,14 +260,29 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(Q.rPill),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Q.card, contentColor = Q.foreground
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color.White,
+                    contentColor = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+                ),
+                elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
                 ),
             ) {
-                Icon(Icons.Filled.GMobiledata, null, modifier = Modifier.height(22.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Google ilə davam et", style = T.button)
+                Icon(
+                    androidx.compose.ui.res.painterResource(
+                        az.qoshul.app.R.drawable.ic_google_g
+                    ),
+                    contentDescription = "Google",
+                    modifier = Modifier.height(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    "Google ilə davam et",
+                    style = T.button.copy(
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.W600
+                    ),
+                )
             }
             // D-063: "və ya" ayırıcısı — xətlərlə balanslı
             Spacer(Modifier.height(12.dp))
