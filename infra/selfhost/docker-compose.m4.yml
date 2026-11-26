@@ -1,0 +1,57 @@
+# Qoshul.az — M4 mikroservisi (service/) compose faylı (D-165).
+#
+# NİYƏ VAR: root README §1b bu fayla istinad edirdi, amma repo-da YOX İDİ —
+# m4 deploy-u əl ilə (`cargo run` + yadda saxlanmış env-lər) aparılırdı.
+# Yenidən deploy olanda GOOGLE_WEB_CLIENT_ID konteynerə düşmürdü → m4
+# /config null qaytarırdı → APK köhnə BuildConfig ID-yə səssizcə düşürdü
+# → Credential Manager 28444 (D-155/D-156-dakı xətanın özü). Bu fayl deploy-u
+# idempotent edir: bütün lazımlı env-lər bircə yerdən gəlir.
+#
+# İstifadə (repo kökündən):
+#   cd infra/selfhost
+#   cp ../../service/.env.example ../../service/.env   # 🔶 doldur (aşağıda)
+#   docker compose -f docker-compose.m4.yml --env-file ../../service/.env up -d --build
+#
+# QEYD: şəbəkə — `supabase_default` (əsas compose-un layihə adı `supabase`).
+# EXTERNAL olduğundan əsas stack ƏVVƏLDƏN qalxmalıdır (docker compose up -d).
+# Köhnə təlimatdakı əl ilə `docker network connect supabase_default qoshul-m4`
+# lazım deyil — konteyner şəbəkəyə avtomatik qoşulur (envoy `qoshul-m4`
+# hostname-i ilə görür, cds.yaml qoshul-m4 clusteri).
+#
+# 🔶 service/.env-dəki dəyərlər (service/.env.example):
+#   SUPABASE_SERVICE_ROLE_KEY  — .env (selfhost) SERVICE_ROLE_KEY
+#   ADMIN_TOKEN                 — openssl rand -hex 32
+#   GOOGLE_WEB_CLIENT_ID        — Google Cloud „Web application“ klient ID
+#   GOOGLE_CLIENT_IDS           — web_id,android_id (vergüllü aud siyahısı)
+#   FCM_SERVICE_ACCOUNT_JSON    — push aktiv olanda (PLACEHOLDER → söndürülü)
+
+name: qoshul-m4
+
+services:
+  m4:
+    container_name: qoshul-m4
+    image: qoshul-m4:latest
+    build:
+      context: ../../service
+      dockerfile: Dockerfile.m4
+    restart: unless-stopped
+    networks:
+      - supabase
+    environment:
+      PORT: 8080
+      # docker şəbəkəsi daxilindən API gateway (envoy). Host-dan cargo run
+      # üçün bu dəyəri http://127.0.0.1:8000 ilə əvəz et (api-gw 127.0.0.1-də).
+      SUPABASE_URL: ${M4_SUPABASE_URL:-http://api-gw:8000}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON}
+      # D-156/D-165: dinamik WEB klient ID — /config APK-ya bunu ötürür;
+      # PLACEHOLDER → /config null qaytarır (APK BuildConfig-a düşür).
+      GOOGLE_WEB_CLIENT_ID: ${GOOGLE_WEB_CLIENT_ID}
+      # D-155/D-156: vergüllü aud siyahısı (web_id,android_id).
+      GOOGLE_CLIENT_IDS: ${GOOGLE_CLIENT_IDS}
+
+networks:
+  supabase:
+    name: supabase_default
+    external: true

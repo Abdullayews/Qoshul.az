@@ -181,32 +181,61 @@ detallar `supabase/testdata/README.md`-də.
 client ID“). Android tipli ID qoyulanda Google Play services axını
 başlatmır — sorğu serverə heç çatmır.
 
-**Həll — 2 komponent:**
+**Həll — 3 komponent:**
 
 1. **Console-da Web klient ID yaratmaq (yalnız sahib edə bilər):**
    - console.cloud.google.com → layihə → „APIs & Services → Credentials“
    - „+ Create Credentials → OAuth client ID“ → **Web application**
    - Heç bir Restriction lazım deyil (redirect URI boş qala bilər —
      native axın IDToken grant istifadə edir, redirect istifadə olunmur)
-   - Yaradılan `XXXX.apps.googleusercontent.com` ID-ni **serverə yazın:
-     `/home/ubuntu/Qoshul.az/service/.env.m4` → `GOOGLE_WEB_CLIENT_ID=…`**
-     (və `GOOGLE_CLIENT_IDS=web_id,android_id` — vergüllü) sonra
-     `docker compose -f docker-compose.m4.yml -p selfhost up -d && docker network connect supabase_default qoshul-m4`
-   - Supabase GoTrue üçün: `.env` → `GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=web_id,android_id`
-     (WEB ID birinci!) → `docker compose restart supabase-auth`
+   - Yaradılan `XXXX.apps.googleusercontent.com` ID-ni İKİ yerə yazın:
+     - **repo secret `GOOGLE_WEB_CLIENT_ID`** (GitHub → Settings →
+       Secrets and variables → Actions) — APK-nın BuildConfig fallback-i
+       (D-165: köhnə secret Web klient yaradılmazdan ƏVVƏL qoyulduğundan
+       ANDROID tipli ID daşıyırdı → m4 fetch alınmayanda tətbiq səssizcə
+       ona düşüb 28444 verirdi);
+     - **m4 servisinin env-i** (aşağıdakı docker-compose.m4.yml + service/.env
+       → `GOOGLE_WEB_CLIENT_ID=…`, `GOOGLE_CLIENT_IDS=web_id,android_id`)
+   - Supabase GoTrue üçün `.env`-də BÜTÜN Google bloku (dörd sətir —
+     D-165-də canlı serverdə REDIRECT_URLS-un unudulduğu görüldü):
+     ```dotenv
+     GOTRUE_EXTERNAL_GOOGLE_ENABLED=true
+     GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID=web_id,android_id   # WEB birinci!
+     GOTRUE_EXTERNAL_GOOGLE_SECRET=<client secret>
+     GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS=https://supabase.qoshul.com/auth/v1/callback
+     ```
+     → `docker compose restart supabase-auth`
+   - **Canlı yoxlama** (hamısı HTTPS 200 / gözlənilən cavab verməlidir):
+     ```bash
+     curl -s -H "apikey: $ANON_KEY" https://supabase.qoshul.com/m4/config
+     #   → {"google_web_client_id":"…apps.googleusercontent.com",…}
+     curl -s -H "apikey: $ANON_KEY" \
+       "https://supabase.qoshul.com/auth/v1/authorize?provider=google&redirect_to=https://qoshul.com"
+     #   → 302 (Location: accounts.google.com/…) — „missing redirect URI“
+     #     yoxdursa GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URLS boşdur (D-165-də belə idi)
+     ```
 
-2. **APK artıq dinamikdir (v0.55.1+):** WEB ID APK-ya build-time yazılmır —
-   app açılışında `GET /m4/config` → `google_web_client_id` oxunur
-   (`BackendConfig.adoptGoogleWebClientId`). Console-da ID yaradıldıqdan
-   sonra **yalnız server env yenilənir, yeni APK lazım DEYİL.**
+2. **APK dinamikdir (v0.55.1+), fallback-i düzgündür (D-165+):** WEB ID
+   APK-ya build-time yazılmır — AuthScreen açılışında və hər düymə
+   klikləməsində `GET /m4/config` → `google_web_client_id` oxunur
+   (`BackendConfig.adoptGoogleWebClientId`). Serverdən ID gəlməsə
+   BuildConfig (repo secret) qalır — D-165-dən hər ikisi WEB ID daşıyır.
+   Console-da ID dəyişəndə yalnız server env + repo secret yenilənir.
 
-**Axın (kanonik + fallback):**
+3. **m4 deploy-u reprodüklənəbiləndir (D-165):** `infra/selfhost/docker-compose.m4.yml`
+   — bütün Google env-ləri bir yerdə, `supabase_default` şəbəkəsinə avtomatik
+   qoşulma (əl ilə `docker network connect` YOX):
+   ```bash
+   cd infra/selfhost
+   cp ../../service/.env.example ../../service/.env   # 🔶 doldurun
+   docker compose -f docker-compose.m4.yml --env-file ../../service/.env up -d --build
+   ```
+
+**Axın (D-162-dən: yalnız kanonik yol — m4 girişə qarışmır):**
 ```
-app → /m4/config → WEB ID (dinamik)
+app → /m4/config → WEB ID (dinamik; uğursuzsa BuildConfig=secret)
 app → Credential Manager (serverClientId = WEB ID) → id_token
-app → GoTrue signInWith(IDToken)            ← kanonik (Supabase rəsmi)
-     └ uğursuzsa → POST /m4/auth/google/verify  ← M4 fallback
-        (Google JWKS RS256 + nonce → GoTrue admin sessiya)
+app → GoTrue signInWith(IDToken) — POST /auth/v1/token?grant_type=id_token
 ```
 
 M4 `GOOGLE_CLIENT_IDS` vergüllü aud siyahısıdır — WEB ID gələndə

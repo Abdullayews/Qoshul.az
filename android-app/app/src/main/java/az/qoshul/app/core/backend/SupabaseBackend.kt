@@ -192,12 +192,20 @@ object SupabaseBackend {
 
     /**
      * D-156: M4 /config — dinamik Google WEB klient ID (28444 həlli).
-     * APK yeniləmədən sonra da ID serverdən gəlir; uğursuzluqda səssizcə
-     * BuildConfig dəyərinə qalır (null isə googleReady=false).
+     * APK yeniləmədən sonra da ID serverdən gəlir; uğursuzluqda
+     * BuildConfig dəyəri qalır (null isə googleReady=false).
+     *
+     * D-165: uğursuzluq ARTIQ SƏSSİZ deyil — [Safety.onCaught]-a düşür.
+     * Köhnə `catch (_: Exception)` məhz 28444-ü gizlədirdi: repo secret-i
+     * (GOOGLE_WEB_CLIENT_ID) vaxtından əvvəl — Web klient hələ yaradılmamış
+     * — qoyulduğundan ANDROID tipli ID daşıyırdı; m4 fetch-i alınmayanda
+     * app səssizcə ona düşürdü və Credential Manager 28444 qaytarırdı.
+     *
+     * @return true — /config-dən WEB ID gəldi ([BackendConfig]a yazıldı).
      */
-    suspend fun fetchGoogleConfig() {
+    suspend fun fetchGoogleConfig(): Boolean {
         val http = HttpClient(CIO)
-        try {
+        return try {
             val resp = http.get(BackendConfig.m4Url + "/config") {
                 header("apikey", BackendConfig.supabaseAnonKey)
             }
@@ -206,9 +214,23 @@ object SupabaseBackend {
                 BackendConfig.adoptGoogleWebClientId(
                     (el["google_web_client_id"] as? JsonPrimitive)?.content
                 )
+                BackendConfig.googleWebClientId != null
+            } else {
+                if (BackendConfig.isConfigured) {
+                    Safety.onCaught?.invoke(
+                        "fetchGoogleConfig",
+                        IllegalStateException("m4 /config HTTP ${resp.status.value}"),
+                    )
+                }
+                false
             }
-        } catch (_: Exception) {
-            // Şəbəkə xətası — sessiya açıq deyil, sadəcə BuildConfig qalır
+        } catch (t: Exception) {
+            // Şəbəkə xətası — sessiya açıq deyil, BuildConfig qalır; amma
+            // səssiz udma YOX (D-165): fork PLACEHOLDER buildi xaric loglanır.
+            if (BackendConfig.isConfigured) {
+                Safety.onCaught?.invoke("fetchGoogleConfig", t)
+            }
+            false
         } finally {
             http.close()
         }
@@ -223,7 +245,11 @@ object SupabaseBackend {
         client?.auth?.signOut()
     }
 
-    /** Google düyməsi görünmə şərti (D-156): dinamik — m4 /config VEYA BuildConfig. */
+    /**
+     * Google düyməsi görünmə şərti (D-156): dinamik — m4 /config VEYA BuildConfig.
+     * D-165: artıq GATE deyil (düymə həmişə görünür, googleSignIn fetch-i
+     * öz içində çağırır) — yalnız cari vəziyyət göstəricisi.
+     */
     val googleAvailable: Boolean
         get() = BackendConfig.isConfigured && BackendConfig.googleReady
 

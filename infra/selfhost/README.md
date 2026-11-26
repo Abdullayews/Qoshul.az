@@ -134,14 +134,23 @@ SUPABASE_ANON_KEY=<.env içindəki ANON_KEY — generate-keys.sh çıxışı>
 BACKEND_MODE=SUPABASE
 ```
 
-M4 mikroservisi (eyni hostda, docker şəbəkəsi daxilindən):
+M4 mikroservisi (eyni hostda, docker şəbəkəsi daxilindən) — D-165-dən
+reprodüklənə bilən compose faylı ilə (`docker-compose.m4.yml`, bu qovluqda;
+env mənbəyi `service/.env` — `service/.env.example`-dən):
 
 ```bash
-SUPABASE_URL=http://api-gw:8000 \
-SUPABASE_SERVICE_ROLE_KEY=<SERVICE_ROLE_KEY> \
-ADMIN_TOKEN=<openssl rand -hex 32> \
-cargo run --release   # service/ qovluğundan — yaxud öz konteynerində
+cd infra/selfhost
+cp ../../service/.env.example ../../service/.env   # 🔶 SUPABASE_SERVICE_ROLE_KEY,
+                                                   # ADMIN_TOKEN, GOOGLE_* doldur
+docker compose -f docker-compose.m4.yml --env-file ../../service/.env up -d --build
+# şəbəkə supabase_default-a avtomatik qoşulur (əl ilə network connect YOX)
 ```
+
+Köhnə yol (host-da `cargo run`) hələ işləyir, amma env-lər əl ilə
+eksport olunmalıdır (`set -a; source service/.env; set +a; cargo run --release`)
+— binary heç bir .env faylını ÖZÜ oxumur (dotenv yoxdur). Host-dan işə
+salarkən `SUPABASE_URL=http://127.0.0.1:8000` (api-gw 127.0.0.1-də);
+container-də default `http://api-gw:8000`.
 
 ## 6. Gündəlik əməliyyatlar
 

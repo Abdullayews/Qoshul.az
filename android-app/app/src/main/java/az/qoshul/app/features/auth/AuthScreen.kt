@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,14 +85,26 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     // D-151: vahid SupabaseBackend (app-scope, sessiya persistence ilə).
     val isServer = BackendConfig.isConfigured
 
+    // D-165: /m4/config proaktiv istiləşdirmə — googleAvailable gate-indən
+    // ƏVVƏL dinamik WEB ID gəlsin. Köhnə axında fetch yalnız googleSignIn
+    // daxilində idi, googleSignIn isə yalnız googleAvailable=true olanda
+    // çağırılırdı → BuildConfig boş olanda toy-toyum: düymə heç vaxt
+    // fetch-i çağıra bilmir, „hələ konfiqurasiya olunmayıb“ deyirdi.
+    LaunchedEffect(isServer) {
+        if (isServer) {
+            runCatching { SupabaseBackend.fetchGoogleConfig() }
+        }
+    }
+
     /**
-     * D-150 → D-156: Google Credential Manager axını. WEB client ID m4
-     * /config-dən dinamik gəlir (serverdə dəyişilir, APK yenilənmir);
-     * uğursuzsa BuildConfig dəyəri. 28444 = Console-da Web klient ID
-     * hələ yaradılmayıb — istifadəçiyə dəqiq deyilir, nə edəcəyi var.
+     * D-150 → D-156 → D-165: Google Credential Manager axını. WEB client ID
+     * m4 /config-dən dinamik gəlir (serverdə dəyişilir, APK yenilənmir);
+     * uğunsuzsa BuildConfig dəyəri. D-165: fetch həmişə çağırılır —
+     * googleAvailable gate-i fetch-dən əvvəl toy-toyum yaradırdı.
+     * 28444 = Console-da Web klient ID hələ yaradılmayıb — istifadəçiyə
+     * dəqiq deyilir, nə edəcəyi var.
      */
     fun googleSignIn() {
-        if (!SupabaseBackend.googleAvailable) return
         scope.launch {
             busy = true; error = null
             try {
@@ -244,17 +257,13 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
             // düymə basıland aydın təlimat çıxır — gizlənmir.
             // Apple düyməsi silindi (mock idi; Apple developer hesabı yoxdur).
             // D-161: rəsmi Google brand stili — ağ fon, G loqosu, boz örtük.
+            // D-165: klik həmişə googleSignIn-ə gedir (fetch orada, daxildədir)
+            // — köhnə else budağı googleAvailable=false olanda fetch-i heç
+            // çağırmırdı (toy-toyum).
             androidx.compose.material3.Button(
                 onClick = {
                     if (!busy) {
-                        if (SupabaseBackend.googleAvailable) {
-                            googleSignIn()
-                        } else {
-                            error =
-                                "Google girişi hələ konfiqurasiya olunmayıb " +
-                                    "(GOOGLE ID). İndi e-poçt və ya " +
-                                    "təsdiq kodu ilə daxil ola bilərsən."
-                        }
+                        googleSignIn()
                     }
                 },
                 enabled = !busy,

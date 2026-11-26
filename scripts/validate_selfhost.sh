@@ -43,6 +43,12 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
       "${args[@]}" config --quiet || fail "compose config: ${label}"
     pass "compose config: ${label}"
   done
+  # D-165: m4 compose-u ayrıca validasiya (env mənbəyi service/.env.example —
+  # bütün GOOGLE_* dəyərləri PLACEHOLDER-dur, compose config buna baxmaz)
+  docker compose -f "${SELFHOST}/docker-compose.m4.yml" \
+    --env-file "${REPO_ROOT}/service/.env.example" config --quiet \
+    || fail "compose config: m4"
+  pass "compose config: m4"
 else
   echo "  SKIP: docker yoxdur (yalnız statik yoxlamalar aparıldı)"
 fi
