@@ -251,10 +251,17 @@ pub struct GoTrueSession {
 
 impl GoTrueAdmin {
     pub fn new(base: &str, service_key: &str) -> Self {
+        // D-158: /verify 303 redirect qaytarır; onu İZLƏMƏMƏK lazımdır —
+        // Location başlığındakı #access_token fragment-i client tərəfdə
+        // itir. Policy::none → cavab birbaşa bizə gəlir.
+        let http = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
         Self {
             base: base.trim_end_matches('/').to_string(),
             service_key: service_key.to_string(),
-            http: reqwest::Client::new(),
+            http,
         }
     }
 
