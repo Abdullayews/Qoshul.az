@@ -261,8 +261,8 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(Q.rPill),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = androidx.compose.ui.graphics.Color.White,
-                    contentColor = androidx.compose.ui.graphics.Color(0xFF1F1F1F),
+                    containerColor = Q.googleBtnBg,
+                    contentColor = Q.googleBtnFg,
                 ),
                 elevation = androidx.compose.material3.ButtonDefaults.buttonElevation(
                     defaultElevation = 0.dp,

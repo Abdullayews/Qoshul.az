@@ -111,6 +111,11 @@ object Q {
     val qrLight = Color(0xFFFFFFFF)       // QR işıq modulları (skan oxunuşu üçün ağ)
     val destructiveFg = Color(0xFFFFFFFF) // destructive konteynerin məzmunu
 
+    // D-161: rəsmi Google giriş düyməsi (ağ fon + qara mətn) — brand
+    // tələbi: bütün modlarda SABİT rənglər (Google logo öz rəngini daşıyır).
+    val googleBtnBg = Color(0xFFFFFFFF)   // Google düymə fonu
+    val googleBtnFg = Color(0xFF1F1F1F)   // Google düymə mətni
+
     // „mənim yerim“ göstəricisi (xəritə)
     var myLocation by mutableStateOf(Color(0xFF2D7FF9))
         private set
