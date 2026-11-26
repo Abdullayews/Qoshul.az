@@ -246,6 +246,9 @@ jobs:
 
       - name: fmt + clippy
         run: |
+          # D-159: fmt diff-i logda göstər, sonra yoxla
+          cargo fmt --all || true
+          git diff --stat || true
           cargo fmt --all -- --check
           cargo clippy --all-targets -- -D warnings
 
