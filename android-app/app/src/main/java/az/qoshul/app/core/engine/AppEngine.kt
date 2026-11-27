@@ -734,6 +734,10 @@ class AppEngine(
     fun finishOnboarding(today: LocalDate = now().toLocalDate()) {
         completeRegistration()
         onboardedV = true
+        // D-181: onboarding TAMAMLANDI → profil qərarı VERİLDİ (MainActivity
+        // !profileLoaded qapısı loading göstərir; lokal onboarding axınında
+        // server profil oxunuşu olmur — sonsuz spinner qarşısı)
+        profileLoadedV = true
         dailyLogin(today)
         emit()
         // D-152: onboarded=true serverdə qeyd alınır — restart-dan sonra
