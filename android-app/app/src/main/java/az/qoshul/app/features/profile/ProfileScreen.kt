@@ -173,7 +173,7 @@ fun ProfileScreen(
                     st.city + " · " + engine.statusLabel(st.status) +
                         (if (st.university.isNotEmpty()) " · ${st.university}"
                          else if (st.workField.isNotEmpty()) " · ${st.workField}" else ""),
-                    style = T.subtitle, modifier = Modifier.padding(horizontal = 20.dp),
+                    style = T.subtitle,
                 )
             }
         }

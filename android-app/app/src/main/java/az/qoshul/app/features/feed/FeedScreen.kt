@@ -261,7 +261,7 @@ private fun ForYouView(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 16.dp),
+                    .padding(top = 4.dp, bottom = 16.dp),
             ) {
                 Box(Modifier.weight(1f)) {
                     SearchBarField(

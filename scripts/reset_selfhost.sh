@@ -84,7 +84,8 @@ select f from (
   select '0001_schema.sql' f union all select '0002_server_rules.sql' union all
   select '0003_seed.sql' union all select '0004_audit_fixes.sql' union all
   select '0005_fn_match_candidates_fix.sql' union all select '0006_server_hardening.sql' union all
-  select '0007_profile_persistence.sql' union all select '0008_google_profile_autofill.sql'
+  select '0007_profile_persistence.sql' union all select '0008_google_profile_autofill.sql' union all
+  select '0009_leave_and_saved_events.sql'
 ) t
 where f <= (select max(filename) from (
   select regexp_replace(basename, '.*\/', '') as filename from (

@@ -484,7 +484,9 @@ class AppEngine(
         )
         // iştiraklar
         joinedV.clear(); joinedV.addAll(d.joinedEventIds)
-        pendingV.clear()
+        // D-169: approval gözləyən iştiraklar serverdən bərpa olunur
+        // (əvvəl PENDING joined-a qatılırdı — „Təsdiq gözləyir“ çipi itirdi)
+        pendingV.clear(); pendingV.addAll(d.pendingEventIds)
         savedV.clear(); savedV.addAll(d.savedEventIds)
         checkedInV.clear(); checkedInV.addAll(d.checkedInEventIds)
         // iştirakçı sayları (JOINED sayı) — eventsV-də participants sahəsi
@@ -690,6 +692,10 @@ class AppEngine(
     fun join(id: String): Boolean {
         val e = eventById(id) ?: return false
         if (e.past || e.isFull || joinedV.contains(id)) return false
+        // D-169: qoşulma SERVER-ə gedir (əvvəl yalnız lokal idi —
+        // restart-da iştirak İTİRDİ; server FULL/PAST/approval yoxlaması
+        // avtoritativdir, lokal optimistic UI dərhal göstərir)
+        report(SyncEvent.JoinEventIntent(id))
         if (e.approval) {
             pendingV.add(id)
         } else {
@@ -701,11 +707,16 @@ class AppEngine(
     }
 
     fun leave(id: String) {
+        // D-169: çıxış serverdə (status LEFT) — əvvəl yalnız lokal idi
+        report(SyncEvent.LeaveEventIntent(id))
         joinedV.remove(id)
+        pendingV.remove(id)
         emit()
     }
 
     fun toggleSave(id: String) {
+        // D-169: saxla/sil serverdə (saved_events) — əvvəl yalnız lokal idi
+        report(SyncEvent.SaveEventIntent(id))
         if (!savedV.remove(id)) savedV.add(id)
         emit()
     }

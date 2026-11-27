@@ -39,6 +39,19 @@ class SupabaseMapTest {
         assertNull(SupabaseSync.mapEvent(SyncEvent.XpAwarded("join-e1", 10, "award")))
     }
 
+    // D-169: join/leave/save server axını (əvvəl yalnız lokal idilər)
+    @Test fun `leave intent fn_leave_event params`() {
+        val c = SupabaseSync.mapEvent(SyncEvent.LeaveEventIntent("evt1"))!!
+        assertEquals("fn_leave_event", c.fn)
+        assertEquals("evt1", c.params["p_event_id"]!!.toString().trim('"'))
+    }
+
+    @Test fun `save intent fn_save_event params`() {
+        val c = SupabaseSync.mapEvent(SyncEvent.SaveEventIntent("evt2"))!!
+        assertEquals("fn_save_event", c.fn)
+        assertEquals("evt2", c.params["p_event_id"]!!.toString().trim('"'))
+    }
+
     @Test fun `buy coupon intent fn_buy_coupon`() {
         val c = SupabaseSync.mapEvent(SyncEvent.BuyCouponIntent("o1"))!!
         assertEquals("fn_buy_coupon", c.fn)

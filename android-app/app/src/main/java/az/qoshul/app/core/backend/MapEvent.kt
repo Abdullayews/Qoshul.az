@@ -24,6 +24,10 @@ internal fun mapEventImpl(e: SyncEvent): BackendCall? = when (e) {
         rpcCall("fn_record_swipe", "p_target_id" to e.targetId, "p_interested" to e.interested)
     is SyncEvent.JoinEventIntent ->
         rpcCall("fn_join_event", "p_event_id" to e.eventId)
+    is SyncEvent.LeaveEventIntent ->
+        rpcCall("fn_leave_event", "p_event_id" to e.eventId)
+    is SyncEvent.SaveEventIntent ->
+        rpcCall("fn_save_event", "p_event_id" to e.eventId)
     is SyncEvent.CheckInIntent ->
         rpcCall(
             "fn_check_in_event", "p_event_id" to e.eventId,

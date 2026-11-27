@@ -186,7 +186,7 @@ fun EventsScreen(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 10.dp)
+                        .padding(top = 4.dp, bottom = 10.dp)
                 ) {
                     SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir və ya şəhər axtar...")
                 }
@@ -383,7 +383,7 @@ fun EventsScreen(
             host = pickHost,
             panelModifier = Modifier.align(Alignment.TopStart)
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 0.dp),
             maxHeight = 376.dp,
         )
         detailEvent?.let { ev ->

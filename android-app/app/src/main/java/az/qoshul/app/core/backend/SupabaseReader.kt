@@ -55,6 +55,7 @@ object SupabaseReader {
         val partners: List<Partner> = emptyList(),
         val offers: List<CouponOffer> = emptyList(),
         val joinedEventIds: Set<String> = emptySet(),
+        val pendingEventIds: Set<String> = emptySet(),  // D-169: approval gözləyənlər ayrıca
         val savedEventIds: Set<String> = emptySet(),
         val checkedInEventIds: Set<String> = emptySet(),
         val hostedEventIds: Set<String> = emptySet(),
@@ -104,7 +105,7 @@ object SupabaseReader {
         val people = runCatching { readPeople() }.getOrElse { emptyList() }
         val myProfile = runCatching { readMyProfile() }.getOrNull()
         val participations = runCatching { readParticipations() }
-            .getOrElse { Triple(emptySet(), emptySet(), emptySet()) }
+            .getOrElse { Participation(emptySet(), emptySet(), emptySet(), emptySet()) }
         val hosted = runCatching { readHostedEventIds() }.getOrElse { emptySet() }
         val matches = runCatching { readMatches() }.getOrElse { emptySet() }
         val blocks = runCatching { readBlocks() }.getOrElse { emptySet() }
@@ -120,9 +121,10 @@ object SupabaseReader {
         return d.copy(
             events = events, partners = partners, offers = offers, people = people,
             myProfile = myProfile,
-            joinedEventIds = participations.first,
-            savedEventIds = participations.second,
-            checkedInEventIds = participations.third,
+            joinedEventIds = participations.joined,
+            pendingEventIds = participations.pending,
+            savedEventIds = participations.saved,
+            checkedInEventIds = participations.checkedIn,
             hostedEventIds = hosted,
             matchIds = matches, blockedIds = blocks,
             eventMessages = messages.first, friendMessagePeople = messages.second,
@@ -312,24 +314,36 @@ object SupabaseReader {
 
     // ── İştiraklarım ──
 
-    private suspend fun readParticipations(): Triple<Set<String>, Set<String>, Set<String>> {
-        val c = SupabaseBackend.client ?: return Triple(emptySet(), emptySet(), emptySet())
+    /** D-169: iştirak vəziyyəti — JOINED/PENDING/checkedIn/saved birlikdə. */
+    data class Participation(
+        val joined: Set<String>, val pending: Set<String>,
+        val checkedIn: Set<String>, val saved: Set<String>,
+    )
+
+    private suspend fun readParticipations(): Participation {
+        val c = SupabaseBackend.client ?: return Participation(emptySet(), emptySet(), emptySet(), emptySet())
         val rows: List<JsonObject> = c.postgrest.from("event_participants")
             .select(Columns.raw("event_id,status,checked_in_at"))
             .decodeAs()
         val joined = mutableSetOf<String>()
+        val pending = mutableSetOf<String>()
         val checkedIn = mutableSetOf<String>()
-        val saved = mutableSetOf<String>()
         for (r in rows) {
             val ev = r["event_id"]?.jsonPrimitive?.contentOrNull ?: continue
             when (r["status"]?.jsonPrimitive?.contentOrNull) {
                 "JOINED" -> joined.add(ev)
-                "PENDING" -> joined.add(ev) // gözləyən də siyahıda görünür
-                "SAVED" -> saved.add(ev)
+                "PENDING" -> pending.add(ev)  // D-169: approval gözləyənlər ayrıca
+                // LEFT iştirak siyahısına düşmür (tarixçə yalnız serverdə)
             }
             if (r["checked_in_at"]?.jsonPrimitive?.contentOrNull != null) checkedIn.add(ev)
         }
-        return Triple(joined, saved, checkedIn)
+        // D-169: saxlanılanlar ayrı cədvəldən (0009) — köhnə "SAVED" status
+        // heç vaxt yazılmırdı; saved_events RLS ilə yalnız sahibi oxuyur
+        val savedRows: List<JsonObject> = runCatching {
+            c.postgrest.from("saved_events").select(Columns.raw("event_id")).decodeAs()
+        }.getOrDefault(emptyList())
+        val saved = savedRows.mapNotNull { it["event_id"]?.jsonPrimitive?.contentOrNull }.toSet()
+        return Participation(joined, pending, checkedIn, saved)
     }
 
     private suspend fun readHostedEventIds(): Set<String> {

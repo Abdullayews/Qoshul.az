@@ -234,7 +234,7 @@ private fun ChatList(
             // UI-7 (D-098): 132→24dp — Söhbətlər tabında nav həmişə GİZLİDİR,
             // ona görə nav üçün rezerv alt padding artıq lazım deyil
             // (D-063 vahid 132dp qaydası yalnız nav-li tablara aiddir)
-            start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
+            start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
         ),
     ) {
         item { ViewHeading(title = "Söhbətlər", subtitle = "Görüşdən əvvəl tanış olaq.") }

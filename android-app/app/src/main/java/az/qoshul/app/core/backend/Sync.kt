@@ -24,6 +24,12 @@ sealed interface SyncEvent {
     /** fn_join_event — FULL/PAST/approval yoxlamaları serverdə. */
     data class JoinEventIntent(val eventId: String) : SyncEvent
 
+    /** D-169: fn_leave_event — tədbirdən çıxış serverdə (status LEFT). */
+    data class LeaveEventIntent(val eventId: String) : SyncEvent
+
+    /** D-169: fn_save_event — saxla/sil toggle serverdə. */
+    data class SaveEventIntent(val eventId: String) : SyncEvent
+
     /** fn_check_in_event — B1: 200 m ST_DWithin serverdə; GPS koordinatı varsa. */
     data class CheckInIntent(val eventId: String, val lat: Double?, val lng: Double?) : SyncEvent
 

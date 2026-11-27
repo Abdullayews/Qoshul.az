@@ -71,7 +71,7 @@ fun CouponsScreen(engine: AppEngine, nav: NavState) {
         Column(mod.fillMaxSize()) {
             LazyColumn(
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 0.dp, end = 0.dp, top = 21.dp, bottom = 24.dp
+                    start = 20.dp, end = 20.dp, top = 21.dp, bottom = 24.dp
                 ),
             ) {
                 item {
