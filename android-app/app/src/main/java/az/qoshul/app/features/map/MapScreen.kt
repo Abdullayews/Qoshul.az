@@ -279,7 +279,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
         // G.5 (D-170): geo-suz insanlar (0.0, 0.0) xəritədə GÖRÜNMÜR —
         // SupabaseReader belələrini (0,0) ilə yazır; null-island pinləri
         // istifadəçini aldatmalı deyil
-        .filter { p -> !(p.lat == 0.0 && p.lng == 0.0) }
+        .filter { p -> !(p.mapLat == 0.0 && p.mapLng == 0.0) }
         .map { MapPin.PersonP(it) }
     // D-155: lay filtri — pin kompozisiyası seçilən laya görə
     val pins = when (mapLayer) {
