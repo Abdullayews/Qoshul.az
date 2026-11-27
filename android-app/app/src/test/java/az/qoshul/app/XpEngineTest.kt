@@ -622,7 +622,7 @@ class XpEngineTest {
         assertTrue(st.assistantError.isNotEmpty())
     }
 
-    @Test fun `parseAssistantEvent server [TƏDBİR] formatını parse edir (parser qalır)`() {
+    @Test fun `parseAssistantEvent server TƏDBİR formatını parse edir (parser qalır)`() {
         // fn_assistant_reply cavab formatı (0012): mətn + [TƏDBİR]{json}
         val reply = "Şənbə üçün hazırladığım plan.\n[TƏDBİR]{\"title\":\"Şənbə səhəri Qala yürüşü\"," +
             "\"category\":\"Yürüş\",\"date\":\"2026-11-14\",\"time\":\"09:00\",\"capacity\":10," +
