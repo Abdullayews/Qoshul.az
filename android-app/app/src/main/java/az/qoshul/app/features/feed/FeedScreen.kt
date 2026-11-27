@@ -224,7 +224,7 @@ private fun ForYouView(
     // recompose olmur (audit UI-44).
     val venues = remember(search, st.city) {
         engine.partners.filter { v ->
-            v.city == st.city && (search.isEmpty() ||
+            (st.city.isBlank() || v.city == st.city) && (search.isEmpty() ||
                 "${v.name} ${v.category} ${v.address}".lowercase().contains(search.lowercase()))
         }
     }

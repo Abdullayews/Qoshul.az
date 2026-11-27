@@ -114,7 +114,17 @@ fun CreateEventSheet(
     var tags by rememberSaveable { mutableStateOf("") }
     var price by rememberSaveable { mutableStateOf("") }
     var city by rememberSaveable {
-        mutableStateOf(presetCity.ifEmpty { venue?.city ?: engine.state.value.city })
+        // A.1 (D-170): profil şəhəri boş ola bilər (onboarding öncəsi) —
+        // forma sahəsi boş qala bilməz (server NOT NULL); seçim siyahısının
+        // ilk şəhəri başlanğıc dəyər kimi götürülür
+        mutableStateOf(
+            presetCity.ifEmpty {
+                venue?.city
+                    ?: engine.state.value.city.ifBlank {
+                        engine.dataSource.cities.firstOrNull()?.name ?: ""
+                    }
+            }
+        )
     }
     var category by rememberSaveable {
         // D-051 fix: initial==null → NPE riski aradan qaldırıldı (takeIf zənciri)

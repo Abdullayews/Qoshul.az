@@ -295,7 +295,10 @@ class AppEngine(
     // ═════════════════════════ Köməkçi getterlər ═════════════════════════
 
     val upcoming: List<QoshulEvent> get() = eventsV.filter { !it.past }
-    val cityEvents: List<QoshulEvent> get() = upcoming.filter { it.city == cityV }
+    // A.1 (D-170): şəhər seçilməyib (onboarding öncəsi / server boş) →
+    // filtr YOXDUR: bütün şəhərlərin tədbirləri görünür (boş ekran əvəzinə)
+    val cityEvents: List<QoshulEvent>
+        get() = if (cityV.isBlank()) upcoming else upcoming.filter { it.city == cityV }
     /** D-054: bugünkü tədbirlər — ana ekranda "Aktiv tədbirlər" zolağı üçün. */
     val activeEvents: List<QoshulEvent>
         get() = cityEvents.filter { it.epochDay == today().toEpochDay().toInt() }

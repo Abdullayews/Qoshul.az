@@ -258,7 +258,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
 
     // — pinlər (filtrlərlə, D-027 görünüş rejimi) —
     val venuePins = engine.partners.filter { v ->
-        v.city == st.city && (category == "Hamısı" || v.category == category) &&
+        (st.city.isBlank() || v.city == st.city) && (category == "Hamısı" || v.category == category) &&
             (!openNow || v.isOpenAt(hour)) && (!withDiscount || v.hasDiscount)
     }.map { MapPin.Venue(it) }
     val eventPins = engine.cityEvents.filter {

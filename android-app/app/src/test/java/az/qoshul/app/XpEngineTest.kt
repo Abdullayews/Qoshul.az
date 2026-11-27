@@ -97,6 +97,13 @@ class XpEngineTest {
 
     private fun engine() = AppEngine(dataSource = FakeQoshulDataSource)
 
+    /** D-170: server profili — applyServerData ilə XP seed etmək üçün. */
+    private fun testProfile(xp: Int, onboarded: Boolean = true) =
+        az.qoshul.app.core.backend.SupabaseReader.MyProfile(
+            id = "t1", firstName = "Test", lastName = "User", city = "Bakı",
+            bio = "", xp = xp, onboarded = onboarded, photoCount = 0,
+        )
+
     // ── XP mühərriki (idempotent) ──
 
     @Test fun `qeydiyyat XP bir dəfə verilir`() {
@@ -193,7 +200,7 @@ class XpEngineTest {
         e.setInterests(listOf("Kafe və Yemək", "İdman və Aktivlik", "Musiqi"))
         e.finishOnboarding()
         assertTrue(e.state.value.onboarded)
-        assertTrue(e.state.value.xp >= 320 + 50 + 5) // registration + daily login
+        assertTrue(e.state.value.xp >= 50 + 5) // registration + daily login (başlanğıc 0 — A.1/D-170)
     }
 
     // ── Match (ROL D) ──
@@ -316,7 +323,9 @@ class XpEngineTest {
     // ── Kuponlar (ROL G) ──
 
     @Test fun `səviyyə-avto təklif yalnız açıq səviyyədə görünür`() {
-        val e = engine() // 320 XP → Aktiv (idx 2)
+        val e = engine() // XP serverdən (D-170: başlanğıc 0) — 320 verib Aktiv edək
+        e.applyServerData(az.qoshul.app.core.backend.SupabaseReader.ServerData(
+            myProfile = testProfile(xp = 320)))
         val visible = e.visibleOffers.map { it.id }
         assertTrue("o4" in visible) // minRank 2 (Aktiv) — açıqdır
         assertTrue("o5" in visible) // minRank 1 (Kəşfiyyatçı) ≤ Aktiv — açıqdır
@@ -682,7 +691,9 @@ class XpEngineTest {
     }
 
     @Test fun `N2 buyCoupon uğursuzluq səbəbləri görünəndir`() {
-        val e = engine() // 320 XP → Aktiv (idx 2)
+        val e = engine() // XP serverdən — 320 verib Aktiv edək (D-170)
+        e.applyServerData(az.qoshul.app.core.backend.SupabaseReader.ServerData(
+            myProfile = testProfile(xp = 320)))
         val r1 = e.buyCoupon("o-nope")
         assertTrue(r1 is CouponPurchase.Failure)
         assertEquals(SpendError.OFFER_NOT_FOUND, (r1 as CouponPurchase.Failure).error)
@@ -732,7 +743,7 @@ class XpEngineTest {
         e.dailyLogin(d.plusDays(2))  // 1 gün buraxılıb → dondurma
         assertEquals(2, e.state.value.loginStreak)
         // giriş günləri +5 verilməyə davam edir
-        assertEquals(320 + 5 + 5, e.state.value.xp)
+        assertEquals(5 + 5, e.state.value.xp)  // başlanğıc 0 (A.1/D-170); 320 köhnə static idi
     }
 
     @Test fun `B2 seriya — 2 gün buraxılanda da DONDURULUR`() {
@@ -771,8 +782,8 @@ class XpEngineTest {
         assertEquals(6, e.state.value.loginStreak)
         d = d.plusDays(1); e.dailyLogin(d)                 // 7 → bonus +30, reset
         assertEquals(1, e.state.value.loginStreak)
-        // 7 giriş × 5 XP + 30 bonus (başlanğıc 320)
-        assertEquals(320 + 7 * 5 + 30, e.state.value.xp)
+        // 7 giriş × 5 XP + 30 bonus (başlanğıc 0 — A.1/D-170)
+        assertEquals(7 * 5 + 30, e.state.value.xp)
     }
 
     @Test fun `B5 XP kartı kod injeksiya olunur, N7 fallback rəqəm sayı`() {

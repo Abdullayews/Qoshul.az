@@ -128,9 +128,12 @@ object QoshulLocation {
      * yumşaltması → [StreamFix] emit. İcazə yoxdursa axın DƏRHAL bağlanır.
      */
     fun locationStream(context: Context) = callbackFlow {
-        if (!hasPermission(context)) { close(); return@callbackFlow }
-        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        if (lm == null) { close(); return@callbackFlow }
+        // H1 (D-145): return@callbackFlow awaitClose-i ATLAYIR — qadağan;
+        // early-exit close() + else-zənciri ilə yazılır
+        val lm = if (hasPermission(context)) {
+            context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        } else null
+        if (lm != null) {
 
         var lastSentLat = 0.0
         var lastSentLng = 0.0
@@ -169,6 +172,11 @@ object QoshulLocation {
             }
         if (registered.isEmpty()) close()
         awaitClose { registered.forEach { try { lm.removeUpdates(listener) } catch (_: Exception) {} } }
+        } else {
+            // icazə yoxdur / LocationManager yoxdur — axın dərhal bağlanır
+            close()
+            awaitClose { }
+        }
     }
 
     /** İki nöqtə arası məsafə (Haversine, metr) — yumşaltma üçün. */
