@@ -1,6 +1,5 @@
 package az.qoshul.app.backend
 
-import az.qoshul.app.core.backend.MapEvent
 import az.qoshul.app.core.backend.SupabaseSync
 import az.qoshul.app.core.backend.SyncEvent
 import az.qoshul.app.core.data.FakeQoshulDataSource
