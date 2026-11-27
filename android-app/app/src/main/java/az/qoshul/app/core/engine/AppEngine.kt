@@ -63,11 +63,6 @@ import kotlinx.coroutines.launch
  */
 class AppEngine(
     /**
-     * Məlumat mənbəyi. D-149: SUPABASE rejimində başlanğıc istifadəçi/sosial
-     * məlumat BOŞDUR — data serverdən gəlir (fake seed oxunmur); MOCK
-     * rejimində deterministik [FakeQoshulDataSource] (CI/test axını dəyişmir).
-     */
-    /**
      * D-151: yalnız server mənbəyi — başlanğıc BOŞ; [applyServerData]
      * [ServerDataSource] mutable listlərinə serverdən oxunan datanı yazır,
      * bütün getterlər dataSource üzərindən oxuyur (fake mənbə APK-da YOXDUR).
@@ -76,8 +71,9 @@ class AppEngine(
     private val scope: CoroutineScope? = null,
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
     /**
-     * M1 (D-078): backend güzgüsü — null = MOCK (testlər/determinizm dəyişmir).
-     * SUPABASE rejimində mutasiyalar [SyncEvent] kimi [sync]-ə çatdırılır;
+     * Backend güzgüsü. Mutasiyalar [SyncEvent] kimi [sync]-ə çatdırılır
+     * (D-170: MOCK rejimi yoxdur — testlər NoopSink verir, istehsal
+     * SupabaseSync qurur);
      * qaydaları server tərəfdə SQL funksiyaları zorlayır (supabase/0002).
      */
     private val sync: SyncSink? = null,
@@ -97,29 +93,41 @@ class AppEngine(
     // — auth/onboarding —
     private var signedInV = false
     private var onboardedV = false
-    private var profileNameV = "Dost"
-    private var firstNameV = "Dost"
+    // C (D-170): onboarded qərarı YALNIZ serverdən gələn profillə verilir.
+    // profileLoadedV=false → UI loading göstərir, onboarding AÇILMIR;
+    // xəta → syncErrorV + UI retry düyməsi (səssiz udma YOXDUR)
+    private var profileLoadedV = false
+    private var syncErrorV = "
+    // A.1 (D-170): BÜTÜN başlanğıc dəyərlər BOŞ — static/default məlumat
+    // yoxdur. Profil məlumatı yalnız qeydiyyatda istifadəçidən alınır
+    // (onboarding) və ya serverdən gəlir (applyServerData). Boş String/
+    // boş List tiplər saxlanılıb — UI-da null yoxlaması lazım deyil.
+    private var profileNameV = ""
+    private var firstNameV = ""
     private var lastNameV = ""
     // D-112: profil şəkli açarı (imagePaint açarları — coffee/padel/tech/
-    // friends_baku); profil redaktə ekranından seçilir
-    private var avatarV = "coffee"
-    private var cityV = "Bakı"
-    private var statusV = "student"
+    // friends_baku); profil redaktə ekranından seçilir; boş → imagePaint
+    // default avatar (friends_baku) göstərir
+    private var avatarV = ""
+    private var cityV = ""
+    private var statusV = ""
     private var universityV = ""
     private var workFieldV = ""
-    private var languagesV = listOf("Azərbaycan dili")
+    private var languagesV = listOf<String>()
     private var interestsV = listOf<String>()
     private var goalsV = listOf<String>()
     private var personalityV: PersonalityResult? = null
     private var availabilityV = listOf<String>()
-    private var groupSizeV = "Kiçik qrup (3–6)"
-    private var budgetV = "10 AZN-ə qədər"
+    private var groupSizeV = ""
+    private var budgetV = "
 
     // — ROL B: profil yaradılması —
     private var birthDateV: LocalDate? = null
     private var genderV = ""
     private var bioV = ""
-    private var photoCountV = 1
+    // E (D-170): şəkil backendi hələ AKTİV DEYİL — photo_count 0-dan
+    // başlayır; storage API hazır olanda redaktə ekranı açılacaq
+    private var photoCountV = 0
     private var phoneVerifiedV = false
     private var profileCompletedV = false
 
@@ -133,7 +141,9 @@ class AppEngine(
     private var designModeV = DesignMode.LIGHT
 
     // — XP 1: Peşəkarlıq (xərclənmir) —
-    private var xpV = 320
+    // I.1 (D-170): başlanğıc XP 0 — köhnə 320 static idi; XP yalnız
+    // serverdən (applyServerData → me.xp) gəlir
+    private var xpV = 0
     private val xpEventIds = mutableSetOf<String>()
     private val earnedBadgesV = mutableSetOf<String>()
     private var matchXpToday = 0
@@ -246,6 +256,7 @@ class AppEngine(
     private fun buildState() = AppUiState(
         version = ++version,
         signedIn = signedInV, onboarded = onboardedV,
+        profileLoaded = profileLoadedV, syncError = syncErrorV,
         profileName = profileNameV, firstName = firstNameV, lastName = lastNameV,
         avatar = avatarV,
         city = cityV, status = statusV, university = universityV, workField = workFieldV,
@@ -305,14 +316,41 @@ class AppEngine(
     // ═════════════════════════ XP mühərriki ═════════════════════════
 
     /** İdemponent Peşəkarlıq XP mükafatı — eyni açar ikinci dəfə sayılmır. */
+    /**
+     * I.1/I.4 (D-170): XP optimistic artırılır (UI dərhal reaksiya verir),
+     * amma server avtoritativdir — sync xətası gələndə ROLLBACK olunur
+     * ([onSyncError] kanalı) və növbəti refreshFromServer server XP-sini
+     * qaytarır. XpAwarded güzgü getmir (qayda 8) — server eyni qaydanı
+     * öz intent RPC-si daxilində icra edir.
+     */
     private fun award(key: String, amount: Int): Boolean {
         if (xpEventIds.contains(key)) return false
         xpEventIds.add(key)
         val beforeRank = rankIndex
         xpV += amount
+        pendingXpAwards[key] = amount
         report(SyncEvent.XpAwarded(key, amount, "award"))
         maybeLevelUp(beforeRank)
         return true
+    }
+
+    /** I.4: gözləmədə olan optimistic XP məbləğləri (rollback üçün). */
+    private val pendingXpAwards = linkedMapOf<String, Int>()
+
+    /**
+     * I.4 (D-170): sync xətası → optimistic dəyişikliklər geri qaytarılır
+     * və istifadəçiyə xəta görünür. SupabaseSync.rpcAsync onFailure
+     * kanalından çağırılır (aşağıda AppEngine.reportFailure).
+     */
+    fun reportFailure(tag: String, err: Throwable) {
+        // XP rollback: gözləmədə olan mükafatlar geri alınır
+        if (pendingXpAwards.isNotEmpty()) {
+            pendingXpAwards.values.forEach { xpV -= it }
+            pendingXpAwards.clear()
+            syncErrorV = "Sinxronizasiya xətası — dəyişikliklər geri alındı (${err.message?.take(80) ?: err::class.simpleName})"
+            emit()
+        }
+        az.qoshul.app.core.safety.Safety.onCaught?.invoke(tag, err)
     }
 
     /**
@@ -421,7 +459,7 @@ class AppEngine(
     /**
      * Giriş tamamlandı — UI-ni imza vəziyyətinə keçirir. D-149: real
      * GoTrue axını (SupabaseAuth) uğurdan sonra məhz bunu çağırır;
-     * MOCK rejimində lokal simulyasiya eyni qapıdan keçir (testlər).
+     * (test engine-ləri seeded state ilə eyni qapıdan keçir.)
      */
 
     // ═════════════════════════ D-151: server data tətbiqi ═════════════════════════
@@ -432,11 +470,29 @@ class AppEngine(
      * serverdən gəlir, boş qalırsa UI empty state göstərir.
      */
     fun applyServerData(d: az.qoshul.app.core.backend.SupabaseReader.ServerData) {
+        // I.2 (D-170): aktiv XP kartı SERVERDƏN (CSPRNG nonce) —
+        // regenerateXpCard sonrası refresh-də bərpa olunur
+        d.xpCard?.let { card ->
+            val exp = runCatching {
+                java.time.Instant.parse(card.expiresAtIso).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+            }.getOrNull() ?: return@let
+            xpCardV = az.qoshul.app.core.model.XpCardCode.fromServer(
+                card.nonce, card.fallbackCode, exp)
+            xpCardVenueIdV = card.venueId
+        }
+        // C (D-170): profil gəldi → onboarded qərarı serverdəndir
+        if (d.myProfile != null) {
+            profileLoadedV = true
+            syncErrorV = ""
+        }
         // profil — D-152: onboarding sahələri və maraqlar da bərpa olunur
         d.myProfile?.let { me ->
-            firstNameV = me.firstName.ifBlank { "Dost" }
+            // A.1 (D-170): server fallback-i YOX — boş gəlirsə boş qalır
+            // (onboarding tamamlanmayınca ad boş ola bilər)
+            firstNameV = me.firstName
             lastNameV = me.lastName
-            profileNameV = "${me.firstName} ${me.lastName}".trim().ifBlank { "Dost" }
+            profileNameV = listOf(me.firstName, me.lastName)
+                .filter { it.isNotBlank() }.joinToString(" ")
             cityV = me.city.ifBlank { cityV }
             bioV = me.bio
             xpV = me.xp
@@ -506,18 +562,33 @@ class AppEngine(
         emit()
     }
 
-    /** Serverdən yenidən oxu (pull-to-refresh / re-entry). */
+    /**
+     * Serverdən yenidən oxu (pull-to-refresh / re-entry).
+     *
+     * C (D-170): nəticə state-i — [AppUiState.profileLoaded] /
+     * [AppUiState.syncError]. XƏTA SƏSSİZ UDULMUR: onFailure xətanı
+     * syncErrorV-yə yazır (UI retry düyməsi göstərir) + Safety.log-a
+     * düşür. Test engine-ləri (FakeData fixture) təsirlənmir —
+     * PLACEHOLDER build-də funksiya heç başlamır.
+     */
     fun refreshFromServer() {
-        // D-152: yalnız real konfiqurasiyada (istehsal). Test engine-ləri
-        // (FakeData fixture, PLACEHOLDER build) seeded state-i qoruyur —
-        // boş server data ilə üzərinə yazılmır.
         val s = scope ?: return
         if (!az.qoshul.app.core.backend.BackendConfig.isConfigured) return
         if (az.qoshul.app.core.backend.SupabaseBackend.client == null) return
         s.launch {
             runCatching {
                 applyServerData(az.qoshul.app.core.backend.SupabaseReader.loadAll(now()))
-            }.onFailure { az.qoshul.app.core.safety.Safety.onCaught?.invoke("refresh", it) }
+                // profil oxundu — onboarded qərarı artıq etibarlıdır
+                profileLoadedV = true
+                syncErrorV = ""
+                emit()
+            }.onFailure {
+                az.qoshul.app.core.safety.Safety.onCaught?.invoke("refresh", it)
+                // C: xəta İSTİFADƏÇİYƏ AYDIN görünür (səssiz udmа yoxdur)
+                profileLoadedV = false
+                syncErrorV = it.message?.take(160) ?: "Şəbəkə xətası — yenidən cəhd et"
+                emit()
+            }
         }
     }
 
@@ -540,6 +611,10 @@ class AppEngine(
 
     fun signOut() {
         signedInV = false
+        // C: növbəti girişdə profil yenidən serverdən oxunana qədər loading
+        profileLoadedV = false
+        syncErrorV = ""
+        onboardedV = false
         emit()
     }
 
@@ -590,7 +665,7 @@ class AppEngine(
         // bu son paketdə göndərilir (boş olmayanlar).
         report(
             SyncEvent.SaveProfileIntent(
-                firstName = firstNameV.takeIf { it.isNotBlank() && it != "Dost" },
+                firstName = firstNameV.takeIf { it.isNotBlank() },
                 lastName = lastNameV.takeIf { it.isNotBlank() },
                 city = cityV.takeIf { it.isNotBlank() },
                 status = statusV.takeIf { it.isNotBlank() },
@@ -647,6 +722,35 @@ class AppEngine(
         report(SyncEvent.SetAvatarIntent(key))
     }
 
+    /**
+     * D.1 (D-170): profil seçimləri Ayarlardan idarə olunur — hər biri
+     * dərhal serverə yazılır (SaveProfileIntent). Onboarding eyni
+     * setter-ləri işlədir (mənbə fərqi yoxdur).
+     */
+    fun setStatus(id: String) {
+        statusV = id
+        emit()
+        report(SyncEvent.SaveProfileIntent(status = id.ifBlank { null }))
+    }
+
+    fun setLanguages(langs: List<String>) {
+        languagesV = langs
+        emit()
+        report(SyncEvent.SaveProfileIntent(languages = langs.ifEmpty { null }))
+    }
+
+    fun setGroupSize(gs: String) {
+        groupSizeV = gs
+        emit()
+        report(SyncEvent.SaveProfileIntent(groupSize = gs.ifBlank { null }))
+    }
+
+    fun setBudget(b: String) {
+        budgetV = b
+        emit()
+        report(SyncEvent.SaveProfileIntent(budget = b.ifBlank { null }))
+    }
+
     fun setCity(name: String) {
         cityV = name
         emit()
@@ -657,11 +761,26 @@ class AppEngine(
     fun setMapVisibility(v: MapVisibility) {
         mapVisibilityV = v
         emit()
+        // H.1 (D-170): görünmə seçimi SERVERƏ yazılır (EVERYONE/FRIENDS/OFF);
+        // server RLS ikinci cihazdan baxışda tətbiq edir, klient süzgəci
+        // yalnız ikinci qatdır (server avtoriteti)
+        report(SyncEvent.PrefsIntent(mapVisibility = v.name))
+    }
+
+    /**
+     * G.1 (D-170): davamlı lokasiya axınından gələn real fix → server.
+     * Throttle/dəqiqlik filtri QoshulLocation-da (≤50m, ≥15m hərəkət,
+     * 4s interval) — bura yalnız TƏMİZ fix-lər çatır.
+     */
+    fun reportLocation(lat: Double, lng: Double) {
+        report(SyncEvent.LocationUpdateIntent(lat, lng))
     }
 
     fun setShowDistance(v: Boolean) {
         showDistanceV = v
         emit()
+        // H.1 (D-170): məsafə göstərişi serverdə saxlanılır
+        report(SyncEvent.PrefsIntent(showDistance = v))
     }
 
     // ═════════════════════════ Dizayn (D-118/D-119) ═════════════════════════
@@ -880,12 +999,15 @@ class AppEngine(
             coupon = couponsV.firstOrNull { it.code == couponCode }
             if (coupon == null || !coupon.isActive(now()) || coupon.venueId != venue.id) return null
         }
-        val id = "r${reservationsV.size + 1}"
+        val id = "local-${'$'}{reservationsV.size + 1}"
         val resv = Reservation(
             id = id, venueId = venue.id, venueName = venue.name, venueImage = venue.image,
             date = date, time = time, party = party, note = note,
             couponCode = coupon?.code,
-            qrCode = "QSH-$id-${now().nano / 1_000_000 % 10000}",
+            // I.2 (D-170): QR KODU SERVERDƏ YARANIR (fn_create_reservation —
+            // CSPRNG). Klient mock QR ÜRETMİR: boş string = "kod gəlir";
+            // refreshFromServer rezervasiyanı server ID/QR ilə əvəz edir.
+            qrCode = "",
             createdAt = now(),
             status = if (venue.autoAccept) ResvStatus.CONFIRMED else ResvStatus.PENDING,
         )
@@ -1074,7 +1196,11 @@ class AppEngine(
 
     fun regenerateXpCard(venueId: String) {
         report(SyncEvent.XpCardIssueIntent(venueId))
-        xpCardV = XpCardCode.fresh(now())
+        // I.2 (D-170): nonce SERVERDƏ yaranır (fn_issue_xp_card_nonce —
+        // pgcrypto CSPRNG). Klient köhnə mockCode-ı GÖSTƏRMİR: kart yalnız
+        // server cavabından (applyServerData.xpCard) qurulur. Optimistic
+        // boş kart = "yaradılır" vəziyyəti — refresh gələndə dolur.
+        xpCardV = null
         xpCardVenueIdV = venueId
         emit()
     }
@@ -1400,7 +1526,7 @@ class AppEngine(
     fun venueById(id: String): Partner? = dataSource.partners.firstOrNull { it.id == id }
 
     /** Məkan rəyləri (D-050: fake yalnız PLACEHOLDER rejimində doludur). */
-    fun venueReviews(venueId: String) = dataSource.mockVenueReviews[venueId] ?: emptyList()
+    fun venueReviews(venueId: String) = dataSource.venueReviewsSeed[venueId] ?: emptyList()
 
     /** Məkan rezerv slotları. */
     fun venueSlots(venueId: String) = dataSource.venueSlotTimes[venueId] ?: emptyList()
@@ -1412,6 +1538,10 @@ data class AppUiState(
     // auth/onboarding
     val signedIn: Boolean,
     val onboarded: Boolean,
+    /** C (D-170): profil serverdən oxunub? false → loading ekranı. */
+    val profileLoaded: Boolean = false,
+    /** C (D-170): son sync xətası (boş = xəta yoxdur). */
+    val syncError: String = "",
     val profileName: String,
     val firstName: String,
     val lastName: String,

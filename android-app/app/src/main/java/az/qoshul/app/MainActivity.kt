@@ -10,8 +10,21 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +39,7 @@ import az.qoshul.app.core.model.QoshulEvent
 import az.qoshul.app.core.model.parseAssistantEvent
 import az.qoshul.app.core.motion.Motion
 import az.qoshul.app.core.theme.Q
+import az.qoshul.app.core.theme.T
 import az.qoshul.app.core.ui.ChatFocusState
 import az.qoshul.app.core.ui.GlassNavHost
 import az.qoshul.app.core.ui.MapFocusState
@@ -111,12 +125,18 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun QoshulApp(engineOverride: AppEngine? = null) {
     val scope = rememberCoroutineScope { Dispatchers.Main.immediate }
-    // M1 (D-078): MOCK → NoopSync; SUPABASE → SupabaseSync (BuildConfig-dən).
+    // D-170: tək rejim — SupabaseSync (MOCK/NoopSync yoxdur).
     // D-149: engineOverride — Robolectric UI testləri hazır engine verir
     // (demo düyməsi silindi; testlər onboarding-i ötürmək üçün seed-li
     // engine inyeksiya edir — istehsal kodu yolunu dəyişmir).
     val sync = remember { az.qoshul.app.core.backend.BackendSync.create(scope) }
     val engine = engineOverride ?: remember { AppEngine(scope = scope, sync = sync) }
+    // I.4 (D-170): RPC xətaları → engine rollback + istifadəçiyə xəta
+    androidx.compose.runtime.LaunchedEffect(engine) {
+        az.qoshul.app.core.backend.SupabaseBackend.onRpcError = { fn, t ->
+            engine.reportFailure("sync:$fn", t)
+        }
+    }
     val st by engine.state.collectAsStateWithLifecycle()
 
     // D-151: SESSİYA BƏRPASI — restart-dan sonra login qalır (SettingsStorage);
@@ -248,4 +268,48 @@ private fun RouteScreen(
 private fun lastProposal(engine: AppEngine): EventProposal? {
     val lastAi = engine.state.value.assistantMsgs.lastOrNull { !it.mine } ?: return null
     return parseAssistantEvent(lastAi.body).proposal
+}
+
+/**
+ * C (D-170): giriş sonrası PROFİL YÜKLƏNMƏ ekranı. signIn() signedInV=true
+ * edir, amma onboarded qərarı serverdən gələn profillə (profileLoaded)
+ * verilir — bu müddətdə loading. Xəta → aydın mesaj + Yenidən cəhd
+ * (səssiz udmа YOXDUR, C.2). Təkrar girişdə onboarding bir daha
+ * GÖRÜNMÜR (onboarded=true serverdən gələnə qədər bu ekran qalır).
+ */
+@Composable
+private fun ProfileLoadingScreen(engine: AppEngine) {
+    val st by engine.state.collectAsStateWithLifecycle()
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Q.background)
+            .padding(horizontal = 20.dp),
+    ) {
+        if (st.syncError.isEmpty()) {
+            CircularProgressIndicator(color = Q.primary, strokeWidth = 3.dp)
+            Spacer(Modifier.height(14.dp))
+            Text("Profil yüklənir…", style = T.subtitle)
+        } else {
+            Text("Yükləmə alınmadı", style = T.h1)
+            Spacer(Modifier.height(8.dp))
+            Text(st.syncError, style = T.subtitle)
+            Spacer(Modifier.height(18.dp))
+            Button(
+                onClick = { engine.refreshFromServer() },
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Q.primary, contentColor = Q.primaryFg),
+            ) { Text("Yenidən cəhd et", style = T.button) }
+            Spacer(Modifier.height(10.dp))
+            // Şəbəkə yoxdursa istifadəçi ayarlara özü baxa bilsin
+            Text(
+                "İnternet bağlantını yoxla və yenidən cəhd et.",
+                style = T.chipXs.copy(color = Q.mutedFg),
+            )
+        }
+    }
 }

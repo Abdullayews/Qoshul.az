@@ -42,7 +42,7 @@ interface QoshulDataSource {
     fun initialVenueXp(): Map<String, VenueXpAccount>
 
     /** Məkan rəyləri — serverdən gəlir. */
-    val mockVenueReviews: Map<String, List<VenueReview>>
+    val venueReviewsSeed: Map<String, List<VenueReview>>
         get() = emptyMap()
 
     // ── Taksonomiya (tətbiq məzmunu — [Taxonomy] mənbəyi) ──
@@ -127,5 +127,5 @@ object ServerDataSource : QoshulDataSource {
     override val initialFriendMessages: Map<String, List<ChatMessage>> get() = friendMessagesM.toMap()
     override val venueSlotTimes: Map<String, List<String>> get() = venueSlotsM.toMap()
     override fun initialVenueXp(): Map<String, VenueXpAccount> = emptyMap()
-    override val mockVenueReviews: Map<String, List<VenueReview>> = emptyMap()
+    override val venueReviewsSeed: Map<String, List<VenueReview>> = emptyMap()
 }

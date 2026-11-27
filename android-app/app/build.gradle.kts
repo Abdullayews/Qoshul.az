@@ -39,7 +39,7 @@ android {
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
-        // D-149: CI-də native.yml SUPABASE_URL/SUPABASE_ANON_KEY/BACKEND_MODE
+        // D-149: CI-də native.yml SUPABASE_URL/SUPABASE_ANON_KEY
         // ötürür; secret qoyulmayınca PLACEHOLDER qalır → BackendConfig MOCK-a
         // düşür (crash yoxdur — D-079 səssiz fallback prinsipi).
         buildConfigField(
@@ -51,11 +51,6 @@ android {
             "String", "SUPABASE_ANON_KEY",
             "\"" + (localProps.getProperty("SUPABASE_ANON_KEY")
                 ?: System.getenv("SUPABASE_ANON_KEY") ?: "PLACEHOLDER_SUPABASE_ANON_KEY") + "\"",
-        )
-        buildConfigField(
-            "String", "BACKEND_MODE",
-            "\"" + (localProps.getProperty("BACKEND_MODE")
-                ?: System.getenv("BACKEND_MODE") ?: "MOCK") + "\"",
         )
         // D-150: Google native sign-in — WEB client ID (CredentialManager
         // setServerClientId). Android client ID (paket+SHA-1) Google Cloud-da

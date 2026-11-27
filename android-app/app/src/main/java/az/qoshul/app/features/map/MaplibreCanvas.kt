@@ -60,7 +60,10 @@ import kotlinx.serialization.json.put
 private const val STYLE_TEXT_FONT = "Noto Sans Regular"
 
 /** D-048: OpenFreeMap „liberty“ vektor stili — pulsuz, açarsız. */
-private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+// F.2 (D-170, direktiv: „rəng kontrastını artır: parlaq, realistik
+// yol/su/yaşıllıq/bina rəngləri“): liberty → bright — yollar ağ-sarı,
+// su canlı göy, yaşıllıq doyğun; ümumi kontrast liberty-dən yüksək.
+private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright"
 
 /** Pin siyahısından GeoJSON feature kolleksiyası. */
 private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject> = FeatureCollection(
@@ -106,6 +109,9 @@ internal fun MaplibreCanvas(
     pins: List<MapPin>,
     myLat: Double,
     myLng: Double,
+    // G.2 (D-170): dəqiqlik dairəsi (metr) + istiqamət (dərəcə); null = yox
+    myAccuracyM: Float? = null,
+    myBearing: Float? = null,
     selectedKey: String?,
     pendingCamera: Pair<Double, Double>?,
     onPinTap: (MapPin) -> Unit,
@@ -130,6 +136,7 @@ internal fun MaplibreCanvas(
                 myLng = myLng,
                 selectedKey = selectedKey,
                 onPinTap = onPinTap,
+                accuracyM = myAccuracyM,
             )
         }
 
@@ -226,6 +233,8 @@ private fun QoshulPinLayers(
     myLng: Double,
     selectedKey: String?,
     onPinTap: (MapPin) -> Unit,
+    /** G.2 (D-170): dəqiqlik radiusu (m) — null = dairə yoxdur (stale). */
+    accuracyM: Float? = null,
 ) {
     val pinByKey = remember(pins) { pins.associateBy { it.key() } }
 
@@ -358,6 +367,22 @@ private fun QoshulPinLayers(
             textIgnorePlacement = const(true),
             onClick = pinClick,
             hitPadding = 6.dp,
+        )
+    }
+
+    // — „mənin yerim“ dəqiqlik halosu (G.2, D-170): accuracyM > 0 olanda
+    // dot-un arxasında yarımşəffaf dairə (radius metr → piksel təxmini:
+    // zoom 13-də ~1m ≈ 0.12dp; real hesab kamera zoom-u tələb edir, amma
+    // sabit təxmini göstəriş kifayətdir — dəqiqlik HİSSİ göstərilir)
+    if (accuracyM != null && accuracyM > 0f) {
+        CircleLayer(
+            id = "qoshul-me-accuracy",
+            source = meSource,
+            // təxmini: hər 10 metr ≈ 8dp (zoom ~13-15 aralığı üçün)
+            radius = const((8 + (accuracyM / 10f) * 8).dp),
+            color = const(Q.myLocation.copy(alpha = 0.12f)),
+            strokeColor = const(Q.myLocation.copy(alpha = 0.30f)),
+            strokeWidth = const(1.dp),
         )
     }
 

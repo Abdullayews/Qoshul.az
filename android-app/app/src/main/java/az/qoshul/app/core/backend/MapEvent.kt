@@ -28,6 +28,12 @@ internal fun mapEventImpl(e: SyncEvent): BackendCall? = when (e) {
         rpcCall("fn_leave_event", "p_event_id" to e.eventId)
     is SyncEvent.SaveEventIntent ->
         rpcCall("fn_save_event", "p_event_id" to e.eventId)
+    is SyncEvent.PrefsIntent ->
+        rpcCall(
+            "fn_save_prefs",
+            "p_map_visibility" to e.mapVisibility,
+            "p_show_distance" to e.showDistance,
+        )
     is SyncEvent.CheckInIntent ->
         rpcCall(
             "fn_check_in_event", "p_event_id" to e.eventId,

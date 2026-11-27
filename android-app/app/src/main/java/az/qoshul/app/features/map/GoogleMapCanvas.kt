@@ -17,16 +17,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import az.qoshul.app.core.theme.MapPalette
 import az.qoshul.app.core.theme.Q
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
@@ -54,6 +57,9 @@ internal fun GoogleMapCanvas(
     pins: List<MapPin>,
     myLat: Double,
     myLng: Double,
+    // G.2 (D-170): dəqiqlik dairəsi (metr) + istiqamət (dərəcə); null = yox
+    myAccuracyM: Float? = null,
+    myBearing: Float? = null,
     selectedKey: String?,
     pendingCamera: Pair<Double, Double>?,
     onPinTap: (MapPin) -> Unit,
@@ -85,7 +91,37 @@ internal fun GoogleMapCanvas(
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
-        properties = MapProperties(mapType = MapType.NORMAL),
+        // F.2 (D-170, direktiv: „rəng kontrastını artır: parlaq, realistik
+        // yol/su/yaşıllıq/bina rəngləri“): stil JSON — yollar parlaq sarı-ağ,
+        // su canlı göy, yaşıllıq doyğun yaşıl, binalar aydıntılı bej, torpaq
+        // isti çalarlı. Atribusiya/loqo SDK default-unada gizlədilə bilmir
+        // (Google Maps SDK şərti) — amma miqyas/compass maps-ui-da bağlıdır.
+        properties = MapProperties(
+            mapType = MapType.NORMAL,
+            mapStyleOptions = com.google.android.gms.maps.model.MapStyleOptions(
+                // language=JSON — Google Maps Platform stil spesifikasiyası
+                // F.2: rənglər MapPalette-dən (hər iki backend eyni palitra)
+                buildString {
+                    fun hex(c: Int) = "#" + Integer.toHexString(c)
+                    append("[")
+                    append("{\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LAND)).append("\"}]},")
+                    append("{\"elementType\":\"labels.text.stroke\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LABEL_HALO)).append("\"},{\"weight\":2.2}]},")
+                    append("{\"elementType\":\"labels.text.fill\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LABEL_FILL)).append("\"}]},")
+                    append("{\"featureType\":\"road\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.ROAD_LOCAL)).append("\"}]},")
+                    append("{\"featureType\":\"road.arterial\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.ROAD_ARTERIAL)).append("\"}]},")
+                    append("{\"featureType\":\"road.highway\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.ROAD_HIGHWAY)).append("\"}]},")
+                    append("{\"featureType\":\"road.highway\",\"elementType\":\"geometry.stroke\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.ROAD_HIGHWAY_STROKE)).append("\"}]},")
+                    append("{\"featureType\":\"water\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.WATER)).append("\"}]},")
+                    append("{\"featureType\":\"landscape.natural\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.NATURE)).append("\"}]},")
+                    append("{\"featureType\":\"poi.park\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.PARK)).append("\"}]},")
+                    append("{\"featureType\":\"poi.park\",\"elementType\":\"labels.text.fill\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.PARK_LABEL)).append("\"}]},")
+                    append("{\"featureType\":\"landscape.man_made\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.BUILDING)).append("\"}]},")
+                    append("{\"featureType\":\"poi.business\",\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.POI)).append("\"}]},")
+                    append("{\"featureType\":\"transit\",\"stylers\":[{\"visibility\":\"off\"}]}")
+                    append("]")
+                }
+            ),
+        ),
         // kamera həbləri bizimdir (MapControls) — SDK-nınkini söndürürük
         uiSettings = MapUiSettings(zoomControlsEnabled = false),
         // boş toxunma = seçimi burax (MapLibre onUnhandled pariteti)
@@ -135,6 +171,17 @@ internal fun GoogleMapCanvas(
         LaunchedEffect(myLat, myLng) {
             meState.position = LatLng(myLat, myLng)
         }
+        // G.2 (D-170): DƏQİQLİK DAİRƏSİ — real fix-in accuracyM radiusu
+        // (yalnız canlı fix-də; fallback/stale halda çəkilmir)
+        if (myAccuracyM != null && myAccuracyM > 0f) {
+            Circle(
+                center = LatLng(myLat, myLng),
+                radius = myAccuracyM.toDouble(),
+                fillColor = Q.myLocation.copy(alpha = 0.15f),
+                strokeColor = Q.myLocation.copy(alpha = 0.35f),
+                strokeWidth = 2f,
+            )
+        }
         MarkerComposable(
             keys = arrayOf(myLat, myLng),
             state = meState,
@@ -147,7 +194,23 @@ internal fun GoogleMapCanvas(
                     .size(20.dp)
                     .border(3.dp, Q.mapPin, CircleShape)
                     .background(Q.myLocation, CircleShape),
-            )
+            ) {
+                // G.2: İSTİQAMƏT oxu — bearing bilinirsə dot içindən çıxan
+                // kiçik üçbucaq (hərəkət istiqaməti, Snapchat pariteti)
+                if (myBearing != null) {
+                    Box(
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 0.dp)
+                            .size(width = 8.dp, height = 14.dp)
+                            .graphics { rotationZ = myBearing!! }
+                            .background(
+                                Q.mapPin,
+                                androidx.compose.ui.graphics.RectangleShape,
+                            ),
+                    )
+                }
+            }
         }
     }
 

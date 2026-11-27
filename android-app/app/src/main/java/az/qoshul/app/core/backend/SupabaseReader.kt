@@ -65,6 +65,8 @@ object SupabaseReader {
         val notifications: List<AppNotification> = emptyList(),
         val blockedIds: Set<String> = emptySet(),
         val myProfile: MyProfile? = null,
+        /** I.2 (D-170): aktiv XP kartı (server CSPRNG nonce; null = yoxdur). */
+        val xpCard: XpCard? = null,
         val venueXp: Map<String, VenueXpAccount> = emptyMap(),
         val coupons: List<UserCoupon> = emptyList(),
         val reservations: List<Reservation> = emptyList(),
@@ -117,6 +119,7 @@ object SupabaseReader {
         val reservations = runCatching { readReservations() }.getOrElse { emptyList() }
         val reviews = runCatching { readVenueReviews() }.getOrElse { emptyMap() }
         val slots = runCatching { readVenueSlots() }.getOrElse { emptyMap() }
+        val xpCard = runCatching { readActiveXpCard() }.getOrNull()
 
         return d.copy(
             events = events, partners = partners, offers = offers, people = people,
@@ -129,6 +132,7 @@ object SupabaseReader {
             matchIds = matches, blockedIds = blocks,
             eventMessages = messages.first, friendMessagePeople = messages.second,
             notifications = notifications, venueXp = venueXp,
+            xpCard = xpCard,
             coupons = coupons, reservations = reservations,
             venueReviews = reviews, venueSlots = slots,
         )
@@ -309,6 +313,35 @@ object SupabaseReader {
                     ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
                 interests = interests,
             )
+        }.getOrNull()
+    }
+
+    /** I.2 (D-170): serverdən gələn aktiv XP kartı. */
+    data class XpCard(
+        val nonce: String, val fallbackCode: String,
+        val venueId: String, val expiresAtIso: String,
+    )
+
+    private suspend fun readActiveXpCard(): XpCard? {
+        val c = SupabaseBackend.client ?: return null
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.from("xp_card_nonces")
+                .select(Columns.raw("nonce,fallback_code,venue_id,expires_at")) {
+                    filter {
+                        eq("used_at", "null")
+                        gt("expires_at", "now()")
+                    }
+                    order("issued_at", Order.DESCENDING)
+                    limit(1)
+                }.decodeAs()
+            rows.firstOrNull()?.let {
+                XpCard(
+                    nonce = it["nonce"]?.jsonPrimitive?.contentOrNull ?: return null,
+                    fallbackCode = it["fallback_code"]?.jsonPrimitive?.contentOrNull ?: "",
+                    venueId = it["venue_id"]?.jsonPrimitive?.contentOrNull ?: "",
+                    expiresAtIso = it["expires_at"]?.jsonPrimitive?.contentOrNull ?: "",
+                )
+            }
         }.getOrNull()
     }
 

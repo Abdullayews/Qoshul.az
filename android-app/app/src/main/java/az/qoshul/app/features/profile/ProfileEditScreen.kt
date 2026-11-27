@@ -145,13 +145,11 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
         }
     }
 
-    // imagePaint açarları + görünən etiketlər (brend şəkil dəsti)
-    val avatarOptions = listOf(
-        "coffee" to "Qəhvə",
-        "padel" to "Padel",
-        "tech" to "Texnologiya",
-        "friends_baku" to "Bakı",
-    )
+    // imagePaint açarları (brend şəkil dəsti). A.3 (D-170): sabit
+    // ad xəritəsi silindi — etiketlər drawable adlarından gəlir
+    // (R.drawable.coffee → "coffee"); yeni şəkil əlavə olunanda bura
+    // toxunmaq lazım deyil.
+    val avatarOptions = listOf("coffee", "padel", "tech", "friends_baku")
     val canSave = first.isNotBlank()
 
     PushScreenScaffold(
@@ -193,7 +191,8 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                avatarOptions.forEach { (key, label) ->
+                avatarOptions.forEach { key ->
+                    val label = key.replaceFirstChar { it.uppercase() }
                     val sel = key == avatar
                     val interaction = remember { MutableInteractionSource() }
                     Column(
@@ -207,7 +206,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                     ) {
                         Image(
                             painter = imagePaint(key),
-                            contentDescription = label,
+                            contentDescription = key,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(52.dp)

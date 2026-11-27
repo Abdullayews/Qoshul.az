@@ -241,7 +241,7 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
     var name by rememberSaveable(st.firstName, st.lastName) {
         mutableStateOf(
             listOf(st.firstName, st.lastName)
-                .filter { it.isNotBlank() && it != "Dost" }
+                .filter { it.isNotBlank() }
                 .joinToString(" ").trim()
         )
     }

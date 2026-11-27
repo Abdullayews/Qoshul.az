@@ -156,6 +156,11 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var myRealLat by remember { mutableStateOf<Double?>(null) }
     var myRealLng by remember { mutableStateOf<Double?>(null) }
     var locating by remember { mutableStateOf(false) }
+    // G.2 (D-170): dəqiqlik dairəsi + istiqamət + stale izləmə
+    var myAccuracyM by remember { mutableStateOf<Float?>(null) }
+    var myBearing by remember { mutableStateOf<Float?>(null) }
+    var myFixAtMs by remember { mutableStateOf<Long?>(null) }
+    var myFixStale by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     // İcazə verilibsə fix al — bir dəfəlik (locateRequest açılışda 0-dır,
@@ -169,6 +174,33 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                 }
                 else -> Unit // fallback ilə davam (aşagıda myLat/myLng)
             }
+        }
+    }
+
+    // G.1 (D-170, Snapchat məntiqi): DAVAMLI lokasiya axını — dəqiqlik
+    // filtri (≤50m), hərəkət yumşaltması (≥15m), throttle (4s). Hər
+    // qəbul edilən fix: (1) xəritə dotu yenilənir + dəqiqlik/bearing
+    // state-i; (2) LocationUpdateIntent → fn_update_location (serverdə
+    // yaxınlıq sorğuları üçün). Mock fix-lər axında RƏDD olunur (G.4).
+    LaunchedEffect(Unit) {
+        if (QoshulLocation.hasPermission(locCtx)) {
+            QoshulLocation.locationStream(locCtx).collect { fix ->
+                myRealLat = fix.lat; myRealLng = fix.lng
+                myAccuracyM = fix.accuracyM
+                myBearing = fix.bearing
+                myFixAtMs = fix.atMs
+                myFixStale = false
+                engine.reportLocation(fix.lat, fix.lng)
+            }
+        }
+    }
+
+    // G.2: stale izləmə — 30 s yeni fix gəlməyəndə dairə/istiqamət
+    // gizlədilir (nöqtə QALIR, köhnə dəqiqlik göstərilmir)
+    LaunchedEffect(myFixAtMs) {
+        if (myFixAtMs != null) {
+            kotlinx.coroutines.delay(QoshulLocation.STALE_MS)
+            myFixStale = true
         }
     }
 
@@ -186,9 +218,27 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     // boş keçilir və istifadəçi xəritəni normal istifadə edir). İcazə
     // varsa real fix alınıb kameraya uçurulur (mock fix RƏDD olunur —
     // QoshulLocation müdafiəsi).
+    // G.3 (D-170): icazə KALICI rədd edilibsə (system dialoq bir daha
+    // gəlmir) — istifadəçini tətbiq ayarlarına aparır (permission revokesi
+    // oradan edilir). shouldShowRequestPermissionRationale=false + rədd =
+    // „bir daha soruşma“ deməkdir.
     val onMyLocation: () -> Unit = {
         if (!QoshulLocation.hasPermission(locCtx)) {
-            locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            val pm = locCtx as android.app.Activity
+            if (!pm.shouldShowRequestPermissionRationale(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // sistem artıq avtomatik soruşmur → AYARLARA keçid yolu
+                try {
+                    val intent = android.content.Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        android.net.Uri.parse("package:" + locCtx.packageName))
+                    locCtx.startActivity(intent)
+                } catch (_: Exception) {
+                    locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            } else {
+                locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            }
         } else if (!locating) {
             locating = true
             scope.launch {
@@ -219,6 +269,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             it.distance <= distanceKm
     }.map { MapPin.Event(it) }
     val peoplePins = engine.matchCandidates
+        // G.5 (D-170): geo-suz insanlar (0.0, 0.0) xəritədə GÖRÜNMÜR —
+        // SupabaseReader belələrini (0,0) ilə yazır; null-island pinləri
+        // istifadəçini aldatmalı deyil
+        .filter { !(it.lat == 0.0 && it.lng == 0.0) }
         .filter { it.distanceKm <= distanceKm }
         // D-151 (spec 4.2): bloklanmış istifadəçilər xəritədə görünmür
         // (matchCandidates artıq blok filtri aparır — cəmi 2qat qoruma)
@@ -286,6 +340,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     pins = pins,
                     myLat = myLat,
                     myLng = myLng,
+                    // G.2 (D-170): dəqiqlik dairəsi + istiqamət oxu; stale
+                    // fix-də (30s+) hər ikisi gizlədilir (null ötürülür)
+                    myAccuracyM = if (myFixStale) null else myAccuracyM,
+                    myBearing = if (myFixStale) null else myBearing,
                     selectedKey = selected?.key(),
                     pendingCamera = pendingCamera,
                     onPinTap = { selected = it },
@@ -298,6 +356,10 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     pins = pins,
                     myLat = myLat,
                     myLng = myLng,
+                    // G.2 (D-170): dəqiqlik dairəsi + istiqamət oxu; stale
+                    // fix-də (30s+) hər ikisi gizlədilir (null ötürülür)
+                    myAccuracyM = if (myFixStale) null else myAccuracyM,
+                    myBearing = if (myFixStale) null else myBearing,
                     selectedKey = selected?.key(),
                     pendingCamera = pendingCamera,
                     onPinTap = { selected = it },

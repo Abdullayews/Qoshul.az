@@ -142,6 +142,16 @@ sealed interface SyncEvent {
         val interests: List<String>? = null,
     ) : SyncEvent
 
+    /**
+     * H.1 (D-170): fn_save_prefs — məxfilik seçimləri (map_visibility
+     * EVERYONE/FRIENDS/OFF, show_distance) serverdə saxlanılır; server
+     * RLS xəritə sorğularında tətbiq edir (klient süzgəci ikinci qat).
+     */
+    data class PrefsIntent(
+        val mapVisibility: String? = null,
+        val showDistance: Boolean? = null,
+    ) : SyncEvent
+
     /** fn_set_avatar (D-152) — profil şəkli açarı. */
     data class SetAvatarIntent(val imageKey: String) : SyncEvent
 }

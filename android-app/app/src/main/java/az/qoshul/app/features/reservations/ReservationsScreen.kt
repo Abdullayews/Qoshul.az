@@ -27,7 +27,9 @@ import androidx.compose.material.icons.filled.TableRestaurant
 import androidx.compose.material.icons.filled.WhereToVote
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicatorDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -200,9 +202,19 @@ fun ReservationsScreen(engine: AppEngine, nav: NavState) {
                     Spacer(Modifier.height(4.dp))
                     Text("${r.date}, ${r.time} · ${r.party} nəfər", style = T.meta)
                     Spacer(Modifier.height(14.dp))
-                    QrCode(payload = r.qrCode)
-                    Spacer(Modifier.height(8.dp))
-                    Text(r.qrCode, style = T.metaBold)
+                    if (r.qrCode.isNotBlank()) {
+                        QrCode(payload = r.qrCode)
+                        Spacer(Modifier.height(8.dp))
+                        Text(r.qrCode, style = T.metaBold)
+                    } else {
+                        // I.2 (D-170): QR serverdə yaranır — kod hələ gəlməyibsə
+                        CircularProgressIndicator(
+                            color = Q.primary, strokeWidth = 2.dp,
+                            modifier = Modifier.size(28.dp),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text("Kod yaranır…", style = T.meta)
+                    }
                 }
             },
             confirmButton = { TextButton(onClick = { qrResv = null }) { Text("Bağla") } },

@@ -157,6 +157,47 @@ class PaletteContrastTest {
         assertEquals(Color(0xFFEAC66C), Q.primaryText)
     }
 
+    // ═══════════ 5. F.2 (D-170): XƏRİTƏ PALİTRASI — ayrılma kontrastı ═══════════
+    // Direktiv: „rəng kontrastını artır: parlaq, realistik yol/su/yaşıllıq/
+    // bina rəngləri. PaletteContrastTest-i yenilə.“ WCAG 1.4.11 non-text:
+    // qonşu xəritə elementləri ≥ 3:1 ayrılmalıdır (yol↔torpaq, su↔torpaq,
+    // yaşıllıq↔torpaq, bina↔torpaq).
+
+    private fun c(hex: Long) = Color(hex)
+
+    @Test
+    fun `xarite — yollar torpaqdan ayrilir (arterial kontur 3_1+, magistral kontur 3_1+)`() {
+        val land = c(az.qoshul.app.core.theme.MapPalette.LAND)
+        // arterial yollar KONTUR ilə ayrılır (doldurma sarı, kontur tünd)
+        assertTrue("arterial kontur torpaqdan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.ROAD_ARTERIAL_STROKE), land) >= 3.0)
+        assertTrue("magistral kontur torpaqdan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.ROAD_HIGHWAY_STROKE), land) >= 3.0)
+    }
+
+    @Test
+    fun `xarite — su ve yasilliq torpaqdan ayrilir (3_1+)`() {
+        val land = c(az.qoshul.app.core.theme.MapPalette.LAND)
+        assertTrue("su (göy) torpaqdan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.WATER), land) >= 3.0)
+        assertTrue("yaşıllıq (doyğun) torpaqdan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.PARK), land) >= 3.0)
+    }
+
+    @Test
+    fun `xarite — park etiketi park fonunda oxunaqlidir (3_1+)`() {
+        assertTrue("park etiketi doyğun yaşıl fonundan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.PARK_LABEL),
+                  c(az.qoshul.app.core.theme.MapPalette.PARK)) >= 3.0)
+    }
+
+    @Test
+    fun `xarite — magistral konturu doldurmadan ayri gorunur`() {
+        assertTrue("magistral stroke doldurmadan ayrılmalı",
+            ratio(c(az.qoshul.app.core.theme.MapPalette.ROAD_HIGHWAY_STROKE),
+                  c(az.qoshul.app.core.theme.MapPalette.ROAD_HIGHWAY)) >= 1.5)
+    }
+
     @Test
     fun `qizili ag mod — brend dolgu ila metn tonu ferqlidir (1_6_1 qopucusu)`() {
         // D-118-in əsl bug-ı: QIZILI + AĞ seçildikdə bütün brend mətnlər

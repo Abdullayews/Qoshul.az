@@ -107,6 +107,13 @@ class XpCardCode private constructor(
         private var nonceSeq = 7
 
         /**
+         * I.2 (D-170): SERVER kartı — fn_issue_xp_card_nonce (pgcrypto
+         * CSPRNG) nəticəsindən qurulur. Klient nonce-u ÖZÜ yaratmır.
+         */
+        fun fromServer(nonce: String, fallbackCode: String, expiresAt: LocalDateTime): XpCardCode =
+            XpCardCode(nonce, fallbackCode, expiresAt)
+
+        /**
          * Yeni kod — TTL 60 saniyə (D-026).
          *
          * B5 (M0 interfeys hazırlığı): [codeSource] injeksiya olunur — mock

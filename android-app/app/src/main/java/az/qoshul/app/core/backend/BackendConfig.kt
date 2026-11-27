@@ -4,8 +4,9 @@ package az.qoshul.app.core.backend
  * D-151 (2026-11-25, direktiv: „demo məntiqi heç olmasın“): MOCK rejimi
  * TAMAMLANIŞI SİLİNDİ — tətbiq yalnız Supabase server rejimində işləyir.
  *
- * Konfiqurasiya (BuildConfig): SUPABASE_URL, SUPABASE_ANON_KEY,
- * BACKEND_MODE="SUPABASE" (local.properties → env/CI secret → PLACEHOLDER).
+ * Konfiqurasiya (BuildConfig): SUPABASE_URL, SUPABASE_ANON_KEY
+ * (local.properties → env/CI secret → PLACEHOLDER). BACKEND_MODE sahəsi
+ * D-170-də silindi — tək rejim var, seçim yoxdur.
  *
  * PLACEHOLDER qaldıqda (məs. fork build) [SupabaseBackend.client] null
  * olur — tətbiq açılır, amma xəta aydın görünür ([describe] ayarlarda

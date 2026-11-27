@@ -25,6 +25,10 @@ import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -69,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.motion.pressable
 import az.qoshul.app.BuildConfig
+import az.qoshul.app.core.data.Taxonomy
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.MapVisibility
 import az.qoshul.app.core.theme.Q
@@ -103,6 +108,11 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     // D-131: Biznes rejimi sheet-i (şirkət dialoqundan açılır)
     var businessOpen by remember { mutableStateOf(false) }
     var cityOpen by remember { mutableStateOf(false) }
+    // D.1 (D-170): profil təfərrüatları — status/dillər/qrup/büdcə seçimi
+    var statusOpen by remember { mutableStateOf(false) }
+    var langsOpen by remember { mutableStateOf(false) }
+    var groupOpen by remember { mutableStateOf(false) }
+    var budgetOpen by remember { mutableStateOf(false) }
     var inviteOpen by remember { mutableStateOf(false) }
     // D-119: dizayn seçim dialoqları (rəng + mod)
     var showDesignColor by remember { mutableStateOf(false) }
@@ -124,6 +134,29 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     // (25 şəhər; setCity feed/map/aktiv tədbirləri dəyişir)
                     NavRow(Icons.Filled.LocationCity, "Şəhər", value = st.city) {
                         cityOpen = true
+                    }
+                    DividerLine()
+                    // D.1 (D-170): profil seçimləri Ayarlardan idarə olunur —
+                    // hər dəyişiklik dərhal serverə yazılır (setter-lər
+                    // SaveProfileIntent göndərir)
+                    NavRow(Icons.Filled.School, "Status",
+                        value = engine.statusLabel(st.status).ifBlank { "Seçilməyib" }) {
+                        statusOpen = true
+                    }
+                    DividerLine()
+                    NavRow(Icons.Filled.Translate, "Dillər",
+                        value = st.languages.joinToString(", ").ifBlank { "Seçilməyib" }) {
+                        langsOpen = true
+                    }
+                    DividerLine()
+                    NavRow(Icons.Filled.Groups, "Qrup ölçüsü",
+                        value = st.groupSize.ifBlank { "Seçilməyib" }) {
+                        groupOpen = true
+                    }
+                    DividerLine()
+                    NavRow(Icons.Filled.Payments, "Büdcə",
+                        value = st.budget.ifBlank { "Seçilməyib" }) {
+                        budgetOpen = true
                     }
                     DividerLine()
                     RowItem(Icons.Filled.WorkspacePremium, "Səviyyə", st.rank)
@@ -504,6 +537,39 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
         CityPickerSheet(engine = engine, onDismiss = { cityOpen = false })
     }
 
+    // — D.1 (D-170): profil təfərrüatları seçim dialoqları —
+    if (statusOpen) {
+        OptionDialog(
+            title = "Status",
+            options = Taxonomy.statuses,
+            active = st.status,
+            labelOf = { engine.statusLabel(it) },
+        ) { engine.setStatus(it); statusOpen = false }
+    }
+    if (langsOpen) {
+        MultiOptionDialog(
+            title = "Dillər",
+            options = Taxonomy.languageOptions,
+            selected = st.languages,
+        ) { engine.setLanguages(it); langsOpen = false }
+    }
+    if (groupOpen) {
+        OptionDialog(
+            title = "Qrup ölçüsü",
+            options = Taxonomy.groupSizes,
+            active = st.groupSize,
+            labelOf = { it },
+        ) { engine.setGroupSize(it); groupOpen = false }
+    }
+    if (budgetOpen) {
+        OptionDialog(
+            title = "Büdcə",
+            options = Taxonomy.budgets,
+            active = st.budget,
+            labelOf = { it },
+        ) { engine.setBudget(it); budgetOpen = false }
+    }
+
     // — D-056: dost dəvəti dialoqu (INVITE_XP əvvəl heç bir UI-a bağlı deyildi) —
     if (inviteOpen) {
         var invited by remember { mutableStateOf(false) }
@@ -750,6 +816,99 @@ private fun Modifier.androidxNavRowTap(enabled: Boolean, onClick: (() -> Unit)?)
     this.then(if (enabled && onClick != null) Modifier.pressable(enabled = enabled, onClick = onClick) else Modifier)
 
 private fun Modifier.androidxDivider(): Modifier = this.then(Modifier.background(Q.border))
+
+/**
+ * D.1 (D-170): tək-seçim dialoqu (status/qrup/büdcə) — seçim dərhal
+ * serverə yazılır (setter SaveProfileIntent göndərir).
+ */
+@Composable
+private fun OptionDialog(
+    title: String,
+    options: List<String>,
+    active: String,
+    labelOf: (String) -> String,
+    onPick: (String) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { opt ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .androidxVisRow { onPick(opt) }
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                    ) {
+                        Text(
+                            labelOf(opt),
+                            style = T.bodySm.copy(
+                                fontWeight = if (opt == active) FontWeight.W700 else FontWeight.W400,
+                                color = if (opt == active) Q.primaryText else Q.foreground,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (opt == active) {
+                            Icon(Icons.Filled.CheckCircle, null,
+                                tint = Q.primaryText, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {},
+    )
+}
+
+/**
+ * D.1 (D-170): çox-seçim dialoqu (dillər) — OK basılanda yazılır.
+ */
+@Composable
+private fun MultiOptionDialog(
+    title: String,
+    options: List<String>,
+    selected: List<String>,
+    onDone: (List<String>) -> Unit,
+) {
+    var sel by remember { mutableStateOf(selected.toSet()) }
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { opt ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .androidxVisRow { sel = if (opt in sel) sel - opt else sel + opt }
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                    ) {
+                        Text(
+                            opt,
+                            style = T.bodySm.copy(
+                                fontWeight = if (opt in sel) FontWeight.W700 else FontWeight.W400,
+                                color = if (opt in sel) Q.primaryText else Q.foreground,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (opt in sel) {
+                            Icon(Icons.Filled.CheckCircle, null,
+                                tint = Q.primaryText, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onDone(sel.toList()) }) { Text("Tamam") }
+        },
+        dismissButton = {},
+    )
+}
 
 private fun Modifier.androidxVisRow(onClick: () -> Unit): Modifier =
     this.then(Modifier.pressable(onClick = onClick))

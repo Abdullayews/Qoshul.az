@@ -370,7 +370,7 @@ object FakeQoshulDataSource : QoshulDataSource {
     // nextDateLabels → core/data/DateLabels.kt (tarix hesablaması, mənbəyə aid deyil)
 
     /** Məkan rəyləri (ROL E) — model DataSource.kt-də (VenueReview). */
-    override val mockVenueReviews = mapOf(
+    override val venueReviewsSeed = mapOf(
         "v1" to listOf(
             VenueReview("Elnur K.", 5, "Meydanlar əla, səhər saatları endirim həqiqətən işləyir."),
             VenueReview("Sara M.", 4, "Təşkilat yaxşıdır, yalnız qaraj yer axtarmaq lazım oldu."),

@@ -89,6 +89,99 @@ object QoshulLocation {
         }
     }
 
+    /**
+     * G.1 (D-170, Snapchat məntiqi): DAVAMLI lokasiya axını — dəqiqlik
+     * filtri (yalnız accuracy ≤ [MAX_ACCURACY_M] fix-lər), hərəkət
+     * yumşaltması (əvvəlki göndərilən nöqtədən ≥ [MIN_MOVE_M] uzaq)
+     * və throttle ([MIN_INTERVAL_MS]-dən tez olmayan) ilə.
+     *
+     * İstehsal: MapScreen açıq olduqca toplanır → engine →
+     * LocationUpdateIntent → fn_update_location (serverdəki yaxınlıq
+     * sorğuları üçün). Mock fix-lər axında da RƏDD olunur.
+     */
+    data class StreamFix(
+        val lat: Double,
+        val lng: Double,
+        /** Dəqiqlik radiusu, metr (dairənin ölçüsü üçün). */
+        val accuracyM: Float,
+        /** Dərəcə (0-360); istiqamət göstərmək üçün (null = bilinmir). */
+        val bearing: Float?,
+        /** Fix vaxtı (epoch millis) — köhnəlmiş fixi gizlətmək üçün. */
+        val atMs: Long,
+    )
+
+    /** Dəqiqlik qapısı: bundan kobud fix-lər süzülür (Snapchat ~50m). */
+    const val MAX_ACCURACY_M = 50f
+
+    /** Minimum hərəkət (metr) — kiçik titrəmələr göndərilmir. */
+    const val MIN_MOVE_M = 15f
+
+    /** Minimum interval (ms) — throttle. */
+    const val MIN_INTERVAL_MS = 4_000L
+
+    /** Fix bu qədər köhnədirsə „stale“ sayılır (xəritədə gizlədilir). */
+    const val STALE_MS = 30_000L
+
+    /**
+     * Davamlı axın — GPS+network provayderləri, minInterval/minDistance
+     * ilə. Hər fix: mock yoxlaması → dəqiqlik filtri → hərəkət/hava
+     * yumşaltması → [StreamFix] emit. İcazə yoxdursa axın DƏRHAL bağlanır.
+     */
+    fun locationStream(context: Context) = callbackFlow {
+        if (!hasPermission(context)) { close(); return@callbackFlow }
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        if (lm == null) { close(); return@callbackFlow }
+
+        var lastSentLat = 0.0
+        var lastSentLng = 0.0
+        var lastSentAt = 0L
+
+        val listener = LocationListener { location ->
+            // 1) mock fix RƏDD (G.4)
+            if (location.isFromMockProvider) return@LocationListener
+            // 2) dəqiqlik filtri
+            if (location.accuracy > MAX_ACCURACY_M) return@LocationListener
+            // 3) throttle + hərəkət yumşaltması
+            val nowMs = System.currentTimeMillis()
+            val movedEnough = lastSentAt == 0L || distanceM(
+                lastSentLat, lastSentLng, location.latitude, location.longitude) >= MIN_MOVE_M
+            val timeOk = nowMs - lastSentAt >= MIN_INTERVAL_MS
+            if (lastSentAt != 0L && !(movedEnough && timeOk)) return@LocationListener
+            lastSentLat = location.latitude; lastSentLng = location.longitude
+            lastSentAt = nowMs
+            trySend(
+                StreamFix(
+                    lat = location.latitude, lng = location.longitude,
+                    accuracyM = location.accuracy,
+                    bearing = location.bearing.takeIf { it != 0f },
+                    atMs = location.time,
+                )
+            )
+        }
+
+        val registered = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            .mapNotNull { p ->
+                try {
+                    lm.requestLocationUpdates(p, 2_000L, 10f, listener, Looper.getMainLooper())
+                    p
+                } catch (_: SecurityException) { null }
+                catch (_: IllegalArgumentException) { null }
+            }
+        if (registered.isEmpty()) close()
+        awaitClose { registered.forEach { try { lm.removeUpdates(listener) } catch (_: Exception) {} } }
+    }
+
+    /** İki nöqtə arası məsafə (Haversine, metr) — yumşaltma üçün. */
+    fun distanceM(la1: Double, lo1: Double, la2: Double, lo2: Double): Double {
+        val r = 6_371_000.0
+        val dLa = Math.toRadians(la2 - la1)
+        val dLo = Math.toRadians(lo2 - lo1)
+        val a = Math.sin(dLa / 2) * Math.sin(dLa / 2) +
+            Math.cos(Math.toRadians(la1)) * Math.cos(Math.toRadians(la2)) *
+            Math.sin(dLo / 2) * Math.sin(dLo / 2)
+        return 2 * r * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    }
+
     /** İcazə istəyərkən istifadəçiyə göstərilən izah (a11y/snackbar üçün). */
     const val RATIONALE =
         "Yaxınlıqdakı məkanları göstərmək və xəritədə mövqeyinizə getmək üçün lokasiya icazəsi lazımdır."

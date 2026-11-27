@@ -314,6 +314,12 @@ object SupabaseBackend {
     /** Uğursuz RPC-lərin son N-i (debug/UI). */
     val lastErrors = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
 
+    /**
+     * I.4 (D-170): sync xətası kanalı — engine optimistic rollback üçün
+     * qeyd olunur (MainActivity qurulanda bağlanır).
+     */
+    @Volatile var onRpcError: ((fn: String, t: Throwable) -> Unit)? = null
+
     /** Asinxron RPC — [BackendSync.report] yolunun icrası. */
     fun rpcAsync(scope: CoroutineScope, call: BackendCall) {
         val c = client ?: return
@@ -323,6 +329,8 @@ object SupabaseBackend {
                     Safety.onCaught?.invoke("sync:${call.fn}", t)
                     lastErrors.value =
                         (listOf("${call.fn}: ${t.message?.take(120)}") + lastErrors.value).take(20)
+                    // I.4: engine rollback + istifadəçiyə aydın xəta
+                    onRpcError?.invoke(call.fn, t)
                 }
         }
     }
