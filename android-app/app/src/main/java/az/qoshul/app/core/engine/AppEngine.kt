@@ -1618,8 +1618,8 @@ class AppEngine(
             val reply = try {
                 val call = az.qoshul.app.core.backend.SupabaseSync.mapEvent(
                     SyncEvent.AssistantIntent(text.trim()),
-                ) ?: ""
-                if (call == "") "" else {
+                )
+                if (call == null) "" else {
                     val r = az.qoshul.app.core.backend.SupabaseBackend.rpcNow(call).getOrNull()
                     // fn_assistant_reply → "cavab mətni" (skalar string)
                     (r as? kotlinx.serialization.json.JsonPrimitive)?.content ?: ""
