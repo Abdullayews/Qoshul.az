@@ -105,6 +105,11 @@ internal fun GoogleMapCanvas(
                 buildString {
                     fun hex(c: Int) = "#" + Integer.toHexString(c)
                     append("[")
+                    // D-180 (direktiv: „xəritənin əsas görüntüsündə kontrastı
+                    // 80% artır“): bütün xəritə elementlərinə saturation
+                    // +0.8 (0 → 0.8 = +80%) — palitra rəngləri doyğunlaşır,
+                    // yol/su/yaşıllıq ayrımı gözlə görünən dərəcədə artır.
+                    append("{\"stylers\":[{\"saturation\":0.8}]},")
                     append("{\"elementType\":\"geometry\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LAND)).append("\"}]},")
                     append("{\"elementType\":\"labels.text.stroke\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LABEL_HALO)).append("\"},{\"weight\":2.2}]},")
                     append("{\"elementType\":\"labels.text.fill\",\"stylers\":[{\"color\":\"").append(hex(MapPalette.LABEL_FILL)).append("\"}]},")

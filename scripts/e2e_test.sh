@@ -15,6 +15,15 @@ EMAIL="e2e_$(date +%s)@qoshul.com"
 PASS="Test12345!"
 J='Content-Type: application/json'
 
+# D-180: test qalığı qarşısı — hər çıxış yolunda (uğurlu exit, set -e
+# xətası, Ctrl-C) test useri cascade silinir (əvvəl yalnız addım 9-da
+# silinirdi; ortada exit = DB-də "E2E Testov" profili qalırdı).
+cleanup() {
+  docker exec supabase-db psql -U supabase_admin -d postgres -q -c \
+    "delete from auth.users where email='$EMAIL'" 2>/dev/null || true
+}
+trap cleanup EXIT
+
 echo "══ 1. SIGNUP: $EMAIL"
 SIGNUP=$(curl -s -m 15 -X POST "$API/auth/v1/signup" -H "apikey: $ANON" -H "$J" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"data\":{\"full_name\":\"E2E Testov\"}}")
@@ -67,10 +76,8 @@ EV_ANON=$(curl -s -m 15 "$API/rest/v1/events?select=title&title=like.E2E*" -H "a
 echo "   anon cavab: $EV_ANON (boş olmalı)"
 [ "$EV_ANON" = "[]" ] || { echo "   ✗ RLS FAIL"; exit 1; }
 
-echo "══ 9. TƏMİZLİK — test user + event sil"
-docker exec supabase-db psql -U supabase_admin -d postgres -q -c \
-  "delete from auth.users where email='$EMAIL'"
-echo "   (cascade: profile + event + iştirak silinir)"
+echo "══ 9. TƏMİZLİK — test user + event sil (trap EXIT ilə)"
+echo "   (cascade: profile + event + iştirak silinir — hər çıxışda)"
 
 echo ""
 echo "✅ E2E KEÇDİ — signup/trigger/create/join/dedup/list/RLS hamısı sağlam"

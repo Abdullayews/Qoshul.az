@@ -288,13 +288,21 @@ object SupabaseReader {
     private suspend fun readPeople(): List<Person> {
         val c = SupabaseBackend.client ?: return emptyList()
         val rows: List<JsonObject> = c.postgrest.from("profile_cards")
-            .select(Columns.raw("id,first_name,last_name,city,status,university,work_field,goals,xp"))
+            .select(Columns.raw("id,first_name,last_name,city,status,university,work_field,goals,xp,map_lat,map_lng"))
             .decodeAs()
         return rows.mapNotNull { p ->
             runCatching {
                 val id = p["id"]!!.jsonPrimitive.content
+                // D-180: xəritə pini üçün REAL (yuvarlaqlaşdırılmış ~1.1km)
+                // koordinat — 0013 profile_cards.map_lat/map_lng. Yoxdursa /
+                // OFF-dursa (0,0) → MapScreen null-island filtri süzür
+                // (əvvəl: hamı üçün sabit Bakı default — pinlər üst-üstə).
+                val mapLat = p["map_lat"]?.jsonPrimitive?.doubleOrNull ?: 0.0
+                val mapLng = p["map_lng"]?.jsonPrimitive?.doubleOrNull ?: 0.0
                 Person(
                     id = id,
+                    mapLat = mapLat,
+                    mapLng = mapLng,
                     firstName = p["first_name"]?.jsonPrimitive?.content ?: "",
                     lastName = p["last_name"]?.jsonPrimitive?.content ?: "",
                     // D-177 (ikinci dalğa): sabit "friends" fallback SİLİNDİ —

@@ -42,6 +42,14 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MapBackendTest {
 
+    private fun repoDir(): java.io.File {
+        var d = java.io.File(System.getProperty("user.dir"))
+        while (d != null && !java.io.File(d, "settings.gradle.kts").exists()) {
+            d = d.parentFile
+        }
+        return checkNotNull(d) { "repo kökü tapılmadı" }
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
@@ -122,4 +130,56 @@ class MapBackendTest {
         compose.onNodeWithText("Xəritə", substring = true).assertIsDisplayed()
         compose.onNodeWithContentDescription("Alt naviqasiya paneli").assertIsDisplayed()
     }
+
+    // ═══ D-180: kontrast +80% (saturation 0.8) — Google stil JSON ═══
+
+    @Test
+    fun `google stilinde saturation 08 var (D-180 +80% kontrast)`() {
+        // direktiv: „xəritənin əsas görüntüsündə kontrastı 80% artır“ —
+        // stil JSON-un İLK qaydası qlobal saturation 0.8 (0→0.8 = +80%)
+        val src = java.io.File(repoDir(), "app/src/main/java/az/qoshul/app/features/map/GoogleMapCanvas.kt").readText()
+        assertTrue(
+            "Google stil JSON-da saturation 0.8 olmalıdır",
+            src.contains("\\"saturation\\":0.8"),
+        )
+    }
+
+    @Test
+    fun `maplibre fallback bright stilidir (D-170 paritet qalir)`() {
+        // raster-saturation vektor stildə mümkün deyil — bright (ən doyğun
+        // OpenFreeMap stili) D-170-dən qalır; şərhdə D-180 qərarı sənədlidir
+        val src = java.io.File(repoDir(), "app/src/main/java/az/qoshul/app/features/map/MaplibreCanvas.kt").readText()
+        assertTrue(
+            "MAP_STYLE_URL bright olmalıdır",
+            src.contains("styles/bright"),
+        )
+        assertTrue(
+            "D-180 qərarı sənədlənməlidir (raster-saturation imkansızlığı)",
+            src.contains("raster-saturation MÜMKÜN DEYİL"),
+        )
+    }
+
+
+    // ═══ D-180: xəritə pinləri real (yuvarlaqlaşdırılmış) koordinat ═══
+
+    @Test
+    fun `readPeople map_lat map_lng oxuyur (D-180 null-island filtr canlanir)`() {
+        // 0013: profile_cards.map_lat/map_lng (2 onluq ~1.1km grid).
+        // Reader (0,0) default qoyur → MapScreen null-island filtri
+        // koordinatsız userləri süzür (əvvəl: sabit Bakı — hamı eyni nöqtədə)
+        val src = java.io.File(repoDir(), "app/src/main/java/az/qoshul/app/core/backend/SupabaseReader.kt").readText()
+        assertTrue(
+            "readPeople sorğusunda map_lat,map_lng olmalıdır",
+            src.contains("work_field,goals,xp,map_lat,map_lng"),
+        )
+        assertTrue(
+            "map_lat double kimi oxunmalıdır (null → 0.0)",
+            src.contains("p[\"map_lat\"]?.jsonPrimitive?.doubleOrNull ?: 0.0"),
+        )
+        assertTrue(
+            "Person mapLat/mapLng server dəyəri ilə qurulur",
+            src.contains("mapLat = mapLat,"),
+        )
+    }
+
 }

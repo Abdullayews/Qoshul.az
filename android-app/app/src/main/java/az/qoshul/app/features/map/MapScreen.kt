@@ -196,8 +196,14 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     }
 
     // G.2: stale izləmə — 30 s yeni fix gəlməyəndə dairə/istiqamət
-    // gizlədilir (nöqtə QALIR, köhnə dəqiqlik göstərilmir)
-    LaunchedEffect(myFixAtMs) {
+    // gizlədilir (nöqtə QALIR, köhnə dəqiqlik göstərilmir).
+    // D-180 BUG-FİX: əvvəlki LaunchedEffect(myFixAtMs) yalnız fix VAXTI
+    // dəyişəndə yenidən başlayırdı — GPS modulu eyni `location.time`-ı
+    // göndərirdisə (bir çox cihazda bearing/accuracy dəyişir, time xeyir
+    // dəyişmir) 30 s-liyə timer ƏVVƏLKİ qalığı ilə qalırdı: dairə həmişə
+    // stale görünürdü / heç vaxt stale olmurdu. İndi hər yeni fix state-i
+    // (lat/lng/accuracy/bearing/at) dəyişəndə timer SIFIRDAN başlayır.
+    LaunchedEffect(myFixAtMs, myAccuracyM, myBearing, myRealLat, myRealLng) {
         if (myFixAtMs != null) {
             kotlinx.coroutines.delay(QoshulLocation.STALE_MS)
             myFixStale = true

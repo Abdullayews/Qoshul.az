@@ -95,4 +95,27 @@ class VenueImageTest {
         assertTrue(sql.contains("fn_add_venue_review"))
         assertTrue(sql.contains("fn_read_swipes"))
     }
+
+    @Test fun `0013 migration login-profil bərpası + xəritə koordinatı (SQL mətn paritesi)`() {
+        val sql = sequenceOf(
+            java.io.File("supabase/migrations/0013_login_profile_recovery.sql"),
+            java.io.File("../../supabase/migrations/0013_login_profile_recovery.sql"),
+            java.io.File("../../../supabase/migrations/0013_login_profile_recovery.sql"),
+        ).firstOrNull { it.exists() }?.readText()
+            ?: error("0013 migration faylı tapılmadı (repo kökünü axtar)")
+        // D-180 (1): trigger INSERT+UPDATE — login-də profil bərpası
+        assertTrue(sql.contains("after insert or update of raw_user_meta_data, email on auth.users"))
+        // D-180 (1): ad boşdursa metadata-dan doldurulur (klient win qorunur)
+        assertTrue(sql.contains("case when btrim(first_name) = ''"))
+        // D-180 (3): zədələnmiş userlər üçün birdəfəlik bərpa (no-op UPDATE)
+        assertTrue(sql.contains("update auth.users set email = email"))
+        // D-180 (4): profile_cards view — yuvarlaqlaşdırılmış koordinat
+        assertTrue(sql.contains("round(st_y(p.last_location::geometry)::numeric, 2)"))
+        assertTrue(sql.contains("round(st_x(p.last_location::geometry)::numeric, 2)"))
+        // privacy: OFF → null; ROL I (dəqiq koordinat YOX) qorunur
+        assertTrue(sql.contains("when p.map_visibility = 'OFF' or p.last_location is null then null"))
+        // seed idempotent
+        assertTrue(sql.contains("on conflict do nothing"))
+    }
 }
+

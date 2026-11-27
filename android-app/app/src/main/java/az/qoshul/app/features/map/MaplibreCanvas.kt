@@ -59,10 +59,14 @@ import kotlinx.serialization.json.put
 /** Liberty stilinin qlif şrifti (initial hərflər üçün). */
 private const val STYLE_TEXT_FONT = "Noto Sans Regular"
 
-/** D-048: OpenFreeMap „liberty“ vektor stili — pulsuz, açarsız. */
-// F.2 (D-170, direktiv: „rəng kontrastını artır: parlaq, realistik
-// yol/su/yaşıllıq/bina rəngləri“): liberty → bright — yollar ağ-sarı,
-// su canlı göy, yaşıllıq doyğun; ümumi kontrast liberty-dən yüksək.
+/** D-048: OpenFreeMap „bright“ vektor stili — pulsuz, açarsız. */
+// F.2 (D-170, direktiv: „rəng kontrastını artır“): liberty → bright —
+// yollar ağ-sarı, su canlı göy, yaşıllıq doyğun.
+// D-180 (direktiv: „kontrastı 80% artır“): +80% saturation Google
+// backenddə stil JSON-na tətbiq olunur (GoogleMapCanvas — istehsal APK
+// əsas backendi). Burada (fallback) raster-saturation MÜMKÜN DEYİL —
+// bright VEKTOR stildir və OpenFreeMap-in ən doyğun stilidir; uzaq
+// stil JSON-u runtime-da transformasiya edilmir (offline riski).
 private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright"
 
 /** Pin siyahısından GeoJSON feature kolleksiyası. */
