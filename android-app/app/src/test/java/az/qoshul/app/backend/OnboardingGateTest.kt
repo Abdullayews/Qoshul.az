@@ -123,7 +123,7 @@ class OnboardingGateTest {
         }
     }
 
-    @Test fun `8 İ hərfi decompose olunmur (i̇ iki kod nöqtəsi yox)`() {
+    @Test fun `8 İ hərfi iki kod nöqtəsinə decompose olunmur`() {
         // JVM lowercase() "İ"ni i+U+0307 çevirir — DB slüqlarında tək 'i' var.
         // U+0307 literal YAZILA BİLMƏZ (font audit onu diapazon-xarici
         // simvol kimi tutur) — kod nöqtəsi Character.toChars ilə düzəlir.

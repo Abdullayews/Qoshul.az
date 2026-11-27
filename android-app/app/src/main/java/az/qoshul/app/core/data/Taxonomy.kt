@@ -155,7 +155,7 @@ object Taxonomy {
     /** Ad → slug; naməlum adda sadə çevirmə (lowercase + boşluq→tire). */
     fun slugOf(category: String): String =
         categorySlugs[category]
-            // D-181: "İ" → "i̇" (i+U+0307 combining dot) decompose bug-u —
+            // D-181: İ → i+combining-dot (U+0307) decompose bug-u —
             // JVM lowercase() İ hərfini İKİ kod nöqtəsinə çevirir; DB slüqları
             // həmişə tək "i" istifadə edir ("müsahibəyə-hazırlıq")
             ?: category.trim().replace("İ", "i").lowercase()
