@@ -338,12 +338,21 @@ object SupabaseReader {
             if (r["checked_in_at"]?.jsonPrimitive?.contentOrNull != null) checkedIn.add(ev)
         }
         // D-169: saxlanılanlar ayrı cədvəldən (0009) — köhnə "SAVED" status
-        // heç vaxt yazılmırdı; saved_events RLS ilə yalnız sahibi oxuyur
-        val savedRows: List<JsonObject> = runCatching {
-            c.postgrest.from("saved_events").select(Columns.raw("event_id")).decodeAs()
-        }.getOrDefault(emptyList())
-        val saved = savedRows.mapNotNull { it["event_id"]?.jsonPrimitive?.contentOrNull }.toSet()
+        // heç vaxt yazılmırdı; saved_events RLS ilə yalnız sahibi oxuyur.
+        // (Ayrı suspend funksiya — runCatching+decodeAs inline tip çıxarışı
+        // K2-də pozulurdu: "Cannot infer type for R")
+        val saved = readSavedEventIds()
         return Participation(joined, pending, checkedIn, saved)
+    }
+
+    /** D-169: saved_events cədvərindən istifadəçinin saxladığı tədbirlər. */
+    private suspend fun readSavedEventIds(): Set<String> {
+        val c = SupabaseBackend.client ?: return emptySet()
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.from("saved_events")
+                .select(Columns.raw("event_id")).decodeAs()
+            rows.mapNotNull { it["event_id"]?.jsonPrimitive?.contentOrNull }.toSet()
+        }.getOrDefault(emptySet())
     }
 
     private suspend fun readHostedEventIds(): Set<String> {
