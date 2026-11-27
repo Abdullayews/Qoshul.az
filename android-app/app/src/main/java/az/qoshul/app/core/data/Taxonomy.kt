@@ -175,9 +175,17 @@ object Taxonomy {
     fun slugsForSelection(selection: String): List<String> {
         // 1) bilinən alt kateqoriya → tək slug
         categorySlugs[selection]?.let { return listOf(it) }
-        // 2) onboarding qrup adı → qrup(lar)ın alt slüqları (açıq xəritə)
-        rolToGroups[selection.trim()]?.let { groups ->
-            return groups.flatMap { g -> g.items.mapNotNull { categorySlugs[it] } }.distinct()
+        // 2) onboarding qrup adı → qrup(lar)ın alt slüqları (açıq xəritə).
+        //    Açlı tip annotasiyası: g.items (List<String>) → mapNotNull-ın
+        //    R tipi (String) K2 tərəfindən çıxarılmır — lambda parametri
+        //    açıq verilib
+        rolToGroups[selection.trim()]?.let { groups: List<String> ->
+            val out = mutableListOf<String>()
+            for (g in groups) {
+                val items = categoryGroups.firstOrNull { it.group == g }?.items ?: emptyList()
+                for (item in items) categorySlugs[item]?.let { out.add(it) }
+            }
+            return out.distinct()
         }
         // 3) naməlum ad → köhnə fallback (DB tərəfi filtrləyir — 0014)
         return listOf(slugOf(selection))
