@@ -184,10 +184,11 @@ dependencies {
     implementation(libs.google.maps.compose)
     implementation(libs.google.play.services.maps)
 
-    // — M1: Supabase backend (D-068 pin; supabase/README.md §2) —
-    // supabase-kt = core (SupabaseClient); modullar ayrıca (CI fəslindən):
+    // — M1: Supabase backend (D-068 pin → D-166 v3) —
+    // supabase-kt = core (SupabaseClient); modullar ayrıca (CI fəslindən).
+    // D-166: gotrue-kt 2.6.1 → auth-kt 3.9.0 (v3; namespace .auth).
     implementation(libs.supabase.kt)
-    implementation(libs.supabase.gotrue)
+    implementation(libs.supabase.auth)
     // D-151: sessiya persistence (SettingsStorage)
     implementation(libs.multiplatform.settings)
     implementation(libs.supabase.postgrest)

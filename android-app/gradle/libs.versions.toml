@@ -28,12 +28,15 @@ kyant0Backdrop = "2.0.1"
 # (deptree sübutu: debugRuntimeClasspath-da VAR, compile-da YOX)
 mapsCompose = "9.0.1"
 playServicesMaps = "20.0.0"
-# — M1 (D-068): Supabase + Ktor + serialization —
-# qrup: io.github.jan-tennert.supabase (search.maven.org + gotrue-kt 2.6.1 POM
-# 200 ilə təsdiq; supabase-kt/postgrest-kt 3.9.0 bu gün D-068 metadata ilə
-# yoxlanılıb, CI-da gradle həlli son təsdiqi verir)
-supabaseKt = "3.9.0"        # umbrella (postgrest/realtime/storage/functions 3.9.0 daxil)
-gotrueKt = "2.6.1"          # auth modulu ayrıca versiya xətti (head 2.7.0-beta-1 — beta götürülür)
+# — M1 (D-068 → D-166): Supabase + Ktor + serialization —
+# qrup: io.github.jan-tennert.supabase. D-166: köhnə gotrue-kt 2.6.1
+# (namespace io.github.jan.supabase.gotrue) tam SİLİNDİ — v3 auth-kt
+# 3.9.0 (namespace io.github.jan.supabase.auth) ilə əvəz olundu.
+# Sübut: DEX-də iki auth qatı paralel yaşayırdı (gotrue 501 + auth 900
+# string) — köhnə qat z35 serializer konfliktinin və gizli bug-ların
+# mənbəyi idi. auth-kt-android 3.9.0 POM: core + multiplatform-settings
+# daxildir (gotrue YOX, öz təsdiqi).
+supabaseKt = "3.9.0"        # umbrella (auth/postgrest/realtime/storage/functions 3.9.0 daxil)
 ktorCio = "3.6.1"           # CIO engine — əlavə native asılılıq YOX (M1)
 serializationJson = "1.12.0"
 # — D-150: Google native sign-in (Credential Manager, 2026-11-24) —
@@ -70,15 +73,15 @@ kyant0-backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref =
 # D-108: Google Maps SDK (maps-compose — Play Services xəritə)
 google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 google-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
-# — M1: Supabase (D-068 pin) — QEYD (CI fəslindən, D-078 düzəlişi):
-# supabase-kt "umbrella" əslində CORE-dur (SupabaseClient); modullar
-# ayrıca deklarasiya olunur: gotrue-kt (auth), postgrest-kt (RPC).
+# — M1: Supabase (D-068 pin; D-166 v3 miqrasiyası) — QEYD (CI fəslindən,
+# D-078 düzəlişi): supabase-kt "umbrella" əslində CORE-dur (SupabaseClient);
+# modullar ayrıca deklarasiya olunur: auth-kt (auth, v3), postgrest-kt (RPC).
 # realtime-kt/storage-kt — istifadə kodu gələndə əlavə olunacaq (M4).
 supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", version.ref = "supabaseKt" }
-supabase-gotrue = { group = "io.github.jan-tennert.supabase", name = "gotrue-kt", version.ref = "gotrueKt" }
+supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version.ref = "supabaseKt" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKt" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
-# D-151: gotrue-kt SettingsStorage — sessiya persistence (restart-da login qalır)
+# D-151: auth-kt SettingsStorage — sessiya persistence (restart-da login qalır)
 multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 # D-150: Google native sign-in — Credential Manager + Google ID

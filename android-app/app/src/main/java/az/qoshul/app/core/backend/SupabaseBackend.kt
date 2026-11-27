@@ -22,18 +22,18 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.gotrue.Auth
-import io.github.jan.supabase.gotrue.OtpType
-import io.github.jan.supabase.gotrue.SessionStatus
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.Google
-import io.github.jan.supabase.gotrue.providers.builtin.Email
-import io.github.jan.supabase.gotrue.providers.builtin.IDToken
-import io.github.jan.supabase.gotrue.providers.builtin.OTP
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.OtpType
+import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
+import io.github.jan.supabase.auth.providers.builtin.OTP
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
-import io.github.jan.supabase.gotrue.SettingsSessionManager
+import io.github.jan.supabase.auth.SettingsSessionManager
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -57,10 +57,13 @@ import java.util.UUID
  *
  * Sessiya persistence (D-151): SettingsSessionManager (multiplatform-settings,
  * Android-də SharedPreferences) — app restart-dan sonra login QALIR; access
- * token auto-refresh gotrue-kt daxilindədir.
+ * token auto-refresh auth-kt daxilindədir.
  *
- * versiya pin: supabase-kt 3.9.0 + gotrue-kt 2.6.1 (D-068; namespace
- * `io.github.jan.supabase` — D-078 transfer qeydi).
+ * versiya pin (D-166): V3 TƏMİZ — supabase-kt 3.9.0 + auth-kt 3.9.0 +
+ * postgrest-kt 3.9.0, hamısı eyni versiya xətti; namespace
+ * `io.github.jan.supabase.auth` (köhnə `.gotrue` qatı 2.6.1 TAM silindi —
+ * DEX-də iki paralel auth qatı yaşayırdı, z35 serializer konfliktinin
+ * mənbəyi idi).
  *
  * Təhlükəsizlik (qayda 3/D-080): yalnız ANON_KEY; SERVICE_ROLE_KEY
  * klientə heç vaxt düşmür.
