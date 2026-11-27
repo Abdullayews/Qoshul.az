@@ -344,7 +344,7 @@ private fun ChatView(
     // Realtime-dan gəlir (typing broadcast + messages INSERT). Köhnə
     // 1400ms saxta taymer SİLİNDİ — öz mesajından sonra saxta cavab
     // gözləntisi yaratmırdı, yalnız UI aldadırdı.
-    val typing by az.qoshul.app.core.backend.TypingIndicator.rememberTyping(title)
+    val typing = az.qoshul.app.core.backend.TypingIndicator.rememberTyping(title)
     var menuOpen by remember { mutableStateOf(false) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val listState = rememberLazyListState()

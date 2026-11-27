@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -210,6 +211,8 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
                 )
             }
         }
+        // D-176 (ikinci dalğa): sync xətaları Snackbar — BoxScope daxilində
+        SyncErrorSnackbar(st.syncError)
     }
 
     // — Modal sheet-lər (yaratma / bitirmə) —
@@ -232,10 +235,7 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
         FinishActivitySheet(engine = engine, event = ev, onDismiss = { finishEvent = null })
     }
 
-    // D-176 (ikinci dalğa): sync xətaları Snackbar ilə görünür — profileLoaded
-    // qapısı yalnız GİRİŞ yükünü göstərir; shell DAXİLINDA baş verən
-    // metadata (prefs/lokasiya/bildiriş) xətaları səssiz qalmır.
-    SyncErrorSnackbar(st.syncError, Modifier.align(Alignment.BottomCenter))
+
 }
 
 /**
@@ -244,7 +244,7 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
  * Xəta boş olanda heç nə göstərilmir; eyni mətn təkrar göstərilmir.
  */
 @Composable
-private fun SyncErrorSnackbar(syncError: String, modifier: androidx.compose.ui.Modifier) {
+private fun androidx.compose.foundation.layout.BoxScope.SyncErrorSnackbar(syncError: String) {
     if (syncError.isEmpty()) return
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     LaunchedEffect(syncError) {
@@ -252,7 +252,7 @@ private fun SyncErrorSnackbar(syncError: String, modifier: androidx.compose.ui.M
     }
     androidx.compose.material3.SnackbarHost(
         hostState = snackbar,
-        modifier = modifier,
+        modifier = Modifier.align(Alignment.BottomCenter),
     )
 }
 

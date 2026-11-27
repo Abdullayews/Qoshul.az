@@ -161,7 +161,7 @@ fun VenueImage(
                 venueCategoryIcon(category), null,
                 tint = Q.mutedFg, modifier = androidx.compose.ui.Modifier.size(34.dp),
             )
-            Spacer(androidx.compose.foundation.layout.Modifier.height(6.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 category, style = T.chipXs.copy(color = Q.mutedFg),
                 maxLines = 1, overflow = TextOverflow.Ellipsis,

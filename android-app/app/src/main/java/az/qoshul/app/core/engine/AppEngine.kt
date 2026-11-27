@@ -1114,8 +1114,8 @@ class AppEngine(
                 // fn_record_swipe → [{"matched": true, "awarded_xp": true}]
                 val arr = r as? kotlinx.serialization.json.JsonArray
                 val obj = arr?.firstOrNull() as? kotlinx.serialization.json.JsonObject
-                when (obj?.get("matched")
-                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }) {
+                val prim = obj?.get("matched") as? kotlinx.serialization.json.JsonPrimitive
+                when (prim?.content) {
                     "true" -> SwipeOutcome.MATCHED
                     "false" -> SwipeOutcome.NOT_MATCHED
                     else -> SwipeOutcome.ERROR
@@ -1613,16 +1613,20 @@ class AppEngine(
         }
         assistantJob?.cancel()
         assistantJob = s.launch {
-            val reply = az.qoshul.app.core.safety.Safety.of(
-                tag = "assistant-rpc",
-                fallback = "",
-            ) {
+            // Safety.of bloku non-suspend olduqlarından rpcNow (suspend)
+            // burada birbaşa try/catch ilə çağırılır
+            val reply = try {
                 val call = az.qoshul.app.core.backend.SupabaseSync.mapEvent(
                     SyncEvent.AssistantIntent(text.trim()),
-                ) ?: return@of ""
-                val r = az.qoshul.app.core.backend.SupabaseBackend.rpcNow(call).getOrNull()
-                // fn_assistant_reply → "cavab mətni" (skalar string)
-                (r as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull ?: ""
+                ) ?: ""
+                if (call == "") "" else {
+                    val r = az.qoshul.app.core.backend.SupabaseBackend.rpcNow(call).getOrNull()
+                    // fn_assistant_reply → "cavab mətni" (skalar string)
+                    (r as? kotlinx.serialization.json.JsonPrimitive)?.content ?: ""
+                }
+            } catch (t: Throwable) {
+                az.qoshul.app.core.safety.Safety.onCaught?.invoke("assistant-rpc", t)
+                ""
             }
             if (reply.isBlank()) {
                 assistantErrorV = "Cavab alınmadı — bir azdan yenidən yaz"

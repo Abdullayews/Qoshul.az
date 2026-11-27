@@ -40,13 +40,16 @@ import androidx.compose.material.icons.filled.TableRestaurant
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.WhereToVote
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.TextButtonState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

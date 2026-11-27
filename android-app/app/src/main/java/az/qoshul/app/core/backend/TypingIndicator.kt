@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import az.qoshul.app.core.safety.Safety
+import io.github.jan.supabase.realtime.broadcast
 import io.github.jan.supabase.realtime.broadcastFlow
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.realtime
@@ -41,9 +42,6 @@ object TypingIndicator {
 
     private const val SHOW_TTL_MS = 6000L
     private const val SEND_THROTTLE_MS = 2000L
-
-    /** Aktiv dinləyici — chat dəyişəndə ləğv olunur. */
-    @Volatile private var listenJob: Job? = null
 
     /**
      * „Yazır...“ göstəricisi — chat açıq olan müddətdə:
