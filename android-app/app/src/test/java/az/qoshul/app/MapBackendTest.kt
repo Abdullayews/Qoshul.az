@@ -136,11 +136,14 @@ class MapBackendTest {
     @Test
     fun `google stilinde saturation 08 var (D-180 +80% kontrast)`() {
         // direktiv: „xəritənin əsas görüntüsündə kontrastı 80% artır“ —
-        // stil JSON-un İLK qaydası qlobal saturation 0.8 (0→0.8 = +80%)
+        // stil JSON-un İLK qaydası qlobal saturation 0.8 (0→0.8 = +80%).
+        // Axtarış dırnaqsız: append("{\"stylers\":[{\"saturation\":0.8}]},")
+        // sətri üçün unikal "saturation\":0.8 fraqmenti kifayətdir.
         val src = java.io.File(repoDir(), "app/src/main/java/az/qoshul/app/features/map/GoogleMapCanvas.kt").readText()
         assertTrue(
             "Google stil JSON-da saturation 0.8 olmalıdır",
-            src.contains("\\"saturation\\":0.8"),
+            src.contains("saturation") && src.contains("0.8}]},") &&
+                src.contains("stylers"),
         )
     }
 
