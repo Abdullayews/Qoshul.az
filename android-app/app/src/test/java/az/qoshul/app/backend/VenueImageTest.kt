@@ -117,5 +117,22 @@ class VenueImageTest {
         // seed idempotent
         assertTrue(sql.contains("on conflict do nothing"))
     }
+
+    @Test fun `0014 migration maraq FK guard (SQL mətn paritesi)`() {
+        val sql = sequenceOf(
+            java.io.File("supabase/migrations/0014_interests_fk_guard.sql"),
+            java.io.File("../../supabase/migrations/0014_interests_fk_guard.sql"),
+            java.io.File("../../../supabase/migrations/0014_interests_fk_guard.sql"),
+        ).firstOrNull { it.exists() }?.readText()
+            ?: error("0014 migration faylı tapılmadı (repo kökünü axtar)")
+        // D-181: insert yalnız categories-də MÖVCUD slüqlarla (join filtri)
+        assertTrue(sql.contains("join public.categories c on c.slug = t.slug"))
+        // zərərli tarixi qalıqların təmizliyi
+        assertTrue(sql.contains("delete from public.user_interests ui"))
+        // köhnə APK-lardan gələn zərərli slüq artıq əməliyyatı partlatmır
+        assertTrue(sql.contains("on conflict do nothing"))
+    }
+}
+
 }
 

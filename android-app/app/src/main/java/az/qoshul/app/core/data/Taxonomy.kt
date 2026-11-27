@@ -54,6 +54,12 @@ object Taxonomy {
     // ── D-152: kateqoriya adı → server slug (0003 seed ilə BİREBİR) ──
     // Serverdə categories.slug FK qaydası; slug qaydası qarışıqdır
     // (bəzən ü→u, bəzən saxlanılır) — dəqiq xəritə ən etibarlı yoldur.
+    // D-181: onboarding maraq seçimi QRUPLARI göstərilir (rolCategories —
+    // "İdman və Aktivlik" və s.), alt kateqoriyalar YOX. Qrup adları
+    // user_interests-ə YAZILMIR — qrupun ALT kateqoriyaları yazılır
+    // (qrup → slug-lar xəritəsi, aşağıda groupInterests). Əvvəl qrup adı
+    // birbaşa slugOf-a düşürdü → fallback "idman-və-aktivlik" → FK
+    // pozuntusu ("Sinxronizasiya xətası — dəyişikliklər geri alındı").
     val categorySlugs: Map<String, String> = mapOf(
         "Futbol" to "futbol",
         "Basketbol" to "basketbol",
@@ -148,7 +154,46 @@ object Taxonomy {
 
     /** Ad → slug; naməlum adda sadə çevirmə (lowercase + boşluq→tire). */
     fun slugOf(category: String): String =
-        categorySlugs[category] ?: category.trim().lowercase().replace(Regex("\\s+"), "-")
+        categorySlugs[category]
+            // D-181: "İ" → "i̇" (i+U+0307 combining dot) decompose bug-u —
+            // JVM lowercase() İ hərfini İKİ kod nöqtəsinə çevirir; DB slüqları
+            // həmişə tək "i" istifadə edir ("müsahibəyə-hazırlıq")
+            ?: category.trim().replace("İ", "i").lowercase()
+                .replace(Regex("\\s+"), "-")
+
+    /**
+     * D-181: onboarding maraq SEÇİMİ → server slüqları (FK-safe).
+     *
+     * Onboarding qrup adı göstərir (rolCategories — "İdman və Aktivlik"
+     * və s.); bunlar alt kateqoriya deyil və categories.slug-da YOXDUR —
+     * əvvəl fallback "idman-və-aktivlik" yaradıb FK pozurdu
+     * („Sinxronizasiya xətası — dəyişikliklər geri alındı“).
+     * İndi: qrup seçilibsə həmin qrup(lar)ın BÜTÜN alt kateqoriya
+     * slüqları göndərilir (tövsiyə/match alt kateqoriyalar üzərindən
+     * işləyir); alt kateqoriya adı gələrsə tək slüq qaytarır.
+     */
+    fun slugsForSelection(selection: String): List<String> {
+        // 1) bilinən alt kateqoriya → tək slug
+        categorySlugs[selection]?.let { return listOf(it) }
+        // 2) onboarding qrup adı → qrup(lar)ın alt slüqları (açıq xəritə)
+        rolToGroups[selection.trim()]?.let { groups ->
+            return groups.flatMap { g -> g.items.mapNotNull { categorySlugs[it] } }.distinct()
+        }
+        // 3) naməlum ad → köhnə fallback (DB tərəfi filtrləyir — 0014)
+        return listOf(slugOf(selection))
+    }
+
+    /** D-181: onboarding seçimi (rolCategories) → Taksonomiya qrup adları. */
+    private val rolToGroups: Map<String, List<String>> = mapOf(
+        "Əyləncə və Gecə həyatı" to listOf("Oyunlar", "Musiqi"),
+        "Kafe və Yemək" to listOf("Yemək və içki"),
+        "İdman və Aktivlik" to listOf("İdman"),
+        "Təbiət və Səyahət" to listOf("Təbiət", "Səyahət və digər"),
+        "Mədəniyyət və İncəsənət" to listOf("Mədəniyyət", "İncəsənət"),
+        "Oyun və Hobbi" to listOf("Oyunlar", "İncəsənət"),
+        "Musiqi" to listOf("Musiqi"),
+        "Könüllülük və Sosial" to listOf("Könüllülük"),
+    )
 
     /** Kateqoriyanın qrup adı ("Qəhvə" → "Yemək və içki"). */
     fun groupOf(category: String): String =

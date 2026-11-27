@@ -92,4 +92,56 @@ class OnboardingGateTest {
         assertFalse(st.onboarded)
         assertFalse(st.signedIn)
     }
+
+    // ═══ D-181: maraq slüqları FK-safe + profil-null qərarı ═══
+
+    @Test fun `6 onboarding qrup seçimi DB-də mövcud slüqlar verir (D-181 FK-safe)`() {
+        // köhnə bug: "İdman və Aktivlik" → fallback "idman-və-aktivlik" →
+        // user_interests FK pozuntusu. İndi: qrup → alt kateqoriya slüqları.
+        val slugs = az.qoshul.app.core.data.Taxonomy.slugsForSelection("İdman və Aktivlik")
+        assertTrue("boş olmamalıdır", slugs.isNotEmpty())
+        assertTrue("'futbol' qrupun alt kateqoriyasıdır", slugs.contains("futbol"))
+        assertTrue("'basketbol' qrupun alt kateqoriyasıdır", slugs.contains("basketbol"))
+        // heç bir nəticə fallback formasında OLMAMALIDIR
+        assertFalse(
+            "fallback slüq olmamalıdır (idman-və-aktivlik FK pozur)",
+            slugs.any { it.contains("və") },
+        )
+    }
+
+    @Test fun `7 bütün onboarding seçimləri FK-safedir (8 qrup)`() {
+        az.qoshul.app.core.data.Taxonomy.rolCategories.forEach { sel ->
+            val slugs = az.qoshul.app.core.data.Taxonomy.slugsForSelection(sel)
+            assertTrue(
+                "'$sel' üçün slüqlar boş olmamalıdır",
+                slugs.isNotEmpty(),
+            )
+            assertFalse(
+                "'$sel' → fallback 'və' slüqu FK pozur: $slugs",
+                slugs.any { it.contains("və") },
+            )
+        }
+    }
+
+    @Test fun `8 İ hərfi decompose olunmur (i̇ iki kod nöqtəsi yox)`() {
+        // JVM lowercase() "İ"ni i+U+0307 çevirir — DB slüqlarında tək 'i' var
+        val slug = az.qoshul.app.core.data.Taxonomy.slugOf("İdman və Aktivlik")
+        assertFalse(
+            "slug combining char (U+0307) DAXİL ETMƏMƏLİDİR: $slug",
+            slug.contains("\u0307"),
+        )
+    }
+
+    @Test fun `9 profil NULL gəlsə belə sonsuz loading YOX (D-181)`() {
+        // 0013 triggeri profili yaradır, amma race/köhnə sessiya halında
+        // myProfile=null gələ bilər — qərar YENƏ VERİLMƏLİDİR (onboarding
+        // təhlükəsizdir: fn_save_profile sətri bərpa edir)
+        val e = engine()
+        e.signIn()
+        e.applyServerData(ServerData(myProfile = null))
+        val st = e.state.value
+        assertTrue("profil null-dursa belə qərar verilir (loading bitir)", st.profileLoaded)
+        assertFalse("onboarded=false → onboarding göstərilir", st.onboarded)
+    }
+
 }

@@ -183,6 +183,15 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
     Box(Modifier.fillMaxSize().background(rootBg)) {
         when {
             !st.signedIn -> AuthScreen(onSignedIn = { engine.signIn() }, engine = engine)
+            // D-181: profil serverdən oxunana qədər onboarding AÇILMIR.
+            // ƏVVƏLKİ BUG: onboarded qərarı profileLoaded gözləmirdi —
+            // köhnə APK-da təkrar girişdə onboardedV=false defaultu ilə
+            // OnboardingScreen DƏRHAL göstərilirdi; serverdən onboarded=true
+            // gəlsə belə istifadəçi sualları artıq GÖRMÜŞDÜR. İndi:
+            // profil gəlməmiş → ProfileLoadingScreen (spinner); gəldi →
+            // onboarded=true → app, onboarded=false → onboarding (yalnız
+            // yeni qeydiyyat).
+            !st.profileLoaded -> ProfileLoadingScreen(engine)
             !st.onboarded -> OnboardingScreen(engine)
             else -> GlassNavHost(
                 nav = nav,

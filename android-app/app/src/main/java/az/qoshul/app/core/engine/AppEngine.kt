@@ -540,11 +540,13 @@ class AppEngine(
                 card.nonce, card.fallbackCode, exp)
             xpCardVenueIdV = card.venueId
         }
-        // C (D-170): profil gəldi → onboarded qərarı serverdəndir
-        if (d.myProfile != null) {
-            profileLoadedV = true
-            syncErrorV = ""
-        }
+        // C (D-170): profil gəldi → onboarded qərarı serverdəndir.
+        // D-181: profil NULL olsa belə qərar VERİLİR (sonsuz loading yox) —
+        // sətir yoxdursa onboarded=false mənasıdır (0013 triggeri normalda
+        // yaradır; race/köhnə sessiya halında onboarding təhlükəsizdir:
+        // fn_save_profile insert-on-conflict ilə sətri bərpa edir).
+        profileLoadedV = true
+        if (d.myProfile != null) syncErrorV = ""
         // profil — D-152: onboarding sahələri və maraqlar da bərpa olunur
         d.myProfile?.let { me ->
             // A.1 (D-170): server fallback-i YOX — boş gəlirsə boş qalır
@@ -718,9 +720,13 @@ class AppEngine(
     fun setInterests(intr: List<String>) {
         interestsV = intr
         emit()
-        // D-152: maraqlar serverdə atomik əvəz olunur (slug-larla)
+        // D-152: maraqlar serverdə atomik əvəz olunur (slug-larla).
+        // D-181: slugsForSelection — onboarding QRUPLARI göstərilir
+        // (rolCategories); qrup → alt kateqoriya slüqları. Əvvəl qrup
+        // adı fallback slüqa düşüb FK pozurdu (user_interests →
+        // categories.slug). Buradan yalnız DB-də mövcud slüqlar çıxır.
         report(
-            SyncEvent.SaveProfileIntent(interests = intr.map { slugifyCategory(it) }),
+            SyncEvent.SaveProfileIntent(interests = intr.flatMap { Taxonomy.slugsForSelection(it) }.distinct()),
         )
     }
 
