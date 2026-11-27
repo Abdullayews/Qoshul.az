@@ -124,11 +124,19 @@ class OnboardingGateTest {
     }
 
     @Test fun `8 İ hərfi decompose olunmur (i̇ iki kod nöqtəsi yox)`() {
-        // JVM lowercase() "İ"ni i+U+0307 çevirir — DB slüqlarında tək 'i' var
+        // JVM lowercase() "İ"ni i+U+0307 çevirir — DB slüqlarında tək 'i' var.
+        // U+0307 literal YAZILA BİLMƏZ (font audit onu diapazon-xarici
+        // simvol kimi tutur) — kod nöqtəsi Character.toChars ilə düzəlir.
+        val combiningDot = String(Character.toChars(0x0307))
         val slug = az.qoshul.app.core.data.Taxonomy.slugOf("İdman və Aktivlik")
         assertFalse(
             "slug combining char (U+0307) DAXİL ETMƏMƏLİDİR: $slug",
-            slug.contains("\u0307"),
+            slug.contains(combiningDot),
+        )
+        // və məntiqi yoxlama: nəticədə yalnız tək 'i' olmalıdır
+        assertTrue(
+            "İ→i açıq replace işləməlidir ('idman-və-aktivlik' fallback-i)",
+            slug == "idman-və-aktivlik",
         )
     }
 
