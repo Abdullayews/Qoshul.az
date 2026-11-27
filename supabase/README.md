@@ -1,7 +1,7 @@
 # Qoshul.az — Supabase backend (M1)
 
 > **Status:** M1 sxem + server qaydaları hazırdır (D-076/D-077).
-> Tətbiq hələ **MOCK rejimində** işləyir (D-050 ikili rejim) — server
+> Tətbiq **tək rejimdə — SUPABASE** işləyir (D-151/D-170: ikili rejim
 > qoşulanda `BACKEND_MODE=SUPABASE` ilə keçilir.
 >
 > **Deploy (M5):** cloud Supabase LƏĞV EDİLİB — **self-host Supabase**

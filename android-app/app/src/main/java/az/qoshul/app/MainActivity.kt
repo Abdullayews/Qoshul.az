@@ -231,6 +231,29 @@ fun QoshulApp(engineOverride: AppEngine? = null) {
     finishEvent?.let { ev ->
         FinishActivitySheet(engine = engine, event = ev, onDismiss = { finishEvent = null })
     }
+
+    // D-176 (ikinci dalğa): sync xətaları Snackbar ilə görünür — profileLoaded
+    // qapısı yalnız GİRİŞ yükünü göstərir; shell DAXİLINDA baş verən
+    // metadata (prefs/lokasiya/bildiriş) xətaları səssiz qalmır.
+    SyncErrorSnackbar(st.syncError, Modifier.align(Alignment.BottomCenter))
+}
+
+/**
+ * D-176: syncError Snackbar — shell daxilində xəta baş olanda (metadata
+ * report xətası, kritik rollback) istifadəçiyə qısa bildiriş göstərir.
+ * Xəta boş olanda heç nə göstərilmir; eyni mətn təkrar göstərilmir.
+ */
+@Composable
+private fun SyncErrorSnackbar(syncError: String, modifier: androidx.compose.ui.Modifier) {
+    if (syncError.isEmpty()) return
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    LaunchedEffect(syncError) {
+        snackbar.showSnackbar(syncError, duration = androidx.compose.material3.SnackbarDuration.Short)
+    }
+    androidx.compose.material3.SnackbarHost(
+        hostState = snackbar,
+        modifier = modifier,
+    )
 }
 
 /** Push-ekran yönləndirməsi. */

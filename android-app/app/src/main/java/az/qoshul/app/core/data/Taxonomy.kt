@@ -155,6 +155,18 @@ object Taxonomy {
         categoryGroups.firstOrNull { it.items.contains(category) }?.group
             ?: "Səyahət və digər"
 
+    /**
+     * D-177 (ikinci dalğa): kateqoriya → brend şəkil açarı (QoshulDataSource
+     * .imageForCategory buradan götürülür — SupabaseReader də birbaşa çağırır;
+     * köhnə `image ?: "friends"` sabit fallback-i kateqoriyadan törəyir).
+     */
+    fun imageKeyForCategory(category: String): String = when (groupOf(category)) {
+        "İdman", "Təbiət" -> az.qoshul.app.core.model.ImageKey.PADEL
+        "Yemək və içki" -> az.qoshul.app.core.model.ImageKey.COFFEE
+        "Texnologiya", "Biznes və karyera", "Təhsil" -> az.qoshul.app.core.model.ImageKey.TECH
+        else -> az.qoshul.app.core.model.ImageKey.FRIENDS
+    }
+
     // ── Şəhərlər — D-126: Azərbaycanın BÜTÜN rəsmi şəhərləri (79), A-Z ──
     val cities: List<City> = listOf(
         City("Ağcabədi", "Qarabağ", 40.0528, 47.4589),

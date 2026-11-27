@@ -20,6 +20,15 @@ object BackendConfig {
             isUsableKey(az.qoshul.app.BuildConfig.SUPABASE_ANON_KEY)
     }
 
+    /**
+     * D-177 (ikinci dalğa): şəkil YÜKLƏMƏ backendi (0011 avatars bucket +
+     * fn_set_photo_count) UI-da AKTİVDİRMİ? false → onboarding şəkil addımı
+     * və profil avatar dəyişmə GİZLİDİR (yarımçıq UI yoxdur — istifadəçi
+     * brend avatara düşür, real yükləmə gələndə açılır).
+     */
+    val photoUploadEnabled: Boolean
+        get() = az.qoshul.app.BuildConfig.PHOTO_UPLOAD_ENABLED
+
     val supabaseUrl: String get() = az.qoshul.app.BuildConfig.SUPABASE_URL
     val supabaseAnonKey: String get() = az.qoshul.app.BuildConfig.SUPABASE_ANON_KEY
 

@@ -218,13 +218,16 @@ class XpEngineTest {
 
     @Test fun `swipe keç — match yoxdur`() {
         val e = engine()
-        assertFalse(e.swipe("p3", false)) // likesBack = false
-        assertFalse(e.swipe("p4", true))  // likesBack = false
+        // D-176: match qərarı serverdən (swipeRpc override — test inyeksiyası)
+        e.swipeOutcomeOverride = { _ -> AppEngine.SwipeOutcome.NOT_MATCHED }
+        assertFalse(e.swipe("p3", false))
+        assertFalse(e.swipe("p4", true))
     }
 
     @Test fun `qarşılıqlı maraq match yaradır`() {
         val e = engine()
-        assertTrue(e.swipe("p1", true)) // likesBack = true
+        e.swipeOutcomeOverride = { _ -> AppEngine.SwipeOutcome.MATCHED }
+        assertTrue(e.swipe("p1", true))
         assertTrue("p1" in e.state.value.matches)
         assertTrue("p1" in e.state.value.friendships)
         assertTrue(e.state.value.friendMessages.containsKey("p1"))
@@ -233,19 +236,20 @@ class XpEngineTest {
 
     @Test fun `match XP gündəlik cap 3`() {
         val e = engine()
+        e.swipeOutcomeOverride = { _ -> AppEngine.SwipeOutcome.MATCHED }
         val before = e.state.value.xp
         assertTrue(e.swipe("p1", true))  // +10 (1)
         assertTrue(e.swipe("p2", true))  // +10 (2)
         assertTrue(e.swipe("p5", true))  // +10 (3)
         val after3 = e.state.value.xp
         assertEquals(before + 30, after3)
-        // 4-cü match XP vermir (yalnız 3 likesBack=true insan var; cap test üçün məntiq:
-        // bütün likesBack=true istifadə olundu — cap 3-dür)
+        // D-176: likedMe=true insanlar (server inyeksiyası ilə 3 match) — cap 3
         assertEquals(3, e.state.value.swipes.count { it.value })
     }
 
     @Test fun `blok match və dostluğu təmizləyir`() {
         val e = engine()
+        e.swipeOutcomeOverride = { _ -> AppEngine.SwipeOutcome.MATCHED }
         e.swipe("p1", true)
         e.blockUser("p1")
         assertFalse("p1" in e.state.value.matches)
@@ -389,6 +393,7 @@ class XpEngineTest {
         val e = engine()
         e.toggleNotifPref(NotifType.MATCH, false)
         val before = e.state.value.notifications.size
+        e.swipeOutcomeOverride = { _ -> AppEngine.SwipeOutcome.MATCHED }
         e.swipe("p1", true)
         // match bildirişi söndürülüb — yalnız səviyyə/xp bildirişləri ola bilər
         val matchNotifs = e.state.value.notifications.count { it.type == NotifType.MATCH }

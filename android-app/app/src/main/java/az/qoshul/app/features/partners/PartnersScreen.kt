@@ -143,9 +143,12 @@ private fun PartnerCard(p: az.qoshul.app.core.model.Partner, onCreate: () -> Uni
             .fillMaxWidth()
             .androidxPartnerCard()
     ) {
-        Image(
-            painter = imagePaint(p.image), contentDescription = p.name,
-            contentScale = ContentScale.Crop,
+        // D-177: server şəkli (imageUrl) VƏYA kateqoriya ikonlu placeholder
+        az.qoshul.app.core.ui.VenueImage(
+            imageUrl = p.imageUrl,
+            assetKey = p.image,
+            category = p.category,
+            contentDescription = p.name,
             modifier = Modifier.fillMaxWidth().height(200.dp),
         )
         Column(Modifier.padding(20.dp)) {

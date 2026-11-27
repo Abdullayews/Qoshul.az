@@ -54,13 +54,8 @@ interface QoshulDataSource {
     /** Kateqoriyanın qrup adı ("Qəhvə" → "Yemək və içki"). */
     fun groupOf(category: String): String = Taxonomy.groupOf(category)
 
-    /** Yeni tədbir üçün şəkil açarı — qrupa görə (lokal asset xəritəsi). */
-    fun imageForCategory(category: String): String = when (groupOf(category)) {
-        "İdman", "Təbiət" -> ImageKey.PADEL
-        "Yemək və içki" -> ImageKey.COFFEE
-        "Texnologiya", "Biznes və karyera", "Təhsil" -> ImageKey.TECH
-        else -> ImageKey.FRIENDS
-    }
+    /** Yeni tədbir üçün şəkil açarı — qrupa görə (Taxonomy; D-177). */
+    fun imageForCategory(category: String): String = Taxonomy.imageKeyForCategory(category)
 
     /** Şəhər adından koordinat (naməlum → null; çağıran fallback edir). */
     fun findCity(name: String): City? = Taxonomy.findCity(name)

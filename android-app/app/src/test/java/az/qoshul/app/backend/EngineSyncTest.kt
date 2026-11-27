@@ -5,6 +5,7 @@ import az.qoshul.app.core.backend.SyncEvent
 import az.qoshul.app.core.backend.SyncSink
 import az.qoshul.app.core.engine.AppEngine
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDateTime
@@ -37,15 +38,17 @@ class EngineSyncTest {
         assertTrue(rec.events.filterIsInstance<SyncEvent.XpAwarded>().any { it.key.startsWith("login-") })
     }
 
-    @Test fun `swipe match hadisəsi Interested=true Matched=true`() {
+    @Test fun `swipe OFFLINE güzgü intent-i Interested=true Matched=false`() {
         val rec = RecordingSync()
         val e = engine(rec)
-        // p1 likesBack=true olan şəxsdir (FakeData)
+        // D-176: match qərarı SERVERDƏN — test engine-i (scope yoxdur) OFFLINE-dır;
+        // güzgü intent-i gedir, matched=false (proqnoz YOX). Server təsdiqli match
+        // üçün SwipeServerTest-ə bax (swipeOutcomeOverride).
         val matched = e.swipe("p1", true)
-        assertTrue(matched)
+        assertFalse(matched)
         val s = rec.events.filterIsInstance<SyncEvent.SwipeIntent>().last()
         assertTrue(s.interested)
-        assertTrue(s.matched)
+        assertFalse(s.matched)
     }
 
     @Test fun `buyCoupon uğursuz olsa da intent gedir (server qərarı avtoritativ)`() {

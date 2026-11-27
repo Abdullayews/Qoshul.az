@@ -50,7 +50,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 | Dil | **Kotlin 2.4.21** (AGP 9.5, Gradle 9.8.2) |
 | UI | **Jetpack Compose** (BOM 2026.09, Material 3) |
 | Arxitektura | Tək `:app` modulu, package-by-feature; saf-Kotlin `AppEngine` + `StateFlow` (manual DI) |
-| Backend (M1) | **Supabase sxem + RLS + SECURITY DEFINER qaydalar** (`supabase/`) — supabase-kt 3.9.0 pin (D-078); MOCK/SUPABASE ikili rejim, PLACEHOLDER konfiq |
+| Backend (M1) | **Supabase sxem + RLS + SECURITY DEFINER qaydalar** (`supabase/`) — supabase-kt 3.9.0 pin (D-078); **tək rejim: SUPABASE** (D-151/D-170 — ikili rejim silindi); PLACEHOLDER konfiq = fork build aydın xəta |
 | Nüvə (M2) | **Rust** (`rust-core/`: qoshul-core + qoshul-jni) — geo 0.33.1, proptest 1.12, jni 0.22.4 (D-080); JNI APK-da, JVM-də host .so pariteti |
 | Mikroservis (M4) | **axum 0.8.9** (`service/`): FCM HTTP v1, idempotent joblar (24s/2s), admin API — D-082; PLACEHOLDER konfiq → degrade |
 | Deploy (M5) | **Self-host Supabase — Oracle Always Free** (Ampere A1 ARM64, 2 OCPU/12 GB — yeni limitlər D-083): slim compose core+6 profil, Caddy TLS, 12/12 imaj arm64 (D-084..D-087) |
@@ -86,13 +86,16 @@ Qoshul/
 
 `android-app/local.properties` (repoya düşmür) və ya env/CI secret:
 
-| `BACKEND_MODE` | Nə deməkdir |
-|---|---|
-| `SUPABASE` *(tək rejim)* | Real Supabase auth (email/OTP/Google) + canlı oxu-yazı yolu. `SUPABASE_URL` / `SUPABASE_ANON_KEY` local.properties, env və ya CI secret-dən gəlir |
-| *(boş / PLACEHOLDER)* | Fork build: tətbiq açılır, amma ayarlarda aydın konfiqurasiya xətası görünür. **SƏSSİZ DEMO FALLBACK YOXDUR** (D-151 direktivi: „demo məntiqi heç olmasın“) |
+**Status: tək rejim — SUPABASE** (D-151/D-170). `BACKEND_MODE` sahəsi silinib;
+rejim seçimi YOXDUR. `SUPABASE_URL` / `SUPABASE_ANON_KEY` local.properties,
+env və ya CI secret-dən gəlir. Konfiqurasiya tamamlanmadıqda (fork build)
+tətbiq açılır, amma ayarlarda aydın xəta görünür — **SƏSSİZ DEMO FALLBACK
+YOXDUR** (D-151 direktivi: „demo məntiqi heç olmasın“).
 
-MOCK rejimi və demo data mənbəyi silinib: başlanğıc state boşdur, bütün
-məlumat girişdən sonra `SupabaseReader` ilə serverdən oxunur və
+İkinci dalğa (D-175..D-179): köməkçi cavabı, match qərarı, AI tövsiyə
+skoru, dostluq sorğu/cavabı, məkan rəyi — hamısı SERVER RPC-lərinə keçdi;
+typing göstəricisi yalnız Supabase Realtime-dan gəlir. Başlanğıc state
+boşdur, bütün məlumat `SupabaseReader` ilə serverdən oxunur və
 `AppEngine.applyServerData` ilə tətbiq olunur. JVM testləri üçün
 `app/src/test`-də FakeQoshulDataSource fixture-i qalır (APK-ya düşmür).
 
@@ -134,15 +137,16 @@ mkdir -p ../android-app/app/src/main/jniLibs/arm64-v8a ../android-app/app/src/ma
 cp target/aarch64-linux-android/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/arm64-v8a/
 cp target/armv7-linux-androideabi/release/libqoshul_jni.so ../android-app/app/src/main/jniLibs/armeabi-v7a/
 
-# 2) Android tətbiqi (MOCK rejimi — heç bir açar tələb olunmur)
+# 2) Android tətbiqi (testlər açar tələb etmir; istehsal üçün SUPABASE_URL/ANON_KEY)
 cd ../android-app
 ./gradlew testDebugUnitTest        # 277 JVM testi
 ./gradlew assembleRelease          # app-release.apk (R8 + resource shrink)
 ```
 
-MOCK rejimi (default) heç bir konfiqurasiya olmadan qurulur — `local.properties`
-yalnız SUPABASE rejimi (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BACKEND_MODE`)
-və ya Google xəritə (`MAPS_API_KEY`, `MAP_BACKEND`) istəyəndə lazımdır.
+`local.properties` istehsal açarları üçündür: `SUPABASE_URL`,
+`SUPABASE_ANON_KEY`, `GOOGLE_WEB_CLIENT_ID`, xəritə (`MAPS_API_KEY`,
+`MAP_BACKEND`) və şəkil yükləmə qapısı (`PHOTO_UPLOAD_ENABLED`, default
+false — D-177). Açarsız fork build səssiz demo YOX, aydın xəta göstərir.
 
 ## 🖥️ Backend: quraşdırma, konfiqurasiya, işə salma
 
@@ -168,9 +172,10 @@ cd ../.. && scripts/migrate_selfhost.sh                    # migrations (idempot
 fayllar redaktə olunmur, yeni dəyişiklik yeni faylla gəlir. `scripts/lint_sql.py`
 struktur lint-i aparır (CI-də məcburidir).
 
-**Test datası:** `supabase/testdata/` — MOCK→SUPABASE keçidi üçün 100 dolu
-test user (D-147). Migration zəncirinə daxil deyil — əl ilə tətbiq olunur,
-detallar `supabase/testdata/README.md`-də.
+**Test datası:** `supabase/testdata/` — 100 dolu test user (D-147).
+Migration zəncirinə daxil deyil; D-177-dən etibarən yalnız `--with-testdata`
+bayrağı ilə tətbiq olunur (`scripts/migrate_selfhost.sh --with-testdata`) —
+istehsal axını avtomatik olaraq təmiz qalır.
 
 ### 1b) Google Sign-In — D-156 (28444 xətasının həlli)
 

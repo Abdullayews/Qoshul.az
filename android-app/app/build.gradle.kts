@@ -75,6 +75,15 @@ android {
             "\"" + (localProps.getProperty("MAP_BACKEND")
                 ?: System.getenv("MAP_BACKEND") ?: "google") + "\"",
         )
+        // D-177 (ikinci dalğa): şəkil yükləmə backendi (0011 avatars bucket)
+        // hələ tam aktiv deyil — false olanda onboarding şəkil addımı və
+        // profil avatar dəyişmə UI GİZLƏDİLİR (yarımçıq axın yoxdur).
+        // Storage API tamam olanda true alınacaq.
+        buildConfigField(
+            "boolean", "PHOTO_UPLOAD_ENABLED",
+            (localProps.getProperty("PHOTO_UPLOAD_ENABLED")
+                ?: System.getenv("PHOTO_UPLOAD_ENABLED") ?: "false"),
+        )
         val mapsApiKey = localProps.getProperty("MAPS_API_KEY")
             ?: System.getenv("MAPS_API_KEY") ?: ""
         buildConfigField("boolean", "MAPS_KEY_PRESENT", mapsApiKey.isNotBlank().toString())
@@ -187,6 +196,8 @@ dependencies {
     // D-151: sessiya persistence (SettingsStorage)
     implementation(libs.multiplatform.settings)
     implementation(libs.supabase.postgrest)
+    // D-175: Realtime — typing broadcast (chat „yazır...“ yalnız real-time)
+    implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.cio)
     implementation(libs.kotlinx.serialization.json)
 

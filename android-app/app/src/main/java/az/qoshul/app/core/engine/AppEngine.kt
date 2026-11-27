@@ -57,7 +57,7 @@ import kotlinx.coroutines.launch
  *  - Vaxt əvəzləməsi: [clock] injeksiyası — testlərdə vaxt idarə olunur
  *    (Flutter-də DateTime.now hardcode idi; burada yaxşılaşdırma).
  *  - A2 düzəlişi (audit): həftəlik rəy limiti indi həqiqətən həftədə sıfırlanır.
- *  - A10 düzəlişi: mock cavablar Job ləğvi ilə təhlükəsizdir.
+ *  - A10 düzəlişi: uzun gedişlər Job ləğvi ilə təhlükəsizdir.
  *
  * Bütün məntiq qaydaları ROL (docs/product-spec.md) + D-026 ilə eynidir.
  */
@@ -72,7 +72,7 @@ class AppEngine(
     private val clock: () -> LocalDateTime = { LocalDateTime.now() },
     /**
      * Backend güzgüsü. Mutasiyalar [SyncEvent] kimi [sync]-ə çatdırılır
-     * (D-170: MOCK rejimi yoxdur — testlər NoopSink verir, istehsal
+     * (D-170: ikili rejim YOXDUR — testlər RecordingSync verir, istehsal
      * SupabaseSync qurur);
      * qaydaları server tərəfdə SQL funksiyaları zorlayır (supabase/0002).
      */
@@ -207,9 +207,13 @@ class AppEngine(
     private val checkedInV = mutableSetOf<String>()
 
     // — insanlar / dostluqlar —
-    private val friendshipsV = mutableMapOf("p2" to "accepted")
+    // D-176: başlanğıc hardcoded ("p2" to "accepted") SİLİNDİ — dostluqlar
+    // yalnız serverdən gəlir (applyServerData → d.friendships)
+    private val friendshipsV = mutableMapOf<String, String>()
 
     // — ROL D: match —
+    // D-176: swipes serverdən bərpa olunur (applyServerData → d.swipedPeople);
+    // likesBack proqnozu SİLİNDİ — match qərarı fn_record_swipe cavabıdır
     private val swipesV = mutableMapOf<String, Boolean>()
     private val matchesV = mutableSetOf<String>()
 
@@ -243,7 +247,11 @@ class AppEngine(
     private val assistantMsgsV = mutableListOf<ChatMessage>()
     private var assistantBusyV = false
     private var assistantJob: Job? = null
+    private var assistantErrorV = ""
     private val replyJobs = mutableListOf<Job>()
+
+    // — D-179: AI tövsiyə skorları (serverdən; null = zolaq gizlədilir) —
+    private var aiScoresV: Map<String, Int>? = null
 
     private var ledgerSeq = 100
     private var version = 0L
@@ -283,6 +291,8 @@ class AppEngine(
         eventMessages = eventMessagesV.mapValues { it.value.toList() },
         friendMessages = friendMessagesV.mapValues { it.value.toList() },
         assistantMsgs = assistantMsgsV.toList(), assistantBusy = assistantBusyV,
+        assistantError = assistantErrorV,
+        aiRecommendationsAvailable = aiScoresV != null,
         finishedActivities = finishedActivitiesV.toSet(),
     )
 
@@ -318,8 +328,9 @@ class AppEngine(
 
     // ═════════════════════════ XP mühərriki ═════════════════════════
 
-    /** İdemponent Peşəkarlıq XP mükafatı — eyni açar ikinci dəfə sayılmır. */
     /**
+     * İdemponent Peşəkarlıq XP mükafatı — eyni açar ikinci dəfə sayılmır.
+     *
      * I.1/I.4 (D-170): XP optimistic artırılır (UI dərhal reaksiya verir),
      * amma server avtoritativdir — sync xətası gələndə ROLLBACK olunur
      * ([onSyncError] kanalı) və növbəti refreshFromServer server XP-sini
@@ -337,13 +348,55 @@ class AppEngine(
         return true
     }
 
-    /** I.4: gözləmədə olan optimistic XP məbləğləri (rollback üçün). */
+    /**
+     * I.4: gözləmədə olan optimistic XP məbləğləri (rollback üçün).
+     * D-175 (ikinci dalğa): açar → (məbləğ, kritiklik). KRİTİK əməliyyatların
+     * (join/leave/save/swipe/buy/spend/reserve/checkin/finish) XP-ləri
+     * xətada rollback olunur; metadata-only hadisələr optimistic qalır.
+     */
     private val pendingXpAwards = linkedMapOf<String, Int>()
+
+    /**
+     * D-176 (ikinci dalğa): report() təsnifatı — hər [SyncEvent] ya KRİTİK,
+     * ya METADATA-dır. KRİTİK = server dəyişikliyi görünən state-i dəyişir;
+     * xətada optimistic dəyişikliklər rollback olunmalıdır. METADATA =
+     * güzgü məlumatı (prefslər, lokasiya, bildiriş seçimi); xətada yalnız
+     * Snackbar ilə bildirilir, rollback lazım deyil (server refresh-də
+     * doğruluğu bərpa edir).
+     */
+    internal fun criticalityOf(e: SyncEvent): Criticality = when (e) {
+        is SyncEvent.XpAwarded -> Criticality.METADATA // güzgü getmir (qayda 8)
+        is SyncEvent.JoinEventIntent,
+        is SyncEvent.LeaveEventIntent,
+        is SyncEvent.SaveEventIntent,
+        is SyncEvent.SwipeIntent,
+        is SyncEvent.BuyCouponIntent,
+        is SyncEvent.SpendIntent,
+        is SyncEvent.CreateReservationIntent,
+        is SyncEvent.UseReservationIntent,
+        is SyncEvent.CancelReservationIntent,
+        is SyncEvent.NoShowIntent,
+        is SyncEvent.CheckInIntent,
+        is SyncEvent.GrantVenueXpIntent,
+        is SyncEvent.RequestFriendIntent,
+        is SyncEvent.RespondFriendIntent,
+        is SyncEvent.AddVenueReviewIntent,
+        is SyncEvent.CreateEventIntent -> Criticality.CRITICAL
+        else -> Criticality.METADATA
+    }
+
+    /** D-176: əməliyyat kritikliyi (rollback siyasəti üçün). */
+    enum class Criticality { CRITICAL, METADATA }
 
     /**
      * I.4 (D-170): sync xətası → optimistic dəyişikliklər geri qaytarılır
      * və istifadəçiyə xəta görünür. SupabaseSync.rpcAsync onFailure
      * kanalından çağırılır (aşağıda AppEngine.reportFailure).
+     *
+     * D-175 (ikinci dalğa): report() təsnifatı — kritik əməliyyatların
+     * xətası rollback-in dəstəklənməsi (pendingXpAwards + əməliyyat-specific
+     * rollback bərpası refreshFromServer ilə), metadata xətalar yalnız
+     * syncErrorV-ə yazılır (Snackbar UI-da göstərir).
      */
     fun reportFailure(tag: String, err: Throwable) {
         // XP rollback: gözləmədə olan mükafatlar geri alınır
@@ -359,6 +412,10 @@ class AppEngine(
     /**
      * M1: güzgü çıxışı — heç vaxt atmır, heç vaxt bloklamır (Safety qatır).
      * Server tərəfdə eyni qayda intent RPC-ləri içində icra olunur (qayda 8).
+     *
+     * D-176 (ikinci dalğa): KRİTİK hadisələrin güzgüsi çıxışda kritiklik
+     * etiketi ilə qeyd olunur — rpcAsync xətası gələndə reportFailure
+     * yalnız kritik əməliyyatlar üçün rollback edir.
      */
     private fun report(e: SyncEvent) {
         val s = sync ?: return
@@ -515,6 +572,8 @@ class AppEngine(
                     Taxonomy.allCategories.firstOrNull { c -> slugifyCategory(c) == slug } ?: slug
                 }
             }
+            // D-176: avatar açarı serverdən bərpa (fn_set_avatar orada yazır)
+            if (me.avatar.isNotBlank()) avatarV = me.avatar
         }
         // listlər — ServerDataSource mutable konteynerlərinə yazılır
         (dataSource as? ServerDataSource)?.apply {
@@ -554,6 +613,14 @@ class AppEngine(
         // sosial
         matchesV.clear(); matchesV.addAll(d.matchIds)
         blockedV.clear(); blockedV.addAll(d.blockedIds)
+        // D-176: keçirilmiş kartlar və dostluqlar SERVERDƏN bərpa olunur —
+        // əvvəl restart-da keçilən kartlar və dostluqlar İTİRİRDİ
+        swipesV.clear(); swipesV.putAll(d.swipedPeople)
+        friendshipsV.clear(); friendshipsV.putAll(d.friendships)
+        // D-179: AI tövsiyə skorları serverdən (null → zolaq gizlədilir)
+        aiScoresV = d.aiRecommendations
+        // D-178: öz məkan rəylərim (dialoq birdəfəlik)
+        myVenueReviewsV.clear(); myVenueReviewsV.putAll(d.myVenueReviews)
         eventMessagesV.clear()
         d.eventMessages.forEach { (k, v) -> eventMessagesV[k] = v.toMutableList() }
         friendMessagesV.clear()
@@ -946,7 +1013,20 @@ class AppEngine(
                 !restrictedUsersV.contains(p.id)
         }
 
-    /** ROL D: "Maraqlıyam"/"Keç". Qaytarır: true → qarşılıqlı match (mock likesBack). */
+    /**
+     * ROL D: "Maraqlıyam"/"Keç". D-176 (ikinci dalğa): match qərarı SERVERDƏN
+     * gəlir — fn_record_swipe cavabındakı `matched` bayrağı. Köhnə klient
+     * tərəfli `Person.likesBack` proqnozu SİLİNDİ (server avtoriteti, qayda 8).
+     *
+     * Axın (maraq bildiriləndə): TƏK RPC — fn_record_swipe birbaşa çağırılır
+     * (ikili güzgü report() YOX — ikiqat yazma olmazdı). Cavab:
+     *  • MATCHED     → optimistic match UI + XP (serverdə onsuz da hazır);
+     *  • NOT_MATCHED → swipe serverdə qeyd olundu, match yoxdur;
+     *  • ERROR       → KART GERİ QAYIDIR (swipesV-dən silinir — istifadəçi
+     *                  yenidən swipe edə bilər), xəta istifadəçiyə görünür;
+     *  • OFFLINE     → server yoxdur (test engine / PLACEHOLDER) — güzgü
+     *                  intent-i çıxır, match məlum deyil (false).
+     */
     fun swipe(personId: String, interested: Boolean): Boolean {
         if (swipesV.containsKey(personId) || blockedV.contains(personId)) return false
         swipesV[personId] = interested
@@ -956,32 +1036,104 @@ class AppEngine(
             return false
         }
         val p = personById(personId)
-        if (p == null || !p.likesBack) {
-            report(SyncEvent.SwipeIntent(personId, interested = true, matched = false))
-            emit()
+        if (p == null) {
+            // D-176: naməlum ID — kartı keçmək olmaz, rollback (RPC getmir)
+            swipesV.remove(personId)
             return false
         }
-        // Match! → bildiriş + chat + XP (gündə max 3)
-        matchesV.add(personId)
-        friendshipsV[personId] = "accepted"
-        friendMessagesV.getOrPut(personId) { mutableListOf() }
-        notify(
-            NotifType.MATCH,
-            "Yeni match: ${p.fullName}",
-            "Qarşılıqlı maraq yarandı — söhbəti başlat!",
-        )
-        val today = now().toLocalDate()
-        if (matchXpDay != today) {
-            matchXpDay = today
-            matchXpToday = 0
+        when (swipeRpc(personId)) {
+            SwipeOutcome.OFFLINE -> {
+                // server yoxdur — yalnız güzgü intent-i (test/PLACEHOLDER)
+                report(SyncEvent.SwipeIntent(personId, interested = true, matched = false))
+                emit()
+                return false
+            }
+            SwipeOutcome.ERROR -> {
+                // D-176: RPC xətası — KART GERİ QAYIDIR + xəta görünür
+                swipesV.remove(personId)
+                syncErrorV = "Swipe göndərilə bilmədi — kart geri qayıtdı, yenidən cəhd et"
+                emit()
+                return false
+            }
+            SwipeOutcome.NOT_MATCHED -> {
+                emit()
+                return false
+            }
+            SwipeOutcome.MATCHED -> {
+                // Match! → bildiriş + chat + XP (gündə max 3; serverdə də var)
+                matchesV.add(personId)
+                friendshipsV[personId] = "accepted"
+                friendMessagesV.getOrPut(personId) { mutableListOf() }
+                lastMatchedPersonIdV = personId
+                notify(
+                    NotifType.MATCH,
+                    "Yeni match: ${p.fullName}",
+                    "Qarşılıqlı maraq yarandı — söhbəti başlat!",
+                )
+                val today = now().toLocalDate()
+                if (matchXpDay != today) {
+                    matchXpDay = today
+                    matchXpToday = 0
+                }
+                if (matchXpToday < XpRules.MATCH_XP_DAILY_CAP) {
+                    matchXpToday++
+                    award("match-$personId", XpRules.MATCH_XP)
+                }
+                emit()
+                return true
+            }
         }
-        if (matchXpToday < XpRules.MATCH_XP_DAILY_CAP) {
-            matchXpToday++
-            award("match-$personId", XpRules.MATCH_XP)
+    }
+
+    /** D-176: fn_record_swipe RPC nəticəsi. */
+    enum class SwipeOutcome { MATCHED, NOT_MATCHED, ERROR, OFFLINE }
+
+    /** Server təsdiqli son match (UI dialoq üçün; consume ilə təmizlənir). */
+    private var lastMatchedPersonIdV: String? = null
+
+    /**
+     * D-176: swipe RPC — fn_record_swipe birbaşa (sinxron, timeout qorumalı).
+     * Match dialoqu kart uçuş animasiyası ilə birgə açılmalıdır (UX qərarı);
+     * RPC xətası/timeout → ERROR (kart geri qayıdır). Test engine-lər
+     * (scope=null / konfiqurasiyasız) → OFFLINE (güzgü report() gedir).
+     * [swipeOutcomeOverride] — testlər nəticəni inyeksiya edir (SwipeServerTest).
+     */
+    internal var swipeOutcomeOverride: ((personId: String) -> SwipeOutcome)? = null
+
+    internal fun swipeRpc(personId: String): SwipeOutcome {
+        swipeOutcomeOverride?.let { return it(personId) }
+        if (scope == null) return SwipeOutcome.OFFLINE
+        if (!az.qoshul.app.core.backend.BackendConfig.isConfigured) return SwipeOutcome.OFFLINE
+        if (az.qoshul.app.core.backend.SupabaseBackend.client == null) return SwipeOutcome.OFFLINE
+        val call = az.qoshul.app.core.backend.SupabaseSync.mapEvent(
+            SyncEvent.SwipeIntent(personId, interested = true, matched = false),
+        ) ?: return SwipeOutcome.ERROR
+        return kotlinx.coroutines.runBlocking {
+            kotlinx.coroutines.withTimeoutOrNull(SWIPE_RPC_TIMEOUT_MS) {
+                val r = az.qoshul.app.core.backend.SupabaseBackend.rpcNow(call).getOrNull()
+                // fn_record_swipe → [{"matched": true, "awarded_xp": true}]
+                val arr = r as? kotlinx.serialization.json.JsonArray
+                val obj = arr?.firstOrNull() as? kotlinx.serialization.json.JsonObject
+                when (obj?.get("matched")
+                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }) {
+                    "true" -> SwipeOutcome.MATCHED
+                    "false" -> SwipeOutcome.NOT_MATCHED
+                    else -> SwipeOutcome.ERROR
+                }
+            } ?: SwipeOutcome.ERROR // timeout
         }
-        report(SyncEvent.SwipeIntent(personId, interested = true, matched = true))
-        emit()
-        return true
+    }
+
+    /** D-176: swipe RPC gözləmə həddi (kart animasiyası ~300ms; ANR qoruması). */
+    private companion object {
+        const val SWIPE_RPC_TIMEOUT_MS = 5000L
+    }
+
+    /** D-176: son server-təsdiqli match ID-si (MatchScreen dialoqu açır). */
+    fun consumeLastMatch(): String? {
+        val v = lastMatchedPersonIdV
+        lastMatchedPersonIdV = null
+        return v
     }
 
 
@@ -1048,7 +1200,7 @@ class AppEngine(
         return true
     }
 
-    /** ROL E-7: ləğv (mock: 2 saatdan əvvəl həmişə pulsuz). */
+    /** ROL E-7: ləğv — server qaydası (fn_cancel_reservation) avtoritativdir. */
     fun cancelReservation(id: String) {
         reservationsV.filter { it.id == id && it.canCancel }.forEach { r ->
             report(SyncEvent.CancelReservationIntent(id))
@@ -1170,7 +1322,7 @@ class AppEngine(
         return SpendPreview(true, discount, null)
     }
 
-    /** L.4-5: atomik xərcləmə — double-spend qadağan (mock-da tək axın). */
+    /** L.4-5: atomik xərcləmə — double-spend qadağan (serverdə fn_spend_venue_xp). */
     fun spendVenueXp(
         venueId: String, xpAmount: Int, billAzn: Double,
         note: String = "Kassada XP endirimi",
@@ -1219,6 +1371,21 @@ class AppEngine(
     fun xpCardValidFor(venueId: String): Boolean =
         // D-061: !! zənciri əvəzinə null-safe (vəziyyət paralel dəyişə bilər)
         xpCardV?.let { card -> xpCardVenueIdV == venueId && card.isValid(now()) } == true
+
+    /**
+     * D-175 (ikinci dalğa): XP kartının vaxtı bitəndə avtomatik RE-ISSUE.
+     * XpCardScreen kartı açıq saxladıqda hər saniyə çağırılır (tick) —
+     * vaxtı bitmiş kart (60s TTL) istifadəçinin əl ilə „Yenilə“ basmağını
+     * gözləmir, serverdən yenisi dərhal istənir. Yalnız aktiv ekranda
+     * işləyir (tick mənbəyi XpCardScreen-in LaunchedEffect-i).
+     */
+    fun reissueExpiredXpCard() {
+        val venueId = xpCardVenueIdV ?: return
+        val card = xpCardV ?: return
+        if (!card.isValid(now()) && !card.used) {
+            regenerateXpCard(venueId)
+        }
+    }
 
     // — L.3: təşkilatçı bitirmə axını (statik QR → şəkil → taq) —
 
@@ -1294,7 +1461,7 @@ class AppEngine(
         emit()
     }
 
-    /** ROL H: tədbir xatırlatması (24s / 2s əvvəl) — mock tetikleyici. */
+    /** ROL H: tədbir xatırlatması (24s / 2s əvvəl) — m4 jobs cron tetikləyir. */
     fun eventReminder(e: QoshulEvent, whenText: String) {
         notify(
             NotifType.EVENT_REMINDER,
@@ -1368,7 +1535,7 @@ class AppEngine(
         emit()
     }
 
-    /** ROL TAB 4: "Söhbəti sil" — şəxsi söhbəti bağlayır (mock). */
+    /** ROL TAB 4: "Söhbəti sil" — şəxsi söhbəti bağlayır (lokal UI state). */
     fun deleteChat(personId: String) {
         friendMessagesV.remove(personId)
         friendshipsV.remove(personId)
@@ -1382,14 +1549,29 @@ class AppEngine(
     }
 
     // — insanlar —
+    /**
+     * D-176: dostluq sorğusu SERVERƏ gedir (fn_request_friend). Optimistic
+     * „sent“ statusu — RPC xətasında reportFailure rollback edir və
+     * refreshFromServer server həqiqətini qaytarır.
+     */
     fun requestFriend(personId: String) {
         friendshipsV[personId] = "sent"
         emit()
+        report(SyncEvent.RequestFriendIntent(personId))
     }
 
-    fun acceptFriend(personId: String) {
-        friendshipsV[personId] = "accepted"
+    /**
+     * D-176: gələn sorğuya cavab SERVERƏ gedir (fn_respond_friend).
+     * [accept]=true → „accepted“, əks halda sorğu silinir.
+     */
+    fun acceptFriend(personId: String, accept: Boolean = true) {
+        if (accept) {
+            friendshipsV[personId] = "accepted"
+        } else {
+            friendshipsV.remove(personId)
+        }
         emit()
+        report(SyncEvent.RespondFriendIntent(personId, accept))
     }
 
     val acceptedFriends: List<Person>
@@ -1398,126 +1580,84 @@ class AppEngine(
                 !restrictedUsersV.contains(p.id)
         }
 
-    // ═════════════════════════ Assistant (mock AI) ═════════════════════════
+    // ═════════════════════════ Assistant (server axını, D-175) ═════════════════════════
 
+    /**
+     * D-175 (ikinci dalğa): „Qoşa“ köməkçisi — cavab SERVERDƏN gəlir
+     * (fn_assistant_reply RPC). Köhnə klient tərəfli assistantReplyFor
+     * şablon generatoru TAM SİLİNDİ (qayda 8 — məntiq serverdə).
+     *
+     * Axın: sual → optimistic „Sən“ mesajı + busy → RPC (scope daxilində)
+     * → cavab gələndə tam mətn bir dəfəyə əlavə olunur (yazı simulyasiyası
+     * YOXDUR — typing yalnız Supabase Realtime kanalı ilə görünür).
+     * Xətada: köməkçi XƏTA KARTI görünür (syncError-a da düşür — Snackbar).
+     * Server konfiqurasiyasızdırsa (PLACEHOLDER/test) dərhal xəta kartı.
+     */
     fun sendAssistant(text: String) {
         if (text.isBlank() || assistantBusyV) return
         assistantMsgsV.add(ChatMessage("Sən", text.trim(), mine = true))
         assistantBusyV = true
+        assistantErrorV = ""
         emit()
 
-        val reply = assistantReplyFor(text.trim())
-        assistantJob?.cancel()
         val s = scope
-        if (s != null) {
-            assistantJob = s.launch {
-                delay(400)
-                // Yazı simulyasiyası: 24ms-də 2 simvol (Flutter pariteti).
-                var shown = ""
-                assistantMsgsV.add(ChatMessage("Qoşa", ""))
-                var idx = assistantMsgsV.size - 1
-                while (shown.length < reply.length && assistantBusyV) {
-                    // D-061: siyahı paralel dəyişsə (idx artıq keçərsə)
-                    // yazı simulyasiyası yeni elementə keçir, çökmür.
-                    idx = idx.coerceAtMost(assistantMsgsV.size - 1)
-                    shown = reply.substring(0, minOf(shown.length + 2, reply.length))
-                    // M4 (audit v0.49): copy() id-ni qoruyur — LazyColumn
-                    // key-i typing zamanı sabit qalır (əvvəl hər 24ms-də
-                    // item silinib yenidən yaradılırdı)
-                    assistantMsgsV[idx] = assistantMsgsV[idx].copy(body = shown)
-                    emit()
-                    delay(24)
-                }
-                assistantBusyV = false
-                emit()
+        if (s == null ||
+            !az.qoshul.app.core.backend.BackendConfig.isConfigured ||
+            az.qoshul.app.core.backend.SupabaseBackend.client == null
+        ) {
+            // Server yoxdur — köməkçi xəta kartı (uydurma cavab YOX)
+            assistantBusyV = false
+            assistantErrorV = "Köməkçi serverə qoşula bilmədi — internet bağlantını yoxla"
+            emit()
+            return
+        }
+        assistantJob?.cancel()
+        assistantJob = s.launch {
+            val reply = az.qoshul.app.core.safety.Safety.of(
+                tag = "assistant-rpc",
+                fallback = "",
+            ) {
+                val call = az.qoshul.app.core.backend.SupabaseSync.mapEvent(
+                    SyncEvent.AssistantIntent(text.trim()),
+                ) ?: return@of ""
+                val r = az.qoshul.app.core.backend.SupabaseBackend.rpcNow(call).getOrNull()
+                // fn_assistant_reply → "cavab mətni" (skalar string)
+                (r as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull ?: ""
             }
-        } else {
-            // scope yoxdur (JVM test): dərhal tam cavab.
-            assistantMsgsV.add(ChatMessage("Qoşa", reply))
+            if (reply.isBlank()) {
+                assistantErrorV = "Cavab alınmadı — bir azdan yenidən yaz"
+                az.qoshul.app.core.safety.Safety.onCaught?.invoke(
+                    "assistant",
+                    IllegalStateException("fn_assistant_reply boş cavab"),
+                )
+            } else {
+                assistantMsgsV.add(ChatMessage("Qoşa", reply))
+            }
             assistantBusyV = false
             emit()
         }
     }
 
     /**
-     * D-151: "Qoşa" köməkçisi — LLM inteqrasiyasına qədər server datası
-     * əsaslı YERLİ köməkçi. Passiv ifadələr ("özün yaz", "özün tap") YOXDUR —
-     * Qoşa təşəbbüsü öz üzərinə götürür, aktiv təkliflər verir. Master spec
-     * bölmə 5-in tələbi.
+     * „AI ilə seç“ (Sənin üçün) — D-179 (ikinci dalğa): skor SERVERDƏN
+     * gəlir (fn_recommend_events → aiScoresV; applyServerData yazır).
+     * RPC yoxdursa / xəta verərsə aiScoresV=null → BOŞ siyahı qayıdır →
+     * „AI seçimi“ zolağı GİZLƏDİLİR (klient tərəfli 2-bit skor SİLİNDİ).
+     * Səbəb izahları server skoruna görə: 2 = maraq uyğunluğu, 1 = yer az.
      */
-    private fun assistantReplyFor(q: String): String {
-        val lower = lowercaseAz(q)
-        val wantsProposal = listOf("fikri", "fikir", "təklif", "plan", "şənbə", "bazar", "təşkil")
-            .any { lower.contains(it) }
-        if (wantsProposal) {
-            return "Şənbə üçün hazırladığım plan: səhər yürüş, sonra birlikdə çay. " +
-                "Təklifimi bir düymə ilə tədbirə çevirə bilərsən.\n[TƏDBİR]{\"title\":\"Şənbə səhəri Qala yürüşü\",\"category\":\"Yürüş\"," +
-                "\"date\":\"${nextSaturdayIso()}\",\"time\":\"09:00\",\"capacity\":10," +
-                "\"location\":\"Qala qalası, Bakı\",\"description\":\"Qala qalası ətrafında 5 km asan " +
-                "yürüş + qala divarlarında fotopauza. Sonrasında yaxınlıqdakı kafedə çay.\"," +
-                "\"partner\":\"\"}"
-        }
-        if (lower.contains("pulsuz") || lower.contains("ödənişsiz")) {
-            // A.1 (D-170): şəhər seçilməyibsə filtrsüz (cityEvents pariteti)
-            val free = upcoming.filter { it.price == null && (cityV.isBlank() || it.city == cityV) }.take(3)
-            if (free.isEmpty()) return "Bu şəhərdə pulsuz tədbir yoxdur — sənin üçün birini təşkil edim! " +
-                "Məsələn, parkda səhər qaçışı və ya bulvarda yürüş planlaya bilərəm. \"Fikir al\" yaz, hazırlayım."
-            return "Pulsuz tədbirlər bunlardır:\n\n" +
-                free.joinToString("\n") { "• ${it.title} — ${it.date}, ${it.time} (${it.location})" } +
-                "\n\nHansını seçsən, dərhal qoşulmağını təşkil edirəm."
-        }
-        if (lower.contains("idman") || lower.contains("spor")) {
-            val sport = upcoming.filter {
-                dataSource.groupOf(it.category) == "İdman" ||
-                    dataSource.groupOf(it.category) == "Təbiət"
-            }.take(3)
-            if (sport.isEmpty()) return "Aktiv idman tədbiri tapmadım — sənin üçün idman görüşü quraşdırım! " +
-                "Padel, qaçış və ya velosiped — hansı maraqlıdır? Dey, dəvətnaməni hazırlayım."
-            return "Aktiv idman tədbirləri:\n\n" +
-                sport.joinToString("\n") { "• ${it.title} — ${it.date} ${it.time}, ${it.participants}/${it.capacity} nəfər" }
-        }
-        val rec = cityEvents.take(2)
-        if (rec.isEmpty()) return "Bu şəhərdə hələ tədbir yoxdur — birlikdə ilkini təşkil edək! " +
-                "Maraqlarını yaz (məs. \"futbol, kahve\"), mən də tədbiri qurub dəvətnamə göndərim."
-        return "Sənin üçün tövsiyələrim:\n\n" +
-            rec.joinToString("\n") { "• ${it.title} (${it.category}) — ${it.date} ${it.time}" } +
-            "\n\nHər hansı birini seçsən, qoşulmanı dərhal edərəm. \"Sənin üçün\" bölməsindəki AI seçimlərinə də bax."
-    }
-
-    /** Azərbaycan hərfləri üçün lowercase (I→ı və İ→i xüsusi halları). */
-    private fun lowercaseAz(s: String): String =
-        s.replace("I", "ı").replace("İ", "i").lowercase()
-
-    private fun nextSaturdayIso(): String {
-        // D-061: nə olar əgər saat/vaxt mənbəyi nasazdırsa — limitsiz
-        // dövr qadağanı (7 gündən çox fırlanma mantıq xətası deməkdir).
-        // A2: tək vaxt mənbəyi — clock (keçmişdə 2 ayrı LocalDate.now()).
-        val today = now().toLocalDate()
-        var d = today
-        var guard = 0
-        while ((d.dayOfWeek != java.time.DayOfWeek.SATURDAY || !d.isAfter(today)) && guard < 400) {
-            d = d.plusDays(1)
-            guard++
-        }
-        return Safety.of("next-saturday", "2026-01-01") {
-            "%04d-%02d-%02d".format(d.year, d.monthValue, d.dayOfMonth)
-        }
-    }
-
-    /** "AI ilə seç" (Sənin üçün) — maraq uyğunluğuna görə sıralama. */
     fun aiRecommendations(): List<Pair<QoshulEvent, String>> {
-        val scored = cityEvents.map { e ->
-            val group = dataSource.groupOf(e.category)
-            val interestHit = interestsV.any { it.contains(group, ignoreCase = true) }
-            e to (if (interestHit) 2 else 0) + (if (!e.isFull) 1 else 0)
-        }.sortedByDescending { it.second }.take(3)
-        return scored.map { (e, score) ->
-            e to when {
-                score >= 2 -> "Profilindəki maraqlarına uyğundur."
-                score == 1 -> "Yerlər az qalıb — tez qoşul."
-                else -> "Yeni başlayanlar üçün uyğun səviyyə."
+        val scores = aiScoresV ?: return emptyList()
+        return cityEvents
+            .mapNotNull { e -> scores[e.id]?.let { e to it } }
+            .sortedByDescending { it.second }
+            .take(3)
+            .map { (e, score) ->
+                e to when {
+                    score >= 2 -> "Profilindəki maraqlarına uyğundur."
+                    score == 1 -> "Yerlər az qalıb — tez qoşul."
+                    else -> "Yeni başlayanlar üçün uyğun səviyyə."
+                }
             }
-        }
     }
 
     /** Şəkil/qrup köməkçiləri UI üçün (D-050: mənbəyə yönəldilmiş). */
@@ -1529,8 +1669,29 @@ class AppEngine(
     /** Məkan ID ilə (server rejimində server siyahısından). */
     fun venueById(id: String): Partner? = dataSource.partners.firstOrNull { it.id == id }
 
-    /** Məkan rəyləri (D-050: fake yalnız PLACEHOLDER rejimində doludur). */
+    /** Məkan rəyləri (D-178: readVenueReviews-dən — yalnız APPROVED). */
     fun venueReviews(venueId: String) = dataSource.venueReviewsSeed[venueId] ?: emptyList()
+
+    /** D-178: bu məkana rəy yazıbmı? (serverdən — dialoq birdəfəlik). */
+    fun venueReviewedByMe(venueId: String): Boolean = myVenueReviewsV[venueId] == true
+
+    /** D-178: serverdən oxunan öz rəy statusları (applyServerData yazır). */
+    private val myVenueReviewsV = mutableMapOf<String, Boolean>()
+
+    /**
+     * D-178: məkan rəyi SERVERƏ yazılır (fn_add_venue_review — PENDING,
+     * moderasiyadan sonra hamıya görünür). Klient tərəfdə rəy siyahısına
+     * DƏRHAL ƏLAVƏ OLUNMUR (moderasiya gecikməsi var — yalnız APPROVED
+     * rəylər oxunur); „yazıldı“状态 yalnız myVenueReviewsV ilə görünür.
+     */
+    fun addVenueReview(venueId: String, stars: Int, body: String): Boolean {
+        if (stars !in 1..5) return false
+        if (myVenueReviewsV[venueId] == true) return false
+        myVenueReviewsV[venueId] = true
+        emit()
+        report(SyncEvent.AddVenueReviewIntent(venueId, stars, body.trim()))
+        return true
+    }
 
     /** Məkan rezerv slotları. */
     fun venueSlots(venueId: String) = dataSource.venueSlotTimes[venueId] ?: emptyList()
@@ -1613,6 +1774,10 @@ data class AppUiState(
     // assistant
     val assistantMsgs: List<ChatMessage>,
     val assistantBusy: Boolean,
+    /** D-175: son köməkçi xətası (boş = xəta yoxdur; UI xəta kartı göstərir). */
+    val assistantError: String = "",
+    /** D-179: AI tövsiyə RPC mövcuddurmu? false → „AI seçimi“ zolağı gizlədilir. */
+    val aiRecommendationsAvailable: Boolean = false,
     // bitmiş aktivitelər
     val finishedActivities: Set<String>,
 ) {

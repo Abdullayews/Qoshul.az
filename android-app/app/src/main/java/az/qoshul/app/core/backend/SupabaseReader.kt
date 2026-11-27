@@ -17,6 +17,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -72,6 +73,17 @@ object SupabaseReader {
         val reservations: List<Reservation> = emptyList(),
         val venueReviews: Map<String, List<VenueReview>> = emptyMap(),
         val venueSlots: Map<String, List<String>> = emptyMap(),
+        /** D-176: keçirilmiş kartlar (swipes) serverdən bərpa olunur. */
+        val swipedPeople: Map<String, Boolean> = emptyMap(),
+        /** D-176: dostluqlar (PENDING sorğu / ACCEPTED) serverdən. */
+        val friendships: Map<String, String> = emptyMap(),
+        /** D-177: venue rəy statusu — öz PENDING rəyi (dialoq birdəfəlik). */
+        val myVenueReviews: Map<String, Boolean> = emptyMap(),
+        /**
+         * D-179: AI tövsiyə skorları serverdən (fn_recommend_events).
+         * NULL = RPC yoxdur/bos → „AI seçimi“ zolağı GİZLƏDİLİR.
+         */
+        val aiRecommendations: Map<String, Int>? = null,
     )
 
     /** Mənim profilim (profiles cədvəlim) — D-152: onboarding sahələri + maraqlar. */
@@ -94,6 +106,8 @@ object SupabaseReader {
         val budget: String = "",
         val availability: List<String> = emptyList(),
         val interests: List<String> = emptyList(),
+        /** D-176: avatar açarı (photo_urls[0] — brend şəkil seçimi). */
+        val avatar: String = "",
     )
 
     private val DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME
@@ -120,6 +134,13 @@ object SupabaseReader {
         val reviews = runCatching { readVenueReviews() }.getOrElse { emptyMap() }
         val slots = runCatching { readVenueSlots() }.getOrElse { emptyMap() }
         val xpCard = runCatching { readActiveXpCard() }.getOrNull()
+        // D-176: swipes + dostluqlar serverdən bərpa olunur (restart-da
+        // keçilmiş kartlar / dostluqlar İTİRDİ — indi server avtoriteti)
+        val swipedPeople = runCatching { readSwipedPeople() }.getOrElse { emptyMap() }
+        val friendships = runCatching { readFriendships() }.getOrElse { emptyMap() }
+        val myVenueReviews = runCatching { readMyVenueReviews() }.getOrElse { emptyMap() }
+        // D-179: AI tövsiyə RPC (yoxdursa null → zolaq gizlədilir)
+        val aiRecommendations = runCatching { readAiRecommendations() }.getOrNull()
 
         return d.copy(
             events = events, partners = partners, offers = offers, people = people,
@@ -135,6 +156,9 @@ object SupabaseReader {
             xpCard = xpCard,
             coupons = coupons, reservations = reservations,
             venueReviews = reviews, venueSlots = slots,
+            swipedPeople = swipedPeople, friendships = friendships,
+            myVenueReviews = myVenueReviews,
+            aiRecommendations = aiRecommendations,
         )
     }
 
@@ -165,7 +189,12 @@ object SupabaseReader {
             id = this["id"]!!.jsonPrimitive.content,
             title = this["title"]?.jsonPrimitive?.content ?: "",
             category = this["category"]?.jsonPrimitive?.content ?: "Digər",
-            image = this["image"]?.jsonPrimitive?.content ?: "friends",
+            // D-177 (ikinci dalğa): image fallback "friends" SİLİNDİ — boş
+            // açar kateqoriyadan törəyir (imageForCategory; DataSource-da)
+            image = this["image"]?.jsonPrimitive?.contentOrNull
+                ?: az.qoshul.app.core.data.Taxonomy.imageKeyForCategory(
+                    this["category"]?.jsonPrimitive?.contentOrNull ?: "",
+                ),
             city = this["city"]?.jsonPrimitive?.content ?: "",
             location = this["location"]?.jsonPrimitive?.content ?: "",
             lat = lat, lng = lng, distance = 0.0,
@@ -195,7 +224,7 @@ object SupabaseReader {
     private suspend fun readPartners(): List<Partner> {
         val c = SupabaseBackend.client ?: return emptyList()
         val rows: List<JsonObject> = c.postgrest.from("venues")
-            .select(Columns.raw("id,name,category,address,city,deal,hours,image,price_range,auto_accept,rating,reviews_count,open_from,open_to,discount_percent,location,xp_per_azn,max_discount_percent,min_bill_azn"))
+            .select(Columns.raw("id,name,category,address,city,deal,hours,image,image_url,price_range,auto_accept,rating,reviews_count,open_from,open_to,discount_percent,location,xp_per_azn,max_discount_percent,min_bill_azn"))
             .decodeAs()
         return rows.mapNotNull { it.toPartner() }
     }
@@ -204,6 +233,8 @@ object SupabaseReader {
         val geo = this["location"]?.jsonPrimitive?.jsonObject
         val lng = geo?.get("coordinates")?.jsonArray?.getOrNull(0)?.jsonPrimitive?.doubleOrNull ?: 0.0
         val lat = geo?.get("coordinates")?.jsonArray?.getOrNull(1)?.jsonPrimitive?.doubleOrNull ?: 0.0
+        // D-177: imageUrl = venues.image_url (NULL → kateqoriya ikonlu placeholder)
+        val imageUrl = this["image_url"]?.jsonPrimitive?.contentOrNull
         Partner(
             id = this["id"]!!.jsonPrimitive.content,
             name = this["name"]?.jsonPrimitive?.content ?: "",
@@ -212,7 +243,10 @@ object SupabaseReader {
             city = this["city"]?.jsonPrimitive?.content ?: "",
             deal = this["deal"]?.jsonPrimitive?.contentOrNull,
             hours = this["hours"]?.jsonPrimitive?.content ?: "",
-            image = this["image"]?.jsonPrimitive?.content ?: "friends",
+            // D-177: paket açarı boş olanda brendə düşmür — kateqoriya
+            // ikonlu placeholder (imageForCategory) UI-da həll olunur
+            image = this["image"]?.jsonPrimitive?.content ?: "",
+            imageUrl = imageUrl,
             lat = lat, lng = lng,
             priceRange = this["price_range"]?.jsonPrimitive?.content ?: "₼₼",
             autoAccept = this["auto_accept"]?.jsonPrimitive?.booleanOrNull ?: true,
@@ -263,7 +297,10 @@ object SupabaseReader {
                     id = id,
                     firstName = p["first_name"]?.jsonPrimitive?.content ?: "",
                     lastName = p["last_name"]?.jsonPrimitive?.content ?: "",
-                    image = "friends",
+                    // D-177 (ikinci dalğa): sabit "friends" fallback SİLİNDİ —
+                    // profil şəkli yoxdursa boş açar default avatara düşür
+                    // (imagePaint-in else qolu — brend şəkil, kateqoriya deyil)
+                    image = "",
                     city = p["city"]?.jsonPrimitive?.content ?: "",
                     status = p["status"]?.jsonPrimitive?.content ?: "other",
                     org = p["university"]?.jsonPrimitive?.contentOrNull
@@ -282,7 +319,7 @@ object SupabaseReader {
         val c = SupabaseBackend.client ?: return null
         val rows: List<JsonObject> = c.postgrest.from("profiles")
             .select(Columns.raw("id,first_name,last_name,city,bio,xp,onboarded,photo_count," +
-                "gender,status,university,work_field,languages,goals,group_size,budget,availability"))
+                "gender,status,university,work_field,languages,goals,group_size,budget,availability,photo_urls"))
             .decodeAs()
         val p = rows.firstOrNull() ?: return null
         // D-152: maraqlar (user_interests) ayrı cədvəldən oxunur
@@ -291,6 +328,9 @@ object SupabaseReader {
                 .select(Columns.raw("category_slug")).decodeAs()
             irows.mapNotNull { it["category_slug"]?.jsonPrimitive?.contentOrNull }
         }.getOrElse { emptyList() }
+        // D-176: avatar açarı photo_urls[0]-dan (fn_set_avatar oraya yazır)
+        val avatar = p["photo_urls"]?.jsonArray
+            ?.firstOrNull()?.jsonPrimitive?.contentOrNull ?: ""
         return runCatching {
             MyProfile(
                 id = p["id"]!!.jsonPrimitive.content,
@@ -312,6 +352,7 @@ object SupabaseReader {
                 availability = p["availability"]?.jsonArray
                     ?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList(),
                 interests = interests,
+                avatar = avatar,
             )
         }.getOrNull()
     }
@@ -557,7 +598,7 @@ object SupabaseReader {
                     id = r["id"]!!.jsonPrimitive.content,
                     venueId = r["venue_id"]?.jsonPrimitive?.content ?: "",
                     venueName = r["venue_name"]?.jsonPrimitive?.content ?: "",
-                    venueImage = r["venue_image"]?.jsonPrimitive?.content ?: "friends",
+                    venueImage = r["venue_image"]?.jsonPrimitive?.content ?: "",
                     date = r["resv_date"]?.jsonPrimitive?.content ?: "",
                     time = r["resv_time"]?.jsonPrimitive?.content ?: "",
                     party = r["party"]?.jsonPrimitive?.intOrNull ?: 1,
@@ -604,5 +645,94 @@ object SupabaseReader {
             { it["venue_id"]?.jsonPrimitive?.contentOrNull ?: "" },
             { it["slot_time"]?.jsonPrimitive?.contentOrNull ?: "" },
         ).mapValues { it.value.sorted() }
+    }
+
+    // ── D-176: keçirilmiş kartlar (swipes) — restart-da itmir ──
+
+    /**
+     * Mənim swipe hərəkətlərim (fn_read_swipe RPC — həm LIKE, həm PASS).
+     * Qaytarılan map: personId → interested. Boş = heç bir kart keçilməyib.
+     */
+    private suspend fun readSwipedPeople(): Map<String, Boolean> {
+        val c = SupabaseBackend.client ?: return emptyMap()
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.rpc(
+                function = "fn_read_swipes",
+            ).decodeAs()
+            rows.mapNotNull { r ->
+                val id = r["person_id"]?.jsonPrimitive?.contentOrNull
+                    ?: return@mapNotNull null
+                val interested = r["interested"]?.jsonPrimitive?.booleanOrNull ?: false
+                id to interested
+            }.toMap()
+        }.getOrDefault(emptyMap())
+    }
+
+    // ── D-176: dostluqlar (friendships) — serverdən bərpa ──
+
+    /**
+     * Dostluq vəziyyətləri: personId → status („sent“ = mən sorğu göndərmişəm
+     * PENDING; „accepted“ = qəbul olunub). DECLINED göstərilmir (sanki yoxdur).
+     */
+    private suspend fun readFriendships(): Map<String, String> {
+        val c = SupabaseBackend.client ?: return emptyMap()
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.from("friendships")
+                .select(Columns.raw("requester_id,addressee_id,status")).decodeAs()
+            val me = readMyProfile()?.id
+            if (me == null) return@runCatching emptyMap()
+            rows.mapNotNull { f ->
+                val requester = f["requester_id"]?.jsonPrimitive?.contentOrNull
+                val addressee = f["addressee_id"]?.jsonPrimitive?.contentOrNull
+                val status = f["status"]?.jsonPrimitive?.contentOrNull
+                when {
+                    requester == me && status == "PENDING" ->
+                        (addressee ?: return@mapNotNull null) to "sent"
+                    requester == me && status == "ACCEPTED" ->
+                        (addressee ?: return@mapNotNull null) to "accepted"
+                    addressee == me && status == "ACCEPTED" ->
+                        (requester ?: return@mapNotNull null) to "accepted"
+                    addressee == me && status == "PENDING" ->
+                        // mənə gələn sorğu — „incoming“ (UI cavab düymələri göstərir)
+                        (requester ?: return@mapNotNull null) to "incoming"
+                    else -> null
+                }
+            }.toMap()
+        }.getOrDefault(emptyMap())
+    }
+
+    // ── D-178: öz məkan rəylərim (bir məkana bir rəy) ──
+
+    /** venueId → rəy yazıbmı (istənilən statusda). Dialoq birdəfəlik açılır. */
+    private suspend fun readMyVenueReviews(): Map<String, Boolean> {
+        val c = SupabaseBackend.client ?: return emptyMap()
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.from("venue_reviews")
+                .select(Columns.raw("venue_id")).decodeAs()
+            rows.mapNotNull { it["venue_id"]?.jsonPrimitive?.contentOrNull }
+                .associateWith { true }
+        }.getOrDefault(emptyMap())
+    }
+
+    // ── D-179: AI tövsiyə skorları — fn_recommend_events RPC ──
+
+    /**
+     * Server skorları: eventId → score (2 = maraq uyğunluğu, 1 = yer qalığı).
+     * RPC mövcud deyilsə və ya xəta verərsə NULL qayıdır → „AI seçimi“
+     * zolağı GİZLƏDİLİR (klient tərəfli fallback skor YOXDUR).
+     */
+    private suspend fun readAiRecommendations(): Map<String, Int>? {
+        val c = SupabaseBackend.client ?: return null
+        return runCatching {
+            val rows: List<JsonObject> = c.postgrest.rpc(
+                function = "fn_recommend_events",
+            ).decodeAs()
+            rows.mapNotNull { r ->
+                val id = r["event_id"]?.jsonPrimitive?.contentOrNull
+                    ?: return@mapNotNull null
+                val score = r["score"]?.jsonPrimitive?.intOrNull ?: 0
+                id to score
+            }.toMap()
+        }.getOrNull()
     }
 }

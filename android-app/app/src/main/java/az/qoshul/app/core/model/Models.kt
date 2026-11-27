@@ -70,10 +70,15 @@ data class Person(
     val age: Int = 24,
     val distanceKm: Double = 1.5,
     val rolInterests: List<String> = emptyList(),
-    val likesBack: Boolean = false,
     /** A7 düzəlişi (audit): xəritə pini üçün sabit koordinat (saxta törəmə əvəzinə). */
     val mapLat: Double = 40.37,
     val mapLng: Double = 49.83,
+    /**
+     * D-176: hədəfin mənə LIKE edib-etmədiyi — SERVERDƏN gəlir (fn_record_swipe
+     * cavabındaki matched bayrağı / fn_read_swipe). Model sahəsi kimi
+     * likesBack SİLİNDİ: match qərarı serverin cavabıdır, klient proqnozu yox.
+     */
+    val likedMe: Boolean = false,
 ) {
     val fullName: String get() = "$firstName $lastName"
 
@@ -94,9 +99,16 @@ data class Partner(
     val city: String,
     val deal: String? = null,
     val hours: String,
+    /** Paket asset açarı (brend şəkil dəsti) — supabase venues.image. */
     val image: String,
     val lat: Double,
     val lng: Double,
+    /**
+     * D-177: serverdən gələn TAM URL (venues.image_url) — məkanın öz
+     * fotoşəkli. NULL = şəkil yoxdur → UI kateqoriya ikonlu placeholder
+     * göstərir (brend assetə düşmür).
+     */
+    val imageUrl: String? = null,
     // ROL E genişlənmələri
     val priceRange: String = "₼₼",
     val autoAccept: Boolean = true,

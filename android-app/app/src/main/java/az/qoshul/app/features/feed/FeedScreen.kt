@@ -390,6 +390,7 @@ private fun ForYouView(
                                 imageKey = v.image, name = v.name, category = v.category,
                                 priceRange = v.priceRange, rating = v.rating,
                                 discount = v.discountPercent,
+                                imageUrl = v.imageUrl,
                                 onClick = { nav.push(Route.VenueDetail(v.id)) },
                             )
                         }

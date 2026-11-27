@@ -64,7 +64,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -95,8 +94,6 @@ import az.qoshul.app.core.ui.ChatBubble
 import az.qoshul.app.core.ui.SectionHeading
 import az.qoshul.app.core.ui.ViewHeading
 import az.qoshul.app.core.ui.imagePaint
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * Söhbətlər — Flutter chats_screen.dart portu (ROL TAB 4):
@@ -343,24 +340,24 @@ private fun ChatView(
 ) {
     // U2.2 (UI-02): yazılmamış mesaj qaralaması proses ölümündən sağ qalır
     var text by rememberSaveable { mutableStateOf("") }
-    var typing by remember { mutableStateOf(false) }
+    // D-175 (ikinci dalğa): „yazır...“ göstəricisi YALNIZ Supabase
+    // Realtime-dan gəlir (typing broadcast + messages INSERT). Köhnə
+    // 1400ms saxta taymer SİLİNDİ — öz mesajından sonra saxta cavab
+    // gözləntisi yaratmırdı, yalnız UI aldadırdı.
+    val typing by az.qoshul.app.core.backend.TypingIndicator.rememberTyping(title)
     var menuOpen by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
     }
 
-    /** Göndər + "yazır..." simulyasiyası — düymə və tez-cavab çipi üçün ortaq. */
+    /** Göndər — tez-cavab çipi və düymə üçün ortaq (taymer YOX). */
     fun sendAction(body: String) {
         if (body.isBlank()) return
         onSend(body.trim())
         text = ""
-        typing = true
-        scope.launch {
-            delay(1400); typing = false
-        }
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -500,7 +497,11 @@ private fun ChatView(
             ) {
                 ComposerField(
                     value = text,
-                    onValueChange = { text = it },
+                    onValueChange = {
+                        text = it
+                        // D-175: qarşı tərəfə typing broadcast (throttle 2s)
+                        az.qoshul.app.core.backend.TypingIndicator.broadcastTyping(title, scope)
+                    },
                     onSend = { sendAction(text) },
                     modifier = Modifier.weight(1f),
                 )

@@ -150,7 +150,11 @@ fun ProfileScreen(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Text(st.profileName, style = T.h1)
+                // D-175 (ikinci dalğa): ad boş olanda (server fallback YOX —
+                // A.1/D-170) boş başlıq yox, „Salam!“ göstərilir. Feed-dəki
+                // salamlaşma bloku D-115 ilə silindiyindən yeganə ad-başlıq
+                // buradadır; boş ad ekranda „, !“ kimi qırıq görünmür.
+                Text(st.profileName.ifBlank { "Salam!" }, style = T.h1)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RankBadge(label = st.rank)

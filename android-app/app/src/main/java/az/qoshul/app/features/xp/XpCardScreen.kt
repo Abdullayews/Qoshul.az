@@ -227,6 +227,9 @@ private fun DynamicQrSection(account: VenueXpAccount, engine: AppEngine) {
         while (true) {
             kotlinx.coroutines.delay(1000)
             tick++
+            // D-175: kartın vaxtı bitəndə avtomatik re-issue (istifadəçi
+            // „Yenilə“ düyməsini basmağı gözləmir)
+            engine.reissueExpiredXpCard()
         }
     }
     val card = engine.state.value.xpCard

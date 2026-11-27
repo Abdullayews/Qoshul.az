@@ -251,7 +251,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             reason = "Hər ikiniz qəhvə görüşlərini və şəhər gəzintilərini sevirsiniz.",
             age = 23, distanceKm = 1.2,
             rolInterests = listOf("Kafe və Yemək", "Təbiət və Səyahət", "Mədəniyyət və İncəsənət"),
-            likesBack = true, mapLat = 40.3851, mapLng = 49.8456,
+            likedMe = true, mapLat = 40.3851, mapLng = 49.8456,
         ),
         Person(
             id = "p2", firstName = "Rəşad", lastName = "Əliyev", image = imgCoffee,
@@ -260,7 +260,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             reason = "İdman və texnologiya maraqlarınız üst-üstə düşür — padel görüşü üçün ideal.",
             age = 27, distanceKm = 3.4,
             rolInterests = listOf("İdman və Aktivlik", "Təhsil və Karyera", "Oyun və Hobbi"),
-            likesBack = true, mapLat = 40.4108, mapLng = 49.8312,
+            likedMe = true, mapLat = 40.4108, mapLng = 49.8312,
         ),
         Person(
             id = "p3", firstName = "Nigar", lastName = "Quliyeva", image = imgFriends,
@@ -269,7 +269,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             reason = "Mədəni tədbirlərə birgə getmək üçün yüksək uyğunluq.",
             age = 22, distanceKm = 0.8,
             rolInterests = listOf("Mədəniyyət və İncəsənət", "Musiqi", "Könüllülük və Sosial"),
-            likesBack = false, mapLat = 40.3654, mapLng = 49.8342,
+            likedMe = false, mapLat = 40.3654, mapLng = 49.8342,
         ),
         Person(
             id = "p4", firstName = "Orxan", lastName = "Həsənov", image = imgTech,
@@ -278,7 +278,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             reason = "Texnologiya meetuplarında birlikdə iştirak üçün uyğun profil.",
             age = 29, distanceKm = 5.1,
             rolInterests = listOf("Təhsil və Karyera", "Oyun və Hobbi", "İdman və Aktivlik"),
-            likesBack = false, mapLat = 40.3982, mapLng = 49.8545,
+            likedMe = false, mapLat = 40.3982, mapLng = 49.8545,
         ),
         Person(
             id = "p5", firstName = "Aysel", lastName = "İsmayılova", image = imgFriends,
@@ -287,7 +287,7 @@ object FakeQoshulDataSource : QoshulDataSource {
             reason = "Səyahət planları və dizayn maraqlarınız uyğundur.",
             age = 25, distanceKm = 2.3,
             rolInterests = listOf("Təbiət və Səyahət", "Mədəniyyət və İncəsənət", "Musiqi"),
-            likesBack = true, mapLat = 40.3761, mapLng = 49.8201,
+            likedMe = true, mapLat = 40.3761, mapLng = 49.8201,
         ),
     )
 

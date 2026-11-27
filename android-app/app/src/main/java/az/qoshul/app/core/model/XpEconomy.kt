@@ -4,8 +4,9 @@ import java.time.LocalDateTime
 
 /**
  * İkitərəfli XP iqtisadiyyatı modelləri — Flutter `core/models/xp_economy.dart`
- * portu (D-026, product-spec L). UI fazası: mock simulyasiya; backend fazasında
- * hər əməliyyat idempotency key ilə serverdə icra olunacaq (qayda 8/9).
+ * portu (D-026, product-spec L). D-170-dən: hər əməliyyat idempotency key ilə
+ * SERVERDƏ icra olunur (qayda 8/9); [XpCardCode.fresh] yalnız JVM testləri
+ * üçündür — istehsalda kart [XpCardCode.fromServer] ilə serverdən gəlir.
  */
 
 /** Xəritə görünüşü — 3 seçim (D-027): Hamı / Yalnız dostlar / Gizli. */
@@ -114,12 +115,11 @@ class XpCardCode private constructor(
             XpCardCode(nonce, fallbackCode, expiresAt)
 
         /**
-         * Yeni kod — TTL 60 saniyə (D-026).
-         *
-         * B5 (M0 interfeys hazırlığı): [codeSource] injeksiya olunur — mock
-         * deterministikdir; M1/M2-də server CSPRNG nonce-u EYNİ imza ilə
-         * veriləcək (rand crate). [az.qoshul.app.core.model.XpRules.FALLBACK_CODE_DIGITS]
-         * rəqəm sayı artıq hardcode deyil (N7).
+         * Yeni kod — TTL 60 saniyə (D-026). YALNIZ TEST: [codeSource]
+         * injeksiyası deterministik test dəyərləri üçündür; istehsalda
+         * kart [fromServer] ilə server CSPRNG-dən gəlir (fn_issue_xp_card_nonce).
+         * [az.qoshul.app.core.model.XpRules.FALLBACK_CODE_DIGITS]
+         * rəqəm sayı hardcode deyil (N7).
          */
         fun fresh(
             now: LocalDateTime,
@@ -136,7 +136,7 @@ class XpCardCode private constructor(
             )
         }
 
-        /** Mock deterministik kod (B5 sənədi: crypto-random DEYİL — M1-də əvəz olunur). */
+        /** Test deterministik kodu (istehsalda YOX — server CSPRNG). */
         private fun mockCode(now: LocalDateTime): Int {
             val seed = (now.nano / 1000) xor nonceSeq++.hashCode()
             return (seed and 0x7FFFFFFF) % 10_000

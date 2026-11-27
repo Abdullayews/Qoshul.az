@@ -145,6 +145,22 @@ internal fun mapEventImpl(e: SyncEvent): BackendCall? = when (e) {
         "p_interests" to e.interests,
     )
     is SyncEvent.SetAvatarIntent -> rpcCall("fn_set_avatar", "p_image_key" to e.imageKey)
+    // D-175: „Qoşa“ cavabı serverdə qurulur (fn_assistant_reply)
+    is SyncEvent.AssistantIntent ->
+        rpcCall("fn_assistant_reply", "p_query" to e.query)
+    // D-179: AI seçimi skorları serverdə (fn_recommend_events)
+    is SyncEvent.RecommendEventsIntent -> rpcCall("fn_recommend_events")
+    // D-176: dostluq sorğu/cavabı serverdə
+    is SyncEvent.RequestFriendIntent ->
+        rpcCall("fn_request_friend", "p_target_id" to e.personId)
+    is SyncEvent.RespondFriendIntent ->
+        rpcCall("fn_respond_friend", "p_requester_id" to e.requesterId, "p_accept" to e.accept)
+    // D-178: məkan rəyi serverdə (PENDING; moderasiyadan sonra görünür)
+    is SyncEvent.AddVenueReviewIntent ->
+        rpcCall(
+            "fn_add_venue_review", "p_venue_id" to e.venueId,
+            "p_stars" to e.stars, "p_body" to e.body,
+        )
 }
 
 internal data class RpcCall(

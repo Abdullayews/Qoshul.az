@@ -76,10 +76,11 @@ google-play-services-maps = { group = "com.google.android.gms", name = "play-ser
 # — M1: Supabase (D-068 pin; D-166 v3 miqrasiyası) — QEYD (CI fəslindən,
 # D-078 düzəlişi): supabase-kt "umbrella" əslində CORE-dur (SupabaseClient);
 # modullar ayrıca deklarasiya olunur: auth-kt (auth, v3), postgrest-kt (RPC).
-# realtime-kt/storage-kt — istifadə kodu gələndə əlavə olunacaq (M4).
+# D-175: realtime-kt əlavə olundu — typing broadcast (chat „yazır...“).
 supabase-kt = { group = "io.github.jan-tennert.supabase", name = "supabase-kt", version.ref = "supabaseKt" }
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt", version.ref = "supabaseKt" }
 supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgrest-kt", version.ref = "supabaseKt" }
+supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt", version.ref = "supabaseKt" }
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktorCio" }
 # D-151: auth-kt SettingsStorage — sessiya persistence (restart-da login qalır)
 multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }

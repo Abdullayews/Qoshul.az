@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -150,6 +151,37 @@ fun AssistantScreen(engine: AppEngine, nav: NavState, onOpenCreate: () -> Unit) 
                             modifier = Modifier.padding(top = 14.dp).size(16.dp))
                     }
                 }
+                // D-175: köməkçi XƏTA KARTI — server cavabı gəlməyəndə
+                // (RPC xətası / konfiqurasiyasız) uydurma cavab YOXDUR;
+                // istifadəçiyə aydın görünür, yenidən cəhd edə bilər.
+                if (st.assistantError.isNotEmpty() && !st.assistantBusy) {
+                    item {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp)
+                                .androidxAssistantErrorCard()
+                                .padding(14.dp),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.CloudOff, null,
+                                    tint = Q.destructive, modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Köməkçi cavab verə bilmədi",
+                                    style = T.bodySemi.copy(color = Q.destructive),
+                                )
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                st.assistantError,
+                                style = T.bodySm.copy(color = Q.mutedFg),
+                            )
+                        }
+                    }
+                }
                 // D-061: !! əvəzinə yerli dəyişən — təklif state-i
                 // paralel dəyişsə belə (nə olar əgər) çökmür.
                 val confirmed = proposal
@@ -225,6 +257,16 @@ private fun Modifier.androidxComposerBg(): Modifier = this.then(
     Modifier
         .background(Q.card)
         .androidxComposerBorder()
+)
+
+/** D-175: köməkçi xəta kartı fonu — yumşaq dağıdıcı rəng, incə kontur. */
+private fun Modifier.androidxAssistantErrorCard(): Modifier = this.then(
+    Modifier
+        .background(
+            Q.destructive.copy(alpha = 0.06f),
+            RoundedCornerShape(Q.rMd.dp),
+        )
+        .border(1.dp, Q.destructive.copy(alpha = 0.35f), RoundedCornerShape(Q.rMd.dp))
 )
 
 private fun Modifier.androidxComposerBorder(): Modifier = this.then(

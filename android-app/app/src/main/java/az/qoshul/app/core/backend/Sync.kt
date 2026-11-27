@@ -154,6 +154,30 @@ sealed interface SyncEvent {
 
     /** fn_set_avatar (D-152) — profil şəkli açarı. */
     data class SetAvatarIntent(val imageKey: String) : SyncEvent
+
+    /**
+     * D-175: fn_assistant_reply — „Qoşa“ köməkçisinin sualı SERVERƏ gedir;
+     * cavab (şablon mətn + [TƏDBİR] JSON) RPC-nin özündən gəlir.
+     * Klient tərəfli cavab generatoru silindi.
+     */
+    data class AssistantIntent(val query: String) : SyncEvent
+
+    /** D-179: fn_recommend_events — „AI seçimi“ skorları serverdə. */
+    data object RecommendEventsIntent : SyncEvent
+
+    /** D-176: fn_request_friend — dostluq sorğusu serverdə. */
+    data class RequestFriendIntent(val personId: String) : SyncEvent
+
+    /** D-176: fn_respond_friend — sorğuya cavab (qəbul/rədd) serverdə. */
+    data class RespondFriendIntent(val requesterId: String, val accept: Boolean) : SyncEvent
+
+    /**
+     * D-178: fn_add_venue_review — məkan rəyi serverə (PENDING status,
+     * moderasiyadan sonra hamıya görünür).
+     */
+    data class AddVenueReviewIntent(
+        val venueId: String, val stars: Int, val body: String,
+    ) : SyncEvent
 }
 
 /** Güzgü çıxışı — implementasiyalar bloklamamalı, heç vaxt atılmamalıdır. */

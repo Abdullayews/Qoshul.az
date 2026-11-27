@@ -185,43 +185,49 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
             }
             Spacer(Modifier.height(18.dp))
             // — profil şəkli seçimi —
-            Text("Profil şəkli", style = T.label)
-            Spacer(Modifier.height(9.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                avatarOptions.forEach { key ->
-                    val label = key.replaceFirstChar { it.uppercase() }
-                    val sel = key == avatar
-                    val interaction = remember { MutableInteractionSource() }
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .weight(1f)
-                            .androidxAvatarPick(interaction, sel) {
-                                avatar = key
-                            }
-                            .padding(vertical = 9.dp),
-                    ) {
-                        Image(
-                            painter = imagePaint(key),
-                            contentDescription = key,
-                            contentScale = ContentScale.Crop,
+            // D-177 (ikinci dalğa): şəkil yükləmə backendi hələ aktiv
+            // olmadığından (PHOTO_UPLOAD_ENABLED=false) avatar dəyişmə UI
+            // GİZLİDİR — brend avatar seçimi real yükləmə gələndə açılır
+            // (yarımçıq "şəkil seç" axını yoxdur; cari avatar önizləməsi
+            // qalır — yalnız dəyişmə mümkün deyil).
+            if (az.qoshul.app.core.backend.BackendConfig.photoUploadEnabled) {
+                Text("Profil şəkli", style = T.label)
+                Spacer(Modifier.height(9.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    avatarOptions.forEach { key ->
+                        val label = key.replaceFirstChar { it.uppercase() }
+                        val sel = key == avatar
+                        val interaction = remember { MutableInteractionSource() }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
-                                .size(52.dp)
-                                .clip(CircleShape)
-                                .then(
-                                    if (sel) Modifier.border(2.dp, Q.primaryText, CircleShape)
-                                    else Modifier
-                                ),
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (sel) {
-                                Icon(
-                                    Icons.Filled.CheckCircle, null,
-                                    tint = Q.primaryText, modifier = Modifier.size(13.dp),
+                                .weight(1f)
+                                .androidxAvatarPick(interaction, sel) {
+                                    avatar = key
+                                }
+                                .padding(vertical = 9.dp),
+                        ) {
+                            Image(
+                                painter = imagePaint(key),
+                                contentDescription = key,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .then(
+                                        if (sel) Modifier.border(2.dp, Q.primaryText, CircleShape)
+                                        else Modifier
+                                    ),
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (sel) {
+                                    Icon(
+                                        Icons.Filled.CheckCircle, null,
+                                        tint = Q.primaryText, modifier = Modifier.size(13.dp),
                                 )
                                 Spacer(Modifier.width(3.dp))
                             }
@@ -232,6 +238,7 @@ fun ProfileEditScreen(engine: AppEngine, nav: NavState) {
                                     color = if (sel) Q.primaryText else Q.mutedFg,
                                 ),
                             )
+                            }
                         }
                     }
                 }

@@ -311,29 +311,35 @@ private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
                 }
             }
         }
-        FormFieldX("Şəkil ($photos/${XpRules.MAX_PHOTOS})", hint = "Azı 1 şəkil məcburidir — yüklənəndə moderasiyaya düşür") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..XpRules.MAX_PHOTOS).forEach { i ->
-                    Box(
-                        Modifier
-                            .size(46.dp)
-                            .background(
-                                if (i <= photos) Q.secondary else Q.card,
-                                RoundedCornerShape(Q.rMd.dp),
+        // D-177 (ikinci dalğa): şəkil yükləmə backendi (0011 avatars bucket)
+        // hələ AKTİV DEYİL — PHOTO_UPLOAD_ENABLED=false olanda bu addım
+        // GİZLİDİR (yarımçıq "şəkil seç" UI göstərilmir; istifadəçi brend
+        // avatara düşür, real yükləmə gələndə addım qayıdır).
+        if (az.qoshul.app.core.backend.BackendConfig.photoUploadEnabled) {
+            FormFieldX("Şəkil ($photos/${XpRules.MAX_PHOTOS})", hint = "Azı 1 şəkil məcburidir — yüklənəndə moderasiyaya düşür") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    (1..XpRules.MAX_PHOTOS).forEach { i ->
+                        Box(
+                            Modifier
+                                .size(46.dp)
+                                .background(
+                                    if (i <= photos) Q.secondary else Q.card,
+                                    RoundedCornerShape(Q.rMd.dp),
+                                )
+                                .border(
+                                    1.4.dp.takeIf { i <= photos } ?: 1.dp,
+                                    if (i <= photos) Q.primaryText else Q.border,
+                                    RoundedCornerShape(Q.rMd.dp),
+                                )
+                                .clickable { photos = i },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                if (i <= photos) Icons.Filled.Check else Icons.Filled.AddPhotoAlternate,
+                                null, tint = if (i <= photos) Q.primaryText else Q.mutedFg,
+                                modifier = Modifier.size(19.dp),
                             )
-                            .border(
-                                1.4.dp.takeIf { i <= photos } ?: 1.dp,
-                                if (i <= photos) Q.primaryText else Q.border,
-                                RoundedCornerShape(Q.rMd.dp),
-                            )
-                            .clickable { photos = i },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            if (i <= photos) Icons.Filled.Check else Icons.Filled.AddPhotoAlternate,
-                            null, tint = if (i <= photos) Q.primaryText else Q.mutedFg,
-                            modifier = Modifier.size(19.dp),
-                        )
+                        }
                     }
                 }
             }

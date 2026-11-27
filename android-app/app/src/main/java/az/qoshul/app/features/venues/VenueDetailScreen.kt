@@ -34,9 +34,11 @@ import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.RateReview
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TableRestaurant
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.WhereToVote
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -100,6 +102,8 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
     val st by engine.state.collectAsStateWithLifecycle()
     val venue = engine.venueById(venueId) ?: return
     var reserveOpen by remember { mutableStateOf(false) }
+    // D-178: rəy yazma dialoqu (ulduz + mətn → server)
+    var reviewOpen by remember { mutableStateOf(false) }
     val hour = remember { engine.now().hour } // A2: vahid clock
     val openNow = venue.isOpenAt(hour)
     val reviews = engine.venueReviews(venue.id)
@@ -107,9 +111,12 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
     Column(Modifier.fillMaxSize().background(Q.background)) {
         // — şəkil başlıq (SliverAppBar portu) —
         Box(Modifier.fillMaxWidth().height(230.dp)) {
-            Image(
-                painter = imagePaint(venue.image), contentDescription = venue.name,
-                contentScale = ContentScale.Crop,
+            // D-177: server şəkli (imageUrl) VƏYA kateqoriya ikonlu placeholder
+            az.qoshul.app.core.ui.VenueImage(
+                imageUrl = venue.imageUrl,
+                assetKey = venue.image,
+                category = venue.category,
+                contentDescription = venue.name,
                 modifier = Modifier.fillMaxSize(),
             )
             Box(
@@ -187,6 +194,29 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
                 )
             }
             SectionHeading(title = "Rəylər", icon = Icons.Filled.RateReview)
+            // D-178: rəy yazma UI — serverə (fn_add_venue_review, PENDING).
+            // Bir məkana bir rəy (serverdən oxunan myVenueReviews ilə).
+            if (!engine.venueReviewedByMe(venue.id)) {
+                OutlinedButton(
+                    onClick = { reviewOpen = true },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape = RoundedCornerShape(Q.rPill),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Q.card, contentColor = Q.foreground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Q.border),
+                ) {
+                    Icon(Icons.Filled.RateReview, null, tint = Q.primaryText, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Rəy yaz", style = T.button)
+                }
+                Spacer(Modifier.height(10.dp))
+            } else {
+                Text(
+                    "Rəyin göndərilib — moderasiyadan sonra burada görünəcək.",
+                    style = T.meta.copy(color = Q.mutedFg),
+                )
+                Spacer(Modifier.height(10.dp))
+            }
             if (reviews.isEmpty()) {
                 EmptyState(icon = Icons.Filled.RateReview, text = "Hələ rəy yazılmayıb.")
             } else {
@@ -247,6 +277,67 @@ fun VenueDetailScreen(engine: AppEngine, nav: NavState, venueId: String,
     if (reserveOpen) {
         ReserveSheet(engine, venue, onDismiss = { reserveOpen = false })
     }
+
+    // D-178: rəy yazma dialoqu — ulduz seçimi + mətn; göndər → server
+    if (reviewOpen) {
+        AddVenueReviewDialog(
+            venueName = venue.name,
+            onDismiss = { reviewOpen = false },
+            onSubmit = { stars, body ->
+                engine.addVenueReview(venue.id, stars, body)
+                reviewOpen = false
+            },
+        )
+    }
+}
+
+/**
+ * D-178: məkan rəyi dialoqu — 1-5 ulduz + mətn (200 hədd). Göndəriləndə
+ * fn_add_venue_review serverə yazır (PENDING); cavabda dialoq bağlanır.
+ */
+@Composable
+private fun AddVenueReviewDialog(
+    venueName: String,
+    onDismiss: () -> Unit,
+    onSubmit: (stars: Int, body: String) -> Unit,
+) {
+    var stars by remember { mutableStateOf(5) }
+    var body by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rəy yaz — $venueName") },
+        text = {
+            Column {
+                Text("Təcrübəni qiymətləndir:", style = T.subtitle)
+                Spacer(Modifier.height(10.dp))
+                Row {
+                    (1..5).forEach { i ->
+                        IconButton(onClick = { stars = i }) {
+                            Icon(
+                                if (i <= stars) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                null,
+                                tint = if (i <= stars) Q.accent else Q.mutedFg,
+                                modifier = Modifier.size(30.dp),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                QoshulTextField(
+                    value = body,
+                    onValueChange = { if (it.length <= 200) body = it },
+                    maxLines = 3,
+                    hint = "Nə yaxşı idi, nə yaxşılaşmalı?",
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(stars, body.trim()) }) { Text("Göndər") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("İmtina") }
+        },
+    )
 }
 
 /** Məkan info sətri — D-063: vertical 6dp əlavə (toxunma hədəfi ~44dp). */
@@ -321,14 +412,26 @@ fun ReserveSheet(engine: AppEngine, venue: Partner, onDismiss: () -> Unit) {
                 1 -> {
                     SectionTitle("Saat slotu seç")
                     Spacer(Modifier.height(10.dp))
-                    Column {
-                        slots.chunked(4).forEach { row ->
-                            Row {
-                                row.forEach { s ->
-                                    Box(Modifier.padding(end = 8.dp, bottom = 8.dp)) {
-                                        CategoryChip(label = s, icon = Icons.Filled.Schedule,
-                                            active = time == s) {
-                                            time = s; step = 2
+                    if (slots.isEmpty()) {
+                        // D-177 (ikinci dalğa): server slot siyahısı BOŞDURSA fallback
+                        // saat siyahısı GÖSTƏRİLMİR (əvvəl uydurma 09:00-21:00
+                        // toru çıxarırdı) — məkan partnyoru slotları
+                        // daxil etməyib; istifadəçi başqa tarixə/axına baxır.
+                        EmptyState(
+                            icon = Icons.Filled.Schedule,
+                            text = "Bu məkan üçün saat slotları hələ daxil edilməyib.\n" +
+                                "Partnyor təsdiqi gözlənilir — bir azdan yenidən yoxla.",
+                        )
+                    } else {
+                        Column {
+                            slots.chunked(4).forEach { row ->
+                                Row {
+                                    row.forEach { s ->
+                                        Box(Modifier.padding(end = 8.dp, bottom = 8.dp)) {
+                                            CategoryChip(label = s, icon = Icons.Filled.Schedule,
+                                                active = time == s) {
+                                                time = s; step = 2
+                                            }
                                         }
                                     }
                                 }

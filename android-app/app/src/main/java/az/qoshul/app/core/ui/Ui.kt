@@ -28,13 +28,23 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Park
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.MilitaryTech
 import androidx.compose.material3.Icon
@@ -42,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,12 +60,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -82,7 +95,7 @@ import az.qoshul.app.core.theme.OpenSans
 
 // ═══════════════════ Şəkil açarları → res ═══════════════════
 
-/** Mock şəkil açarını rəsm resursuna çevirir (models saf qalır). */
+/** Paket şəkil açarını rəsm resursuna çevirir (models saf qalır). */
 @Composable
 fun imagePaint(key: String): Painter = when (key) {
     "coffee" -> painterResource(R.drawable.coffee)
@@ -90,6 +103,87 @@ fun imagePaint(key: String): Painter = when (key) {
     "tech" -> painterResource(R.drawable.tech)
     else -> painterResource(R.drawable.friends_baku)
 }
+
+/**
+ * D-177: məkan şəkli — paket açarından AYRI server URL-i (venues.image_url).
+ *  • imageUrl DOLUDUR → URL şəkli ASİNXRON yüklənir (IO dispatcher; yüklənə
+ *    vaxt kateqoriya placeholder görünür; xətada placeholder qalır).
+ *  • imageUrl NULL → KATEQORİYA İKONLU PLACEHOLDER (brend assetə düşmür:
+ *    köhnə `image ?: "friends"` fallback boş məkana "Dostlar Bakıda" şəkli
+ *    qoyurdu — yanlış məzmun idi).
+ *
+ * Kateqoriya ikonu: qrup adına görə (Taxonomy.groupOf — İdman →
+ * DirectionsRun, Yemək və içki → Restaurant, ...). Coil/Glide asılılığı
+ * YOXDUR (D-023 sıfır-əlavə-asılılıq qaydası; produceState + IO).
+ */
+@Composable
+fun VenueImage(
+    imageUrl: String?,
+    assetKey: String,
+    category: String,
+    contentDescription: String?,
+    modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier,
+) {
+    val url = imageUrl?.takeIf { it.isNotBlank() && it.startsWith("http") }
+    // Asinxron yükləmə — IO dispatcher (main thread bloklanmır; strict mode təhlükəsiz)
+    val bmp by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null, url,
+    ) {
+        if (url == null) return@produceState
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching {
+                val conn = java.net.URL(url).openConnection()
+                conn.connectTimeout = 4000
+                conn.readTimeout = 4000
+                conn.getInputStream().use { it.readBytes() }
+            }.getOrNull()?.let { bytes ->
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?.asImageBitmap()
+            }
+        }
+    }
+    if (bmp != null) {
+        Image(
+            painter = androidx.compose.ui.graphics.painter.BitmapPainter(bmp!!),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = modifier,
+        )
+        return
+    }
+    // KATEQORİYA İKONLU PLACEHOLDER — boz səth + böyük ikon (+ kateqoriya adı)
+    Box(
+        modifier = modifier.background(Q.muted),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+            Icon(
+                venueCategoryIcon(category), null,
+                tint = Q.mutedFg, modifier = androidx.compose.ui.Modifier.size(34.dp),
+            )
+            Spacer(androidx.compose.foundation.layout.Modifier.height(6.dp))
+            Text(
+                category, style = T.chipXs.copy(color = Q.mutedFg),
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** D-177: kateqoriya → ikon (placeholder üçün; Taxonomy qrupları). */
+fun venueCategoryIcon(category: String): androidx.compose.ui.graphics.vector.ImageVector =
+    when (az.qoshul.app.core.data.Taxonomy.groupOf(category)) {
+        "İdman" -> Icons.Filled.DirectionsRun
+        "Təbiət" -> Icons.Filled.Park
+        "Yemək və içki" -> Icons.Filled.Restaurant
+        "Texnologiya" -> Icons.Filled.Memory
+        "Biznes və karyera" -> Icons.Filled.Work
+        "Təhsil" -> Icons.Filled.School
+        "Sənət" -> Icons.Filled.Palette
+        "Musiqi" -> Icons.Filled.MusicNote
+        "Oyun və əyləncə" -> Icons.Filled.SportsEsports
+        else -> Icons.Filled.Storefront
+    }
 
 // ═══════════════════ Kiçik tip köməkçiləri ═══════════════════
 // U3.2 (UI-07): tStyle() helper-i LƏĞV — bütün çağırışlar T tokenlarına keçdi
@@ -622,6 +716,7 @@ fun BadgeChip(badge: BadgeDef, earned: Boolean) {
 fun VenueMiniCard(
     imageKey: String, name: String, category: String, priceRange: String,
     rating: Double, discount: Int? = null, onClick: (() -> Unit)? = null,
+    imageUrl: String? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
     Column(
@@ -636,9 +731,9 @@ fun VenueMiniCard(
             .border(1.dp, Q.border, RoundedCornerShape(Q.rLg.dp))
     ) {
         Box(Modifier.fillMaxWidth().height(98.dp)) {
-            Image(
-                painter = imagePaint(imageKey), contentDescription = null,
-                contentScale = ContentScale.Crop,
+            VenueImage(
+                imageUrl = imageUrl, assetKey = imageKey, category = category,
+                contentDescription = null,
                 modifier = Modifier.fillMaxWidth().height(98.dp),
             )
             if (discount != null && discount > 0) {

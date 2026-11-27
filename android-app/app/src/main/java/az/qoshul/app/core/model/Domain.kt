@@ -92,7 +92,7 @@ data class Reservation(
 ) {
     val statusLabel: String get() = status.label
 
-    /** Ləğv edilə bilən statuslar (ROL E-7: mock — həmişə pulsuz). */
+    /** Ləğv edilə bilən statuslar (ROL E-7 — server qaydası fn_cancel_reservation). */
     val canCancel: Boolean
         get() = status == ResvStatus.PENDING || status == ResvStatus.CONFIRMED
 
