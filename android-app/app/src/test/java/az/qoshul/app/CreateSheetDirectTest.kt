@@ -37,6 +37,16 @@ class CreateSheetDirectTest {
     private fun newEngine(): AppEngine {
         val engine = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, scope = CoroutineScope(Dispatchers.Unconfined))
         engine.signIn()
+        // D-170: profil şəhəri boş başlayır (A.1) — forma default-u üçün
+        // server şəhərini təqlid edirik (open("Bakı") dropdown etiketi)
+        engine.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                myProfile = az.qoshul.app.core.backend.SupabaseReader.MyProfile(
+                    id = "t1", firstName = "Test", lastName = "User", city = "Bakı",
+                    bio = "", xp = 0, onboarded = true, photoCount = 0,
+                ),
+            )
+        )
         return engine
     }
 

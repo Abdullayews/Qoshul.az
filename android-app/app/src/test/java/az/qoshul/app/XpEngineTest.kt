@@ -97,16 +97,20 @@ class XpEngineTest {
 
     private fun engine() = AppEngine(dataSource = FakeQoshulDataSource)
 
-    /** D-170: server profili — applyServerData ilə XP seed etmək üçün.
-     *  venueXp seed-i də qorunur (applyServerData boş map ilə üstələməsin). */
+    /** D-170: server seed — applyServerData boş listlər ilə üstələməsin
+     *  deyə offers/venueXp da FakeData-dan ötürülür. */
     private fun seedXp(e: AppEngine, xp: Int) {
+        val src = az.qoshul.app.core.data.FakeQoshulDataSource
         e.applyServerData(
             az.qoshul.app.core.backend.SupabaseReader.ServerData(
                 myProfile = az.qoshul.app.core.backend.SupabaseReader.MyProfile(
                     id = "t1", firstName = "Test", lastName = "User", city = "Bakı",
                     bio = "", xp = xp, onboarded = true, photoCount = 0,
                 ),
-                venueXp = az.qoshul.app.core.data.FakeQoshulDataSource.initialVenueXp(),
+                venueXp = src.initialVenueXp(),
+                offers = src.offers,
+                events = src.events,
+                partners = src.partners,
             )
         )
     }
@@ -341,6 +345,7 @@ class XpEngineTest {
 
     @Test fun `buyCoupon uyğun şərtlərdə alınır`() {
         val e = engine() // Aktiv idx 2
+        seedXp(e, 320)
         // o2 minRank 2 — uyğundur; balans v1=340 ≥ 300 → alınır
         val c = e.buyCoupon("o2")
         assertTrue(c is CouponPurchase.Success)
@@ -357,6 +362,7 @@ class XpEngineTest {
 
     @Test fun `kupon alışı obyekt bazasından düşür — peşəkar XP dəyişmir`() {
         val e = engine()
+        seedXp(e, 320)
         val proXpBefore = e.state.value.xp
         e.buyCoupon("o2")
         assertEquals(proXpBefore, e.state.value.xp)
@@ -470,7 +476,19 @@ class XpEngineTest {
 
     @Test fun `dinamik XP kartı 60s və tək istifadə (L4-1)`() {
         val e = engine()
+        // I.2 (D-170): kart serverdən — təqlid + seedXp (offers qorunur)
         e.regenerateXpCard("v5")
+        e.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                xpCard = az.qoshul.app.core.backend.SupabaseReader.XpCard(
+                    nonce = "QSHUL-XP-4231-77", fallbackCode = "4231",
+                    venueId = "v5",
+                    expiresAtIso = java.time.Instant.now().plusSeconds(60).toString(),
+                ),
+                venueXp = az.qoshul.app.core.data.FakeQoshulDataSource.initialVenueXp(),
+                offers = az.qoshul.app.core.data.FakeQoshulDataSource.offers,
+            )
+        )
         assertTrue(e.xpCardValidFor("v5"))
         assertFalse(e.xpCardValidFor("v2")) // başqa obyekt
         val card = e.state.value.xpCard!!
