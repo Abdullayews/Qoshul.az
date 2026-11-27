@@ -92,10 +92,23 @@ class EngineSyncTest {
         val rec = RecordingSync()
         val e = engine(rec)
         e.regenerateXpCard("v5")
-        e.markXpCardUsed()
+        // I.2 (D-170): nonce SERVERDƏ yaranır — kart serverdən gələnədək
+        // lokalda YOXDUR (mockCode göstərilmir). Server kartını təqlid edək:
+        e.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                xpCard = az.qoshul.app.core.backend.SupabaseReader.XpCard(
+                    nonce = "QSHUL-XP-4231-77", fallbackCode = "4231",
+                    venueId = "v5",
+                    expiresAtIso = java.time.Instant.now()
+                        .plusSeconds(60).toString(),
+                ),
+            )
+        )
         assertTrue(rec.events.any { it is SyncEvent.XpCardIssueIntent && it.venueId == "v5" })
+        e.markXpCardUsed()
         val consume = rec.events.filterIsInstance<SyncEvent.XpCardConsumeIntent>().first()
-        assertTrue(consume.nonce.startsWith("QSHUL-XP-"))
+        // consume server nonce-u ilə gedir (klient kod üretməz)
+        assertEquals("QSHUL-XP-4231-77", consume.nonce)
     }
 
     @Test fun `reportUser + blockUser + messages`() {

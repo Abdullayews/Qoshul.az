@@ -97,12 +97,19 @@ class XpEngineTest {
 
     private fun engine() = AppEngine(dataSource = FakeQoshulDataSource)
 
-    /** D-170: server profili — applyServerData ilə XP seed etmək üçün. */
-    private fun testProfile(xp: Int, onboarded: Boolean = true) =
-        az.qoshul.app.core.backend.SupabaseReader.MyProfile(
-            id = "t1", firstName = "Test", lastName = "User", city = "Bakı",
-            bio = "", xp = xp, onboarded = onboarded, photoCount = 0,
+    /** D-170: server profili — applyServerData ilə XP seed etmək üçün.
+     *  venueXp seed-i də qorunur (applyServerData boş map ilə üstələməsin). */
+    private fun seedXp(e: AppEngine, xp: Int) {
+        e.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                myProfile = az.qoshul.app.core.backend.SupabaseReader.MyProfile(
+                    id = "t1", firstName = "Test", lastName = "User", city = "Bakı",
+                    bio = "", xp = xp, onboarded = true, photoCount = 0,
+                ),
+                venueXp = az.qoshul.app.core.data.FakeQoshulDataSource.initialVenueXp(),
+            )
         )
+    }
 
     // ── XP mühərriki (idempotent) ──
 
@@ -324,8 +331,7 @@ class XpEngineTest {
 
     @Test fun `səviyyə-avto təklif yalnız açıq səviyyədə görünür`() {
         val e = engine() // XP serverdən (D-170: başlanğıc 0) — 320 verib Aktiv edək
-        e.applyServerData(az.qoshul.app.core.backend.SupabaseReader.ServerData(
-            myProfile = testProfile(xp = 320)))
+        seedXp(e, 320)
         val visible = e.visibleOffers.map { it.id }
         assertTrue("o4" in visible) // minRank 2 (Aktiv) — açıqdır
         assertTrue("o5" in visible) // minRank 1 (Kəşfiyyatçı) ≤ Aktiv — açıqdır
@@ -692,8 +698,7 @@ class XpEngineTest {
 
     @Test fun `N2 buyCoupon uğursuzluq səbəbləri görünəndir`() {
         val e = engine() // XP serverdən — 320 verib Aktiv edək (D-170)
-        e.applyServerData(az.qoshul.app.core.backend.SupabaseReader.ServerData(
-            myProfile = testProfile(xp = 320)))
+        seedXp(e, 320)
         val r1 = e.buyCoupon("o-nope")
         assertTrue(r1 is CouponPurchase.Failure)
         assertEquals(SpendError.OFFER_NOT_FOUND, (r1 as CouponPurchase.Failure).error)

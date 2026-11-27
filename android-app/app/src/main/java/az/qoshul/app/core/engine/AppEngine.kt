@@ -1458,7 +1458,8 @@ class AppEngine(
                 "\"partner\":\"\"}"
         }
         if (lower.contains("pulsuz") || lower.contains("ödənişsiz")) {
-            val free = upcoming.filter { it.price == null && it.city == cityV }.take(3)
+            // A.1 (D-170): şəhər seçilməyibsə filtrsüz (cityEvents pariteti)
+            val free = upcoming.filter { it.price == null && (cityV.isBlank() || it.city == cityV) }.take(3)
             if (free.isEmpty()) return "Bu şəhərdə pulsuz tədbir yoxdur — sənin üçün birini təşkil edim! " +
                 "Məsələn, parkda səhər qaçışı və ya bulvarda yürüş planlaya bilərəm. \"Fikir al\" yaz, hazırlayım."
             return "Pulsuz tədbirlər bunlardır:\n\n" +

@@ -128,7 +128,8 @@ object QoshulLocation {
      * yumşaltması → [StreamFix] emit. İcazə yoxdursa axın DƏRHAL bağlanır.
      */
     fun locationStream(context: Context) = callbackFlow {
-        // H1 (D-145): return@callbackFlow awaitClose-i ATLAYIR — qadağan;
+        // H1 (D-145): callbackFlow içində early-return awaitClose-i
+        // ATLAYIR — qadağan; close()+else zənciri ilə yazılır:
         // early-exit close() + else-zənciri ilə yazılır
         val lm = if (hasPermission(context)) {
             context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
