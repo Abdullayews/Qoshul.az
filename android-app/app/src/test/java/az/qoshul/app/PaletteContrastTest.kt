@@ -164,6 +164,7 @@ class PaletteContrastTest {
     // yaşıllıq↔torpaq, bina↔torpaq).
 
     private fun c(hex: Long) = Color(hex)
+    private fun c(hex: Int) = Color(hex.toLong() and 0xFFFFFFFFL)
 
     @Test
     fun `xarite — yollar torpaqdan ayrilir (arterial kontur 3_1+, magistral kontur 3_1+)`() {
