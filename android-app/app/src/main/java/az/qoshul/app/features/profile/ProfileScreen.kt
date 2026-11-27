@@ -115,7 +115,7 @@ fun ProfileScreen(
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             // D-063: alt 128→132dp — bütün tab ekranlarında vahid (Feed/Events 132)
-            start = 0.dp, end = 0.dp, top = 13.dp, bottom = 132.dp
+            start = 20.dp, end = 20.dp, top = 13.dp, bottom = 132.dp
         ),
     ) {
         // redaktə / ayarlar — D-112: redaktə artıq DİALOQ deyil, ayrıca

@@ -5,7 +5,7 @@ set -euo pipefail
 
 ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzk0ODcwMDY3LCJleHAiOjE5NTI1NTAwNjd9.nyCQfi9ke_yzcWqD8x67m1LEo71OeeKb3F3AFy-RTBU"
 URL="https://supabase.qoshul.com"
-EMAIL="e2e-flow-$RANDOM@qoshul.az"
+EMAIL="e2e-flow-$RANDOM@qoshul.com"
 
 echo "── 1) Signup $EMAIL"
 R=$(curl -s -X POST "$URL/auth/v1/signup" \

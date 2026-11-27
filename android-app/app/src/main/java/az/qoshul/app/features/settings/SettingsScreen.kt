@@ -132,11 +132,10 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     NavRow(Icons.Filled.People, "Dostunu dəvət et", value = "+${XpRules.INVITE_XP} Qoşa Coin") {
                         inviteOpen = true
                     }
-                    DividerLine()
-                    RowItem(
-                        Icons.Filled.Tune, "Server statusu",
-                        az.qoshul.app.core.backend.BackendConfig.describe(),
-                    )
+                    // D-167 (direktiv: „ayarlarda user ilə əlaqəsiz məlumat
+                    // yəni məsələn server modunda olması kimi artıq məlumat
+                    // vermə“): „Server statusu“ sətri SİLİNDİ — texniki
+                    // detal istifadəçiyə aid deyil.
                     DividerLine()
                     NavRow(
                         Icons.Filled.VerifiedUser, "Hesabı təsdiqlə (telefon)",
@@ -208,7 +207,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     NavRow(Icons.Filled.Language, "Dil", null, subtitle = "Azərbaycan dili")
                     DividerLine()
                     NavRow(Icons.Filled.Info, "Haqqında (v${BuildConfig.VERSION_NAME})", null,
-                        subtitle = "Native (Compose) — ${az.qoshul.app.core.backend.BackendConfig.describe()}")
+                        subtitle = "Native (Compose)")
                     DividerLine()
                     // D-117: xəritə krediti — xəritə üzərindəki SDK atribusiya
                     // zolağı gizlədilib (overlay ləğv); OSM/OpenFreeMap lisenziya
@@ -577,7 +576,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                             "\u201CŞəxsi məlumatlar haqqında\u201D Qanunu və GDPR Article 5 " +
                             "(qanunilik, minimallaşdırma, dəqiqlik, saxlama məhdudiyyəti) " +
                             "prinsiplərinə uyğun işlənir. Hesabınızı sildikdə məlumatlarınız " +
-                            "30 gün ərzində tam silinir. Məlumat surəti üçün: support@qoshul.az.",
+                            "30 gün ərzində tam silinir. Məlumat surəti üçün: support@qoshul.com.",
                         style = T.bodyXs.copy(lineHeight = 16.sp),
                     )
                     Spacer(Modifier.height(12.dp))
@@ -626,7 +625,7 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     "Şirkət hesabı tərəfdaş məkanlar üçündür: tədbir hostu, stol " +
                         "rezervasiyaları, endirim kuponları və obyekt Coin hesabatı " +
                         "bir paneldən idarə olunur.\n\nTərəfdaş olmaq üçün: " +
-                        "qoshul.az/partners ünvanından müraciət et — komanda " +
+                        "qoshul.com/partners ünvanından müraciət et — komanda " +
                         "obyektini təsdiqləyib hesabı aktivləşdirəcək.",
                     style = T.subtitle.copy(lineHeight = 21.sp),
                 )

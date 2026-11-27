@@ -140,7 +140,7 @@ fun FeedScreen(
             ViewTabs(
                 active = v,
                 onChanged = { view = it },
-                horizontal = 0.dp,
+                horizontal = 20.dp,
             )
         }
         if (v == 0) {
@@ -251,7 +251,7 @@ private fun ForYouView(
     // 6+10dp ritm axtarış sətrinin bottom-16dp-də qorunub).
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 0.dp, end = 0.dp, top = 0.dp, bottom = 132.dp
+            start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
         ),
     ) {
         item(key = "feedTabs") { tabs() }
@@ -261,7 +261,7 @@ private fun ForYouView(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 16.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 16.dp),
             ) {
                 Box(Modifier.weight(1f)) {
                     SearchBarField(

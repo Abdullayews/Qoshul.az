@@ -248,6 +248,59 @@ object SupabaseBackend {
         client?.auth?.signOut()
     }
 
+    // ── Hesab idarəetməsi (D-167: istifadəçi yalnız ÖZÜNƏ aid olanı
+    // dəyişə bilsin — mail, şifrə, profil) ──
+
+    /** Cari istifadəçinin e-poçtu (GoTrue user obyektindən; yoxdursa null). */
+    suspend fun currentEmail(): String? =
+        client?.auth?.currentUserOrNull()?.email
+
+    /**
+     * Hesabda e-poçt/şifrə (email provider) identiteti VARMI?
+     * Google ilə girişdə yalnız google identiteti olur — bu halda mail
+     * QEYDİ (linkEmail) mümkündür; email identiteti varsa mail DƏYİŞMƏsi.
+     */
+    suspend fun hasEmailIdentity(): Boolean =
+        client?.auth?.currentUserOrNull()
+            ?.identities?.any { it.provider == "email" } == true
+
+    /**
+     * E-poçtu DƏYİŞTƏR (email identiteti olan — yəni şifrə ilə qeydiyyat
+     * keçmiş — hesablar üçün). GoTrue təsdiq məktubu göndərir; secure
+     * email change rejimində hər iki tərəf təsdiq edir.
+     */
+    suspend fun updateUserEmail(newEmail: String) {
+        requireClient().auth.updateUser {
+            email = newEmail
+        }
+    }
+
+    /**
+     * E-poçt QEYDİ (D-167: google ilə girişdə identitet yalnız google
+     * olur — istifadəçi SONRA mail+şifrə əlavə edə bilər ki, eyni hesaba
+     * həm Google, həm də e-poçt/şifrə ilə daxil olsun). GoTrue
+     * `updateUser{email}` email identiteti olmayan hesabda yeni email
+     * identiteti yaradır və təsdiq OTP göndərir.
+     *
+     * Nəticə: mail təsdiqlənəndən sonra `signIn(email, pass)` yolu
+     * açılır (şifrə `updatePassword` ilə qoyulur).
+     */
+    suspend fun linkEmailIdentity(newEmail: String) {
+        requireClient().auth.updateUser {
+            email = newEmail
+        }
+    }
+
+    /**
+     * Şifrə qoy/dəyiş (email identiteti olan hesablar üçün; google-only
+     * hesabda mail qeydindən SONRA işlənir — girişin ikinci yolu).
+     */
+    suspend fun updatePassword(newPassword: String) {
+        requireClient().auth.updateUser {
+            password = newPassword
+        }
+    }
+
     /**
      * Google düyməsi görünmə şərti (D-156): dinamik — m4 /config VEYA BuildConfig.
      * D-165: artıq GATE deyil (düymə həmişə görünür, googleSignIn fetch-i

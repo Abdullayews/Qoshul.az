@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.core.engine.AppEngine
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import az.qoshul.app.core.theme.Q
 import az.qoshul.app.core.model.XpRules
 import az.qoshul.app.core.model.LocalDate
@@ -233,7 +234,17 @@ private fun Modifier.androidxStatusPadding(): Modifier = this.statusBarsPadding(
 @Composable
 private fun ProfileStep(engine: AppEngine, onNext: () -> Unit) {
     // U2.2 (UI-02): forma sahələri saveable (LocalDate — Serializable)
-    var name by rememberSaveable { mutableStateOf("") }
+    // D-167: initial ad PROFİLDƏN — Google girişində 0008 triggeri adı
+    // profiles.first_name-ə yazır; ad artıq məlum olanda təkrar
+    // soruşmuruq („özü haqqında məlumat istəməsini əngəllə“).
+    val st by engine.state.collectAsStateWithLifecycle()
+    var name by rememberSaveable(st.firstName, st.lastName) {
+        mutableStateOf(
+            listOf(st.firstName, st.lastName)
+                .filter { it.isNotBlank() && it != "Dost" }
+                .joinToString(" ").trim()
+        )
+    }
     var bio by rememberSaveable { mutableStateOf("") }
     var birth by rememberSaveable { mutableStateOf<LocalDate?>(null) }
     var gender by rememberSaveable { mutableStateOf("") }

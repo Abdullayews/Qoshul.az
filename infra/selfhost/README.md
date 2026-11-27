@@ -81,7 +81,7 @@ kod DƏYİŞMİR, yalnız URL/açar dəyişir.
 
 ```bash
 # repo
-git clone https://github.com/Abdullayews/Qoshul.az.git && cd Qoshul.az/infra/selfhost
+git clone https://github.com/Abdullayews/Qoshul.git && cd Qoshul/infra/selfhost
 
 # .env + sirlər (POSTGRES_PASSWORD, JWT_SECRET, ANON_KEY, SERVICE_ROLE_KEY,
 # DASHBOARD_PASSWORD və s. avtomatik yaranır — openssl əsaslı)
@@ -92,14 +92,14 @@ sh generate-keys.sh --update-env
 #   SUPABASE_PUBLIC_URL=https://supabase.<domain>
 #   API_EXTERNAL_URL=https://supabase.<domain>/auth/v1
 #   PROXY_DOMAIN=supabase.<domain>
-#   SITE_URL=https://qoshul.az
+#   SITE_URL=https://qoshul.com
 nano .env
 
 # core + TLS (production minimumu)
 docker compose --profile edge up -d
 docker compose ps          # db/auth/rest/api-gw/caddy healthy olmalıdır
 
-# Qoshul.az sxemi + qaydalar + seed (repo kökündən)
+# Qoshul sxemi + qaydalar + seed (repo kökündən)
 cd ../..
 scripts/migrate_selfhost.sh
 #   → "OK 0001_schema.sql / 0002_server_rules.sql / 0003_seed.sql"
@@ -118,7 +118,7 @@ Admin panel lazımdırsa: `docker compose --profile edge --profile dashboard up 
 | # | Dəyər | Harada | Status |
 |---|---|---|---|
 | 1 | Oracle Always Free VM (2 OCPU/12 GB, Ubuntu ARM) | §3 | 🔶 server |
-| 2 | Domen + DNS A qeydi (məs. `supabase.qoshul.az` → VM IP) | `.env`: `PROXY_DOMAIN`, `SUPABASE_PUBLIC_URL`, `API_EXTERNAL_URL` | 🔶 domen |
+| 2 | Domen + DNS A qeydi (məs. `supabase.qoshul.com` → VM IP) | `.env`: `PROXY_DOMAIN`, `SUPABASE_PUBLIC_URL`, `API_EXTERNAL_URL` | 🔶 domen |
 | 3 | `SITE_URL` (tətbiq domeni) | `.env` | 🔶 domen |
 | 4 | `SUPABASE_URL` + `SUPABASE_ANON_KEY` (self-host) | `android-app/local.properties` | 🔶 deploy sonrası |
 | 5 | `SUPABASE_SERVICE_ROLE_KEY` (YALNIZ M4 servisdə) | service env | 🔶 deploy sonrası |
@@ -192,7 +192,7 @@ gunzip -c backup-2026-11-07.sql.gz | docker compose exec -T db psql -U postgres
 | `volumes/pooler/pooler.exs` | eyni SHA, docker/volumes/pooler | Apache-2.0 |
 | `generate-keys.sh` | eyni SHA, docker/utils (Inder Singh setup.sh əsasında) | Apache-2.0 |
 | `docker-compose.yml` | eyni SHA-dan SLIM-ləşdirilib (profil strukturu D-085) | — |
-| `volumes/api/caddy/Caddyfile` | Qoshul.az | — |
+| `volumes/api/caddy/Caddyfile` | Qoshul | — |
 
 ARM64 (aarch64) dəstəyi — bütün imajlar Docker Hub API ilə yoxlanılıb
 (2026-11-07, D-084): supabase/postgres:17.6.1.136, supabase/gotrue:v2.197.0,

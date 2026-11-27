@@ -533,7 +533,7 @@ class AppEngine(
     }
 
     // D-149: signInDemo() SİLİNDİ — vahid hardcoded demo hesabı (D-050
-    // qalığı, demo@qoshul.az sabitləri) istifadəçi APK-sında görünmür.
+    // qalığı, demo@qoshul.com sabitləri) istifadəçi APK-sında görünmür.
     // Real axın: SupabaseAuth.signUp/signIn/signInWithGoogle → signIn().
 
     fun signOut() {

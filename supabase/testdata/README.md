@@ -10,20 +10,20 @@ tərəfindən yaradılır). Serverə əl ilə, fərqində olaraq tətbiq olunur.
 APK-nın SUPABASE rejimində real login/məlumat axını sınamaq üçün
 (2026-11-24, canlı serverdə tətbiq olunub və doğrulanıb):
 
-- **Giriş:** `testuser001@qoshul.az` … `testuser100@qoshul.az`
+- **Giriş:** `testuser001@qoshul.com` … `testuser100@qoshul.com`
 - **Parol (hamısı eyni):** `QoshulTest!2026`
 - **Məzmun:** hər hesabda tam profil (bio, maraq, lokasiya, XP, streak),
   2–5 tədbir iştirakı, event + şəxsi mesajlar, bildirişlər; 30 tədbir,
   10 venue, 60 swipe, 25 match, 25 review, 20 invite. Boş hesab YOXDUR
   (aşağıdakı audit sorğularının hamısı 0 qaytarır).
 - Parollar bcrypt (cost 10) — GoTrue uyğun; PII yoxdur (ümumi Azərbaycan
-  adları, `@qoshul.az` test domeni, saxta koordinatlar).
+  adları, `@qoshul.com` test domeni, saxta koordinatlar).
 
 ### Tətbiq (yalnız test serverində!)
 
 ```bash
 # 1) mövcud test məlumatını təmizlə (prod-a ASMAYIN):
-sudo docker compose -f ~/Qoshul.az/infra/selfhost/docker-compose.yml \
+sudo docker compose -f ~/Qoshul/infra/selfhost/docker-compose.yml \
   exec -T db psql -U supabase_admin -d postgres -c \
   "truncate public.reviews, public.matches, public.swipes, public.invites,
    public.notifications, public.xp_events, public.messages,
@@ -32,7 +32,7 @@ sudo docker compose -f ~/Qoshul.az/infra/selfhost/docker-compose.yml \
    delete from auth.users;"
 
 # 2) seed-i tətbiq et:
-sudo docker compose -f ~/Qoshul.az/infra/selfhost/docker-compose.yml \
+sudo docker compose -f ~/Qoshul/infra/selfhost/docker-compose.yml \
   exec -T db psql -U supabase_admin -d postgres \
   -v ON_ERROR_STOP=1 -f /dev/stdin < 0006_test_users_seed.sql
 ```

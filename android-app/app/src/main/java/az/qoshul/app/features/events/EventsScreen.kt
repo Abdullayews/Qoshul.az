@@ -176,7 +176,7 @@ fun EventsScreen(
         val st by engine.state.collectAsStateWithLifecycle()
         LazyColumn(
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                start = 0.dp, end = 0.dp, top = 0.dp, bottom = 132.dp
+                start = 20.dp, end = 20.dp, top = 0.dp, bottom = 132.dp
             ),
         ) {
             tabs?.let { t ->
@@ -186,7 +186,7 @@ fun EventsScreen(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 10.dp)
+                        .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 10.dp)
                 ) {
                     SearchBarField(value = search, onValueChange = { search = it }, hint = "Tədbir və ya şəhər axtar...")
                 }

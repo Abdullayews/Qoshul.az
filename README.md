@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🤝 Qoshul.az
+# 🤝 Qoshul
 
 **Azərbaycanın sosial platforması — profillər, canlı söhbət, yaxınlıqdakı insanlar, xəritə, tədbirlər və AI köməkçi.**
 
@@ -9,8 +9,8 @@
 [![Kotlin](https://img.shields.io/badge/Dil-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Compose](https://img.shields.io/badge/UI-Jetpack_Compose-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
-[![Release](https://img.shields.io/github/v/release/Abdullayews/Qoshul.az?style=for-the-badge&include_prereleases&label=Release)](https://github.com/Abdullayews/Qoshul.az/releases)
-[![CI](https://img.shields.io/github/actions/workflow/status/Abdullayews/Qoshul.az/native.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Abdullayews/Qoshul.az/actions/workflows/native.yml)
+[![Release](https://img.shields.io/github/v/release/Abdullayews/Qoshul?style=for-the-badge&include_prereleases&label=Release)](https://github.com/Abdullayews/Qoshul/releases)
+[![CI](https://img.shields.io/github/actions/workflow/status/Abdullayews/Qoshul/native.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Abdullayews/Qoshul/actions/workflows/native.yml)
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## 🧭 Bu nədir?
 
-**Qoshul.az** — Azərbaycan bazarı üçün native Android tətbiqi (**Kotlin + Jetpack
+**Qoshul** — Azərbaycan bazarı üçün native Android tətbiqi (**Kotlin + Jetpack
 Compose**). Tətbiqində: istifadəçi profilləri, yaxınlıqdakı insanlarla tanışlıq
 (Match), interaktiv xəritə, tədbirlər, obyektlər və partnyorlar, kuponlar,
 rezervasiyalar (real skan edilən QR ilə), ikili XP iqtisadiyyatı, təhlükəsizlik
@@ -65,7 +65,7 @@ Bütün texniki qərarlar mənbəsi ilə birlikdə
 ## 📁 Depo strukturu
 
 ```
-Qoshul.az/
+Qoshul/
 ├── android-app/            Native tətbiq (Kotlin + Compose)
 │   ├── app/src/main/       core/ (backend · data · engine · glass · model ·
 │   │                       motion · safety · theme · ui) + features/ (assistant · auth ·
@@ -120,7 +120,7 @@ Tələblər: **JDK 21** (Temurin) · **Android SDK** (API 36) · **Rust stable**
 (qoshul-jni JNI körpüsü üçün) · Linux/macOS (NDK cross-build).
 
 ```bash
-git clone https://github.com/Abdullayews/Qoshul.az.git && cd Qoshul.az
+git clone https://github.com/Abdullayews/Qoshul.git && cd Qoshul
 
 # 1) Rust nüvəsi — host .so (JVM paritet testləri) + Android jniLibs
 cd rust-core
@@ -158,7 +158,7 @@ Ampere A1, slim compose core+6 profil, Caddy TLS). Qısa yol:
 ```bash
 cd infra/selfhost
 cp .env.example .env && sh generate-keys.sh --update-env   # sirlər avtomatik
-# .env-də 🔶 domen dəyərlərini doldur (SUPABASE_PUBLIC_URL, SITE_URL=https://qoshul.az)
+# .env-də 🔶 domen dəyərlərini doldur (SUPABASE_PUBLIC_URL, SITE_URL=https://qoshul.com)
 docker compose -f docker-compose.yml --profile core up -d
 cd ../.. && scripts/migrate_selfhost.sh                    # migrations (idempotent)
 ```
@@ -334,11 +334,11 @@ breaking dəyişiklik olmayıb).
 
 ## 📲 Quraşdırma (APK)
 
-APK yalnız **GitHub Releases**-də saxlanılır — [Releases səhifəsi](https://github.com/Abdullayews/Qoshul.az/releases)
-və ya saytdakı QR: [qoshul.az](https://qoshul.az) (endirmələr birbaşa
+APK yalnız **GitHub Releases**-də saxlanılır — [Releases səhifəsi](https://github.com/Abdullayews/Qoshul/releases)
+və ya saytdakı QR: [qoshul.com](https://qoshul.com) (endirmələr birbaşa
 GitHub-dan gəlir).
 
-1. Ən son buraxılışdan **`Qoshul.az-v… apk`** faylını endirin
+1. Ən son buraxılışdan **`Qoshul-v… apk`** faylını endirin
 2. Android **7.0+** (minSdk 24), arm64-v8a və ya armeabi-v7a
 3. “Naməlum mənbələrdən quraşdırma” icazəsi verin və açın
 4. Hər release səhifəsində APK ölçüsü + SHA-256 göstərilir
