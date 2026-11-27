@@ -38,6 +38,27 @@ class ChatsBackHandlerTest {
         return engine
     }
 
+    /**
+     * D-176: keçmişdə konstruktor-da hardcoded ("p2" to "accepted") seed var
+     * idi (demo qalığı). Artıq dostluq SERVERDƏN gəlir — UI testləri bu
+     * helper ilə server state-i simulyasiya edir (applyServerData).
+     */
+    private fun seedServerState(engine: AppEngine) {
+        engine.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                events = az.qoshul.app.core.data.FakeQoshulDataSource.events,
+                people = az.qoshul.app.core.data.FakeQoshulDataSource.people,
+                offers = az.qoshul.app.core.data.FakeQoshulDataSource.offers,
+                partners = az.qoshul.app.core.data.FakeQoshulDataSource.partners,
+                joinedEventIds = setOf("e1"),
+                friendships = mapOf("p2" to "accepted"),
+                friendMessagePeople = az.qoshul.app.core.data.FakeQoshulDataSource.initialFriendMessages,
+                eventMessages = az.qoshul.app.core.data.FakeQoshulDataSource.initialEventMessages,
+                venueXp = az.qoshul.app.core.data.FakeQoshulDataSource.initialVenueXp(),
+            ),
+        )
+    }
+
     private fun settle() {
         compose.waitForIdle()
         compose.mainClock.advanceTimeBy(60)
@@ -47,6 +68,7 @@ class ChatsBackHandlerTest {
     @Test
     fun `aciq sobhesde sistem geri sobheti baglayir teleq yox`() {
         val engine = newEngine()
+        seedServerState(engine) // D-176: dostluq + joined tədbir serverdən
         val st = engine.state.value
         val ev = st.events.firstOrNull { it.id in st.joined }
         val friend = engine.acceptedFriends.firstOrNull()

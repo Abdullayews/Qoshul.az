@@ -102,6 +102,27 @@ class ScreenshotTest {
         return engine
     }
 
+    /**
+     * D-176: keçmişdə konstruktor-da hardcoded ("p2" to "accepted") seed var
+     * idi (demo qalığı). Artıq dostluq SERVERDƏN gəlir — UI testləri bu
+     * helper ilə server state-i simulyasiya edir (applyServerData).
+     */
+    private fun seedServerState(engine: AppEngine) {
+        engine.applyServerData(
+            az.qoshul.app.core.backend.SupabaseReader.ServerData(
+                events = az.qoshul.app.core.data.FakeQoshulDataSource.events,
+                people = az.qoshul.app.core.data.FakeQoshulDataSource.people,
+                offers = az.qoshul.app.core.data.FakeQoshulDataSource.offers,
+                partners = az.qoshul.app.core.data.FakeQoshulDataSource.partners,
+                joinedEventIds = setOf("e1"),
+                friendships = mapOf("p2" to "accepted"),
+                friendMessagePeople = az.qoshul.app.core.data.FakeQoshulDataSource.initialFriendMessages,
+                eventMessages = az.qoshul.app.core.data.FakeQoshulDataSource.initialEventMessages,
+                venueXp = az.qoshul.app.core.data.FakeQoshulDataSource.initialVenueXp(),
+            ),
+        )
+    }
+
     // ═══════════════ 1. Ana axın: shell + 4 tab ═══════════════
 
     @Test
@@ -431,6 +452,7 @@ class ScreenshotTest {
     @Test
     fun `şəxsi söhbət — tez cavab çipləri`() {
         val engine = newEngine()
+        seedServerState(engine) // D-176: dostluq serverdən (p2 accepted)
         compose.setContent { QoshulTheme { ChatsScreen(engine) } }
         settle()
         compose.onNodeWithText("Rəşad Əliyev").performClick()

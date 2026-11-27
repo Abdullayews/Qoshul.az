@@ -79,9 +79,14 @@ class VenueImageTest {
     }
 
     @Test fun `0012 migration venues image_url əlavə edir (SQL mətn paritesi)`() {
-        val sql = java.io.File(
-            "supabase/migrations/0012_second_wave_server_authority.sql",
-        ).readText()
+        // CI working dir = android-app/app → repo kökündən axtarış
+        // (lokal repo kökündən da işləyir — hər ikisindən yoxlayırıq)
+        val sql = sequenceOf(
+            java.io.File("supabase/migrations/0012_second_wave_server_authority.sql"),
+            java.io.File("../../supabase/migrations/0012_second_wave_server_authority.sql"),
+            java.io.File("../../../supabase/migrations/0012_second_wave_server_authority.sql"),
+        ).firstOrNull { it.exists() }?.readText()
+            ?: error("0012 migration faylı tapılmadı (repo kökünü axtar)")
         assertTrue(sql.contains("add column if not exists image_url text"))
         assertTrue(sql.contains("fn_assistant_reply"))
         assertTrue(sql.contains("fn_recommend_events"))

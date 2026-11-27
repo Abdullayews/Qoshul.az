@@ -213,7 +213,7 @@ class AppEngine(
 
     // — ROL D: match —
     // D-176: swipes serverdən bərpa olunur (applyServerData → d.swipedPeople);
-    // likesBack proqnozu SİLİNDİ — match qərarı fn_record_swipe cavabıdır
+    // köhnə proqnoz SİLİNDİ — match qərarı fn_record_swipe cavabıdır
     private val swipesV = mutableMapOf<String, Boolean>()
     private val matchesV = mutableSetOf<String>()
 
@@ -1016,7 +1016,7 @@ class AppEngine(
     /**
      * ROL D: "Maraqlıyam"/"Keç". D-176 (ikinci dalğa): match qərarı SERVERDƏN
      * gəlir — fn_record_swipe cavabındakı `matched` bayrağı. Köhnə klient
-     * tərəfli `Person.likesBack` proqnozu SİLİNDİ (server avtoriteti, qayda 8).
+     * tərəfli `Person` proqnoz sahəsi SİLİNDİ (server avtoriteti, qayda 8).
      *
      * Axın (maraq bildiriləndə): TƏK RPC — fn_record_swipe birbaşa çağırılır
      * (ikili güzgü report() YOX — ikiqat yazma olmazdı). Cavab:
@@ -1584,7 +1584,7 @@ class AppEngine(
 
     /**
      * D-175 (ikinci dalğa): „Qoşa“ köməkçisi — cavab SERVERDƏN gəlir
-     * (fn_assistant_reply RPC). Köhnə klient tərəfli assistantReplyFor
+     * (fn_assistant_reply RPC). Köhnə klient tərəfli şablon generator
      * şablon generatoru TAM SİLİNDİ (qayda 8 — məntiq serverdə).
      *
      * Axın: sual → optimistic „Sən“ mesajı + busy → RPC (scope daxilində)

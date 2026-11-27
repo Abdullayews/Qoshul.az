@@ -612,25 +612,36 @@ class XpEngineTest {
 
     // ── Assistant ──
 
-    @Test fun `assistant təklif cavabı TƏDBİR JSON verir və parser işləyir`() {
-        val e = engine() // scope=null → dərhal tam cavab
+    @Test fun `assistant serverdən gəlmirsə xəta kartı — uydurma cavab YOX (D-175)`() {
+        val e = engine() // scope=null → server RPC getmir
         e.sendAssistant("Şənbə üçün tədbir fikri ver")
-        val msgs = e.state.value.assistantMsgs
-        assertTrue(msgs.size >= 2)
-        val reply = msgs.last { !it.mine }.body
-        assertTrue(reply.contains("[TƏDBİR]"))
+        val st = e.state.value
+        // yalnız „Sən“ mesajı; şablon cavab [TƏDBİR] ilə YAZILMIR
+        assertEquals(1, st.assistantMsgs.size)
+        assertTrue(st.assistantMsgs[0].mine)
+        assertTrue(st.assistantError.isNotEmpty())
+    }
+
+    @Test fun `parseAssistantEvent server [TƏDBİR] formatını parse edir (parser qalır)`() {
+        // fn_assistant_reply cavab formatı (0012): mətn + [TƏDBİR]{json}
+        val reply = "Şənbə üçün hazırladığım plan.\n[TƏDBİR]{\"title\":\"Şənbə səhəri Qala yürüşü\"," +
+            "\"category\":\"Yürüş\",\"date\":\"2026-11-14\",\"time\":\"09:00\",\"capacity\":10," +
+            "\"location\":\"Qala qalası, Bakı\",\"description\":\"Yürüş\",\"partner\":\"\"}"
         val parsed = az.qoshul.app.core.model.parseAssistantEvent(reply)
         assertNotNull(parsed.proposal)
         assertEquals("Şənbə səhəri Qala yürüşü", parsed.proposal!!.title)
+        assertEquals("2026-11-14", parsed.proposal!!.date)
         assertTrue(parsed.text.isNotEmpty())
         assertFalse(parsed.text.contains("[TƏDBİR]"))
     }
 
-    @Test fun `assistant pulsuz sualı şəhər tədbirlərini sadalayır`() {
+    @Test fun `assistant pulsuz sualı serverə gedir — lokal sadalama YOX (D-175)`() {
         val e = engine()
         e.sendAssistant("Pulsuz tədbirlər hansılardır?")
-        val reply = e.state.value.assistantMsgs.last { !it.mine }.body
-        assertTrue(reply.contains("Pulsuz tədbirlər"))
+        // server yoxdur → cavab YOX, xəta kartı (şəhər tədbirlərini lokal
+        // sadalayan köhnə kod silindi — fn_assistant_reply verir)
+        assertTrue(e.state.value.assistantMsgs.none { !it.mine })
+        assertTrue(e.state.value.assistantError.isNotEmpty())
     }
 
     // ── Şəhər ──
@@ -827,17 +838,14 @@ class XpEngineTest {
         assertEquals("9999", card2.fallbackCode)
     }
 
-    @Test fun `A2 frozen clock — günlük giriş və şənbə təklifi clock-dan`() {
+    @Test fun `A2 frozen clock — günlük giriş clock-dan (şənbə tarixi artıq serverdə)`() {
         val t0 = LocalDateTime.of(2026, 11, 7, 10, 0) // şənbə
         val e = AppEngine(dataSource = az.qoshul.app.core.data.FakeQoshulDataSource, clock = { t0 })
         val xp0 = e.state.value.xp
         e.dailyLogin() // default = clock()
         assertEquals(xp0 + 5, e.state.value.xp)
-        e.sendAssistant("şənbə üçün tədbir fikri ver")
-        val reply = e.state.value.assistantMsgs.last { !it.mine }.body
-        val parsed = az.qoshul.app.core.model.parseAssistantEvent(reply)
-        // t0 şənbədir → növbəti şənbə +7 gün (keçmişdə real vaxtdan asılı idi)
-        assertEquals("2026-11-14", parsed.proposal!!.date)
+        // D-175: şənbə tarixi hesablaması (nextSaturdayIso) klientdən SİLİNDİ —
+        // fn_assistant_reply server tərəfində current_date əsasında qurur
     }
 }
 

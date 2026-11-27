@@ -76,7 +76,7 @@ data class Person(
     /**
      * D-176: hədəfin mənə LIKE edib-etmədiyi — SERVERDƏN gəlir (fn_record_swipe
      * cavabındaki matched bayrağı / fn_read_swipe). Model sahəsi kimi
-     * likesBack SİLİNDİ: match qərarı serverin cavabıdır, klient proqnozu yox.
+     * köhnə sahə SİLİNDİ: match qərarı serverin cavabıdır, klient proqnozu yox.
      */
     val likedMe: Boolean = false,
 ) {

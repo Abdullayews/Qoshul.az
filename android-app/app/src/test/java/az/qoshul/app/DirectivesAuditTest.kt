@@ -422,9 +422,18 @@ class DirectivesAuditTest {
             "köhnə body-hash kompozit açar qalmamalıdır",
             a.contains("body.hashCode()") || c.contains("body.hashCode()"),
         )
-        // typing simulyasiyası copy() ilə id qoruyur
+        // D-175: typing simulyasiyası SİLİNDİ — cavab serverdən (fn_assistant_reply)
+        // bir dəfəyə gəlir; „yazır...“ yalnız Supabase Realtime-dan
+        // (TypingIndicator.kt). Uydurma copy(body=shown) yayımı ARTIQ YOXDUR.
         val e = read("$main/core/engine/AppEngine.kt")
-        assertTrue("typing copy(body=…) ilə yaymalıdır", e.contains(".copy(body = shown)"))
+        assertFalse(
+            "typing simulyasiyası (copy body=shown) qalmamalıdır",
+            e.contains(".copy(body = shown)"),
+        )
+        assertTrue(
+            "typing yalnız Realtime (TypingIndicator) olmalıdır",
+            java.io.File("$main/core/backend/TypingIndicator.kt").exists(),
+        )
     }
 
     @Test
