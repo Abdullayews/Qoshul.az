@@ -31,7 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import az.qoshul.app.core.engine.AppEngine
 import az.qoshul.app.core.model.EventProposal
 import az.qoshul.app.core.model.Partner

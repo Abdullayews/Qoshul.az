@@ -269,17 +269,18 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             it.distance <= distanceKm
     }.map { MapPin.Event(it) }
     val peoplePins = engine.matchCandidates
-        // G.5 (D-170): geo-suz insanlar (0.0, 0.0) xəritədə GÖRÜNMÜR —
-        // SupabaseReader belələrini (0,0) ilə yazır; null-island pinləri
-        // istifadəçini aldatmalı deyil
-        .filter { !(it.lat == 0.0 && it.lng == 0.0) }
         .filter { it.distanceKm <= distanceKm }
         // D-151 (spec 4.2): bloklanmış istifadəçilər xəritədə görünmür
         // (matchCandidates artıq blok filtri aparır — cəmi 2qat qoruma)
         .filter {
             st.mapVisibility == MapVisibility.EVERYONE ||
                 (st.mapVisibility == MapVisibility.FRIENDS && st.friendships[it.id] == "accepted")
-        }.map { MapPin.PersonP(it) }
+        }
+        // G.5 (D-170): geo-suz insanlar (0.0, 0.0) xəritədə GÖRÜNMÜR —
+        // SupabaseReader belələrini (0,0) ilə yazır; null-island pinləri
+        // istifadəçini aldatmalı deyil
+        .filter { p -> !(p.lat == 0.0 && p.lng == 0.0) }
+        .map { MapPin.PersonP(it) }
     // D-155: lay filtri — pin kompozisiyası seçilən laya görə
     val pins = when (mapLayer) {
         MapLayer.PEOPLE -> peoplePins

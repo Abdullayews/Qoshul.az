@@ -17,9 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.graphicsLayer
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -201,9 +202,8 @@ internal fun GoogleMapCanvas(
                     Box(
                         Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = 0.dp)
                             .size(width = 8.dp, height = 14.dp)
-                            .graphics { rotationZ = myBearing!! }
+                            .rotate(myBearing ?: 0f)
                             .background(
                                 Q.mapPin,
                                 androidx.compose.ui.graphics.RectangleShape,

@@ -97,7 +97,7 @@ class AppEngine(
     // profileLoadedV=false → UI loading göstərir, onboarding AÇILMIR;
     // xəta → syncErrorV + UI retry düyməsi (səssiz udma YOXDUR)
     private var profileLoadedV = false
-    private var syncErrorV = "
+    private var syncErrorV = ""
     // A.1 (D-170): BÜTÜN başlanğıc dəyərlər BOŞ — static/default məlumat
     // yoxdur. Profil məlumatı yalnız qeydiyyatda istifadəçidən alınır
     // (onboarding) və ya serverdən gəlir (applyServerData). Boş String/
@@ -119,7 +119,7 @@ class AppEngine(
     private var personalityV: PersonalityResult? = null
     private var availabilityV = listOf<String>()
     private var groupSizeV = ""
-    private var budgetV = "
+    private var budgetV = ""
 
     // — ROL B: profil yaradılması —
     private var birthDateV: LocalDate? = null
