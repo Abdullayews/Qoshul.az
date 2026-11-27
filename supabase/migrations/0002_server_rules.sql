@@ -800,9 +800,10 @@ $$;
 
 -- ═══════════════════ ROL I: report + avto-restrict (N9) ══════════════════
 create or replace function public.fn_report(
-  p_target_type text, p_target_profile_id uuid default null,
+  p_target_type text, p_reason text,
+  p_target_profile_id uuid default null,
   p_target_event_id text default null, p_target_venue_id text default null,
-  p_reason text, p_note text default ''
+  p_note text default ''
 ) returns table(ok boolean, auto_restricted boolean)
 language plpgsql security definer set search_path = public as $$
 declare
@@ -861,8 +862,8 @@ $$;
 
 -- ═══════════════════ N6: mesaj + rate limit + spam ══════════════════════
 create or replace function public.fn_send_message(
-  p_kind text, p_event_id text default null, p_recipient_id uuid default null,
-  p_body text
+  p_kind text, p_body text,
+  p_event_id text default null, p_recipient_id uuid default null
 ) returns table(ok boolean, error text, message_id text)
 language plpgsql security definer set search_path = public as $$
 declare

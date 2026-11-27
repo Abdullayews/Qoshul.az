@@ -102,6 +102,7 @@ create or replace function public.fn_create_event(
     p_age_limit text default null, p_language text default null,
     p_level text default null, p_format text default 'Oflayn',
     p_approval boolean default false, p_recurring text default 'Bir dəfəlik',
+    p_tags jsonb default '[]',
     p_lat double precision default null, p_lng double precision default null,
     p_venue_id text default null, p_image text default 'friends'
 ) returns text
@@ -129,7 +130,8 @@ begin
             then st_setsrid(st_makepoint(p_lng, p_lat), 4326)::geography end,
         (extract(epoch from p_event_date) / 86400)::integer,
         p_event_time, p_event_date, p_capacity, p_description,
-        p_price_azn, p_age_limit, p_language, p_level, p_format, p_approval, p_recurring,
+        p_price_azn, coalesce(p_age_limit, 'Hamı üçün'), coalesce(p_language, 'Azərbaycan dili'),
+        coalesce(p_level, 'Hamı üçün'), p_format, p_approval, p_recurring,
         p_image, me, p_venue_id
     );
     return new_id;

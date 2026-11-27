@@ -60,30 +60,29 @@ grant execute on function public.fn_issue_xp_card_nonce(text) to authenticated;
 grant execute on function public.fn_consume_xp_card_nonce(text) to authenticated;
 grant execute on function public.fn_create_event(
   text, text, text, text, date, text, int, text, int, text, text, text, text,
-  boolean, text, double precision, double precision, text, text) to authenticated;
+  boolean, text, jsonb, double precision, double precision, text, text) to authenticated;
 grant execute on function public.fn_join_event(text) to authenticated;
 grant execute on function public.fn_approve_participant(text, uuid) to authenticated;
 grant execute on function public.fn_check_in_event(text, double precision, double precision)
   to authenticated;
 grant execute on function public.fn_create_reservation(
-  text, date, text, int, text, text, text, text) to authenticated;
+  text, date, text, int, text, text, text) to authenticated;
 grant execute on function public.fn_confirm_reservation(text) to authenticated;
 grant execute on function public.fn_use_reservation(text) to authenticated;
 grant execute on function public.fn_cancel_reservation(text) to authenticated;
 grant execute on function public.fn_mark_no_show(text) to authenticated;
 grant execute on function public.fn_claim_share(text) to authenticated;
 grant execute on function public.fn_add_review(text, int, text) to authenticated;
-grant execute on function public.fn_report(text, uuid, text, text, text) to authenticated;
+grant execute on function public.fn_report(text, text, uuid, text, text, text) to authenticated;
 grant execute on function public.fn_block_user(uuid) to authenticated;
 grant execute on function public.fn_unblock_user(uuid) to authenticated;
-grant execute on function public.fn_send_message(text, text, uuid, text) to authenticated;
+grant execute on function public.fn_send_message(text, text, text, uuid) to authenticated;
 grant execute on function public.fn_match_candidates(int) to authenticated;
 grant execute on function public.fn_create_invite() to authenticated;
 grant execute on function public.fn_register_invite(text) to authenticated;
 grant execute on function public.fn_set_notif_pref(text, boolean) to authenticated;
 grant execute on function public.fn_update_location(double precision, double precision)
   to authenticated;
-grant execute on function public.fn_finish_activity(text, uuid[]) to authenticated;
 
 -- AÇILMAYANLAR (daxili köməkçilər / service-only) — PUBLIC default grantı da ləğv:
 revoke execute on function public.fn_award_xp(uuid, text, int, text) from public;
@@ -92,10 +91,8 @@ revoke execute on function public.fn_expire_coupons() from public;
 revoke execute on function public.fn_moderate_review(text, boolean) from public;
 revoke execute on function public.fn_moderation_queue() from public;
 revoke execute on function public.fn_rank_index(int) from public;
-revoke execute on function public.fn_push_notification(uuid, text, text, text) from public;
 revoke execute on function public.fn_touch_updated_at() from public;
 revoke execute on function public.fn_ensure_profile() from public;
-revoke execute on function public.fn_guard_profile_columns() from public;
 
 -- ── F5: service-only notification yazıcısı (xatırlatma axını üçün) ─────────
 -- jobs.rs artıq fn_set_notif_pref çağırMUR (o, istifadəçinin tərcihini
@@ -122,6 +119,7 @@ begin
   return not quiet;
 end;
 $$;
+revoke execute on function public.fn_push_notification(uuid, text, text, text) from public;
 comment on function public.fn_push_notification is
   'F5: M4 servisi üçün notification yazıcısı — tərcih + sükut saatı; yalnız service_role çağırır.';
 
@@ -186,6 +184,7 @@ begin
     coalesce(array_length(p_tagged_ids, 1), 0) * 25;
 end;
 $$;
+grant execute on function public.fn_finish_activity(text, uuid[]) to authenticated;
 comment on function public.fn_finish_activity is
   'F2: host-müəlliflik + sabit məbləğ (50/25) + idempotensiya (grant-<event_id>). fn_grant_venue_xp artıq client-ə açıq deyil.';
 
@@ -243,7 +242,8 @@ begin
   return query select true, 'OK'::text, r_id, qr, tok;
 end;
 $$;
-comment on function public.fn_create_reservation is
+comment on function public.fn_create_reservation(
+  text, date, text, int, text, text, text, text) is
   'F6: p_coupon_code (M1 görüntü kodu) və ya p_coupon_id (ULID) — hər ikisi qəbul olunur.';
 
 -- ── F8: profiles sütun qoruması — guard trigger (column-level security) ────
@@ -274,6 +274,7 @@ begin
   return new;
 end;
 $$;
+revoke execute on function public.fn_guard_profile_columns() from public;
 
 drop trigger if exists profiles_guard_columns on public.profiles;
 create trigger profiles_guard_columns
