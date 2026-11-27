@@ -432,7 +432,7 @@ class DirectivesAuditTest {
         )
         assertTrue(
             "typing yalnız Realtime (TypingIndicator) olmalıdır",
-            java.io.File("$main/core/backend/TypingIndicator.kt").exists(),
+            File(repoDir(), "$main/core/backend/TypingIndicator.kt").exists(),
         )
     }
 
