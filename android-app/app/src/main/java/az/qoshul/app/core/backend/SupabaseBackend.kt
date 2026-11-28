@@ -1,6 +1,7 @@
 package az.qoshul.app.core.backend
 
 import android.content.Context
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import az.qoshul.app.BuildConfig
@@ -174,11 +175,22 @@ object SupabaseBackend {
             .addCredentialOption(googleIdOption)
             .build()
 
+        // P0.2 (D-182): KÖHNƏ SESSİYA TƏMİZLİYİ — yeni girişdən əvvəl
+        // köhnə Supabase session ləğv olunur. Əks halda: istifadəçi A
+        // hesabdan çıxmadan B hesab seçəndə GoTrue köhnə refresh tokeni
+        // saxlaya bilir → seçilmiş Google hesabı ≠ açılan profil
+        // („səhv hesaba daxil olur“ kök səbəbi). Sessiya yoxdursa
+        // signOut səssiz keçilir.
+        try {
+            client?.auth?.signOut()
+        } catch (_: Exception) { /* köhnə sessiya bağlıdır/bitməyib — davam */ }
+
         val result = CredentialManager.create(context).getCredential(
             context = context, request = request,
         )
-        val googleIdToken = GoogleIdTokenCredential
-            .createFrom(result.credential.data).idToken
+        val googleIdTokenCredential = GoogleIdTokenCredential
+            .createFrom(result.credential.data)
+        val googleIdToken = googleIdTokenCredential.idToken
 
         // D-162: YEGƏNƏ yol — GoTrue IDToken grant (Supabase rəsmi axını),
         // app → GoTrue birbaşa (m4 aralıq qatı girişdən tam çıxarılıb).
@@ -190,6 +202,26 @@ object SupabaseBackend {
             idToken = googleIdToken
             provider = Google
             nonce = rawNonce
+        }
+
+        // P0.2 (D-182): E-POÇT MÜQAYİSƏSİ — seçilmiş Google hesabının
+        // e-poçtu ilə GoTrue sessiyasının e-poçtu UYĞUN OLMALIDIR.
+        // Uyuşmazlıq = köhnə session/qüsur → sessiya LƏĞV edilir və
+        // aydın xəta atılır (səssiz yanlış hesab açılmır).
+        // Qeyd: `id` = hesabın e-poçtu (rəsmi sənəd: developers.google.com
+        // /identity/android-credential-manager/android/reference/.../
+        // GoogleIdTokenCredential — `id` deprecated email sahəsi; googleid
+        // 1.2.1-də mövcud, yeni `email` propertisi yeni versiyalardadır).
+        val sessionEmail = client?.auth?.currentUserOrNull()?.email
+        val googleEmail = googleIdTokenCredential.id
+        if (sessionEmail != null && !sessionEmail.equals(googleEmail, ignoreCase = true)) {
+            try {
+                client?.auth?.signOut()
+            } catch (_: Exception) { }
+            throw IllegalStateException(
+                "Giriş yoxlanılamadı: seçilmiş hesab ($googleEmail) ilə " +
+                    "açılan sessiya ($sessionEmail) uyğunsuzdur. Təkrar cəhd et."
+            )
         }
     }
 
@@ -206,7 +238,21 @@ object SupabaseBackend {
      *
      * @return true — /config-dən WEB ID gəldi ([BackendConfig]a yazıldı).
      */
+    /**
+     * P0.3 (D-182): m4 /config TTL cache — hər girişdə HTTP round-trip
+     * YOX; 5 dəqiqə ərzində cache-lənmiş WEB klient ID istifadə olunur
+     * (login gecikməsi azalır). Uğursuz fetch cache-lənmir (hər cəhd
+     * yenidən şəbəkəyə gedir).
+     */
+    @Volatile private var googleConfigCachedAtMs = 0L
+    private val GOOGLE_CONFIG_TTL_MS = 5 * 60 * 1000L
+
     suspend fun fetchGoogleConfig(): Boolean {
+        // P0.3: cache hələ isti olanda şəbəkəyə GETMƏ
+        if (googleConfigCachedAtMs > 0 &&
+            System.currentTimeMillis() - googleConfigCachedAtMs < GOOGLE_CONFIG_TTL_MS &&
+            BackendConfig.googleWebClientId != null
+        ) return true
         val http = HttpClient(CIO)
         return try {
             val resp = http.get(BackendConfig.m4Url + "/config") {
@@ -217,7 +263,9 @@ object SupabaseBackend {
                 BackendConfig.adoptGoogleWebClientId(
                     (el["google_web_client_id"] as? JsonPrimitive)?.content
                 )
-                BackendConfig.googleWebClientId != null
+                val ok = BackendConfig.googleWebClientId != null
+                if (ok) googleConfigCachedAtMs = System.currentTimeMillis()
+                ok
             } else {
                 if (BackendConfig.isConfigured) {
                     Safety.onCaught?.invoke(
@@ -243,9 +291,25 @@ object SupabaseBackend {
     fun isSignedIn(): Boolean =
         client?.auth?.sessionStatus?.value is SessionStatus.Authenticated
 
-    /** Çıxış — sessiya ləğv olunur, refresh token revoke edilir, storage təmizlənir. */
-    suspend fun signOut() {
+    /**
+     * Çıxış — sessiya ləğv olunur, refresh token revoke edilir, storage təmizlənir.
+     *
+     * P0.2 (D-182): `clearCredentialState` — Credential Manager-ın saxladığı
+     * aktiv credential sessiyası da təmizlənir (rəsmi sənəd:
+     * developer.android.com/identity/sign-in/credential-manager-siwg-implementation
+     * — „Handle sign-out“). Əks halda provayder növbəti girişdə köhnə
+     * aktiv credential-i prioritetləşdirə bilər. `filterByAuthorizedAccounts
+     * = false` olduğundan bizdə auto-select yoxdur, amma təmizlik üçün
+     * yenə də düzgün hərəkətdir. Google dialoqu zərər görmür.
+     */
+    suspend fun signOut(context: Context? = null) {
         client?.auth?.signOut()
+        if (context != null) {
+            try {
+                CredentialManager.create(context)
+                    .clearCredentialState(ClearCredentialStateRequest())
+            } catch (_: Exception) { /* Play Services yoxdursa — problem deyil */ }
+        }
     }
 
     // ── Hesab idarəetməsi (D-167: istifadəçi yalnız ÖZÜNƏ aid olanı

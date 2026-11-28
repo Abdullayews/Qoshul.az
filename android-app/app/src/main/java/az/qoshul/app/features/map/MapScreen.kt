@@ -31,11 +31,13 @@ import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SportsVolleyball
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -166,13 +168,23 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     // İcazə verilibsə fix al — bir dəfəlik (locateRequest açılışda 0-dır,
     // yalnız icazə YENİ verildikdə artır; myRealLat qoruyur: tab keçidlə-
     // rində təkrar GPS dinləməsi YOX — M2-nin ikinci yarısı).
+    // P0.1 (D-182): (1) lokasiya XİDMƏTLƏRİ söndürüülübsə istifadəçi
+    // ayarlara yönlənir (gpsOff chip); (2) axtarış gedişatı UI-da görünür
+    // ("Dəqiq mövqe axtarılır…" — locating=true ikən); (3) locateOnce
+    // artıq yalnız təsdiqlənmiş fix (mock rədd + ≤50m + 10s təzə) qaytarır.
+    var gpsOff by remember { mutableStateOf(false) }
     LaunchedEffect(locateRequest) {
         if (myRealLat == null && QoshulLocation.hasPermission(locCtx)) {
-            when (val r = QoshulLocation.locateOnce(locCtx)) {
-                is QoshulLocation.LocateResult.Found -> {
-                    myRealLat = r.lat; myRealLng = r.lng
+            gpsOff = !QoshulLocation.isLocationEnabled(locCtx)
+            if (!gpsOff) {
+                locating = true
+                when (val r = QoshulLocation.locateOnce(locCtx)) {
+                    is QoshulLocation.LocateResult.Found -> {
+                        myRealLat = r.lat; myRealLng = r.lng
+                    }
+                    else -> Unit // fallback ilə davam (aşagıda myLat/myLng)
                 }
-                else -> Unit // fallback ilə davam (aşagıda myLat/myLng)
+                locating = false
             }
         }
     }
@@ -246,6 +258,15 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                 locLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
             }
         } else if (!locating) {
+            // P0.1 (D-182): xidmətlər söndürüülübsə AYARLARA yönləndir —
+            // səssiz "Unavailable" yox (istifadəçi nə olduğunu bilməli)
+            if (!QoshulLocation.isLocationEnabled(locCtx)) {
+                gpsOff = true
+                try {
+                    locCtx.startActivity(android.content.Intent(
+                        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                } catch (_: Exception) { /* ayarlar açılmadı — chip qalır */ }
+            } else {
             locating = true
             scope.launch {
                 when (val r = QoshulLocation.locateOnce(locCtx)) {
@@ -258,6 +279,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     else -> Unit
                 }
                 locating = false
+            }
             }
         }
     }
@@ -374,6 +396,58 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     onCameraConsumed = { pendingCamera = null },
                     onMyLocationRequest = onMyLocation,
                 )
+            }
+        }
+
+        // — P0.1 (D-182): GPS STATUS ÇİPİ — axtarış gedişatı / xidmət söndürü-
+        // lüb. „Dəqiq mövqe axtarılır… (±X m)“ — accuracy həddi hələ
+        // təmin olunmayıbsa görünür; stream-dən təsdiqlənmiş fix gələndə
+        // çip yox olur. gpsOff — lokasiya xidmətləri söndürüülüb (toxunuş
+        // sistem ayarlarına aparır).
+        if (locating || gpsOff) {
+            GlassSurface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 76.dp),
+                shape = RoundedCornerShape(12.dp),
+                sigma = 12.dp,
+                luminance = 0.5f,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .pressable {
+                            if (gpsOff) {
+                                try {
+                                    locCtx.startActivity(android.content.Intent(
+                                        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                } catch (_: Exception) { }
+                            }
+                        }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    if (gpsOff) {
+                        Icon(
+                            Icons.Filled.LocationOff, null,
+                            tint = Q.error, modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Lokasiya söndürülüb — toxun, ayarlardan yandır",
+                            style = T.meta,
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Dəqiq mövqe axtarılır… (±${QoshulLocation.MAX_ACCURACY_M.toInt()} m-ə qədər)",
+                            style = T.meta,
+                        )
+                    }
+                }
             }
         }
 

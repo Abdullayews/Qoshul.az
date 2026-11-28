@@ -67,6 +67,13 @@ import kotlinx.coroutines.launch
  */
 private enum class AuthMode { ENTER, UP, FORGOT, CODE }
 
+// P0.3 (D-182): auth vaxtaşımları — konfiqurasiya olunan sabitlər.
+// 15 s: şəbəkə əməliyyatları (GoTrue, m4 /config). 60 s: Google dialoqu +
+// IDToken grant (istifadəçi hesab seçimi vaxtı ŞƏBƏKƏ timeout-una daxil
+// deyil — amma sonsuz da dayana bilməz).
+private const val AUTH_TIMEOUT_MS = 15_000L
+private const val AUTH_UI_TIMEOUT_MS = 60_000L
+
 @Composable
 fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
     // U2.2 (UI-02): forma/mode proses ölümündən sağ qalır (enum — Serializable)
@@ -108,7 +115,18 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         scope.launch {
             busy = true; error = null
             try {
-                SupabaseBackend.fetchGoogleConfig()
+                // P0.3 (D-182): 15 s TIMEOUT — zəif şəbəkədə fetchGoogleConfig
+                // (m4 /config HTTP) və ya GoTrue çağırışı asılı qalanda
+                // spinner sonsuz dayanmır; TimeoutCancellationException
+                // aşağıdakı catch-ə düşür, busy=false, aydın mesaj çıxır
+                kotlinx.coroutines.withTimeoutOrNull(AUTH_TIMEOUT_MS) {
+                    SupabaseBackend.fetchGoogleConfig()
+                } ?: run {
+                    error = "Şəbəkə yavaşdır (m4 konfiqurasiya xətası). " +
+                        "Yenidən cəhd et."
+                    busy = false
+                    return@launch
+                }
                 val clientId = BackendConfig.activeGoogleClientId ?: run {
                     error = "Google girişi hələ konfiqurasiya olunmayıb " +
                         "(Web klient ID gözlənilir). İndi e-poçt və ya " +
@@ -116,7 +134,17 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                     busy = false
                     return@launch
                 }
-                SupabaseBackend.signInWithGoogle(context, clientId)
+                // P0.3: Google dialoqu + GoTrue IDToken grant — 60 s
+                // (istifadəçi hesab seçimini 15 s-də tamamlamalı deyil;
+                // yalnız ŞƏBƏKƏ əməliyyatları üçün 15 s tətbiq olunur —
+                // getCredential istifadəçi dialoqudur, öz timeout-u yoxdur)
+                kotlinx.coroutines.withTimeoutOrNull(AUTH_UI_TIMEOUT_MS) {
+                    SupabaseBackend.signInWithGoogle(context, clientId)
+                } ?: run {
+                    error = "Giriş vaxtaşımına uğradı. Yenidən cəhd et."
+                    busy = false
+                    return@launch
+                }
                 engine?.signIn() ?: onSignedIn()
                 busy = false
             } catch (t: Throwable) {
@@ -166,6 +194,10 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
         scope.launch {
             busy = true
             try {
+                // P0.3 (D-182): bütün GoTrue çağırışlarına 15 s timeout —
+                // zəif şəbəkədə busy sonsuz qalmır; TimeoutCancellation-
+                // Exception catch-ə düşür, istifadəçiyə aydın mesaj
+                kotlinx.coroutines.withTimeout(AUTH_TIMEOUT_MS) {
                 when (mode) {
                     AuthMode.UP -> {
                         SupabaseBackend.signUp(email, pass, name.ifBlank { null })
@@ -189,8 +221,11 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                         msg = "Şifrəni yeniləmək üçün link e-poçtuna göndərildi."
                     }
                 }
+                }
             } catch (t: Throwable) {
-                error = t.message?.take(160) ?: "Əməliyyat alınmadı. Bir az sonra yenidən cəhd et."
+                error = if (t is kotlinx.coroutines.TimeoutCancellationException)
+                    "Şəbəkə yavaşdır — vaxtaşımı (15 s). Yenidən cəhd et."
+                else t.message?.take(160) ?: "Əməliyyat alınmadı. Bir az sonra yenidən cəhd et."
             } finally {
                 busy = false
             }
@@ -421,10 +456,16 @@ fun AuthScreen(onSignedIn: () -> Unit, engine: AppEngine? = null) {
                             scope.launch {
                                 busy = true; error = null
                                 try {
-                                    SupabaseBackend.sendEmailOtp(email)
+                                    // P0.3 (D-182): OTP göndərmə də 15 s
+                                    // timeout-a düşür
+                                    kotlinx.coroutines.withTimeout(AUTH_TIMEOUT_MS) {
+                                        SupabaseBackend.sendEmailOtp(email)
+                                    }
                                     mode = AuthMode.CODE
                                 } catch (t: Throwable) {
-                                    error = t.message?.take(160)
+                                    error = if (t is kotlinx.coroutines.TimeoutCancellationException)
+                                        "Şəbəkə yavaşdır — vaxtaşımı (15 s). Yenidən cəhd et."
+                                    else t.message?.take(160)
                                         ?: "Kod göndərilə bilmədi. E-poçtunu yoxla."
                                 }
                                 busy = false

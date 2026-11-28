@@ -99,6 +99,10 @@ import az.qoshul.app.features.auth.QoshulTextField
 @Composable
 fun SettingsScreen(engine: AppEngine, nav: NavState) {
     val st by engine.state.collectAsStateWithLifecycle()
+    // P0.2 (D-182): signOut üçün context — kompozisiya fazasında götürülür
+    // (LocalContext.current YALNIZ @Composable kontekstdə çağırıla bilər;
+    // onClick lambda-sı içində deyil)
+    val signOutCtx = androidx.compose.ui.platform.LocalContext.current
     var showVisibility by remember { mutableStateOf(false) }
     var showBlocked by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
@@ -288,7 +292,9 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                 OutlinedButton(
                     onClick = {
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                            runCatching { az.qoshul.app.core.backend.SupabaseBackend.signOut() }
+                            runCatching {
+                                az.qoshul.app.core.backend.SupabaseBackend.signOut(signOutCtx)
+                            }
                             engine.signOut()
                             nav.popAll()
                         }
@@ -520,7 +526,9 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                     onClick = {
                         showDelete = false
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                            runCatching { az.qoshul.app.core.backend.SupabaseBackend.signOut() }
+                            runCatching {
+                                az.qoshul.app.core.backend.SupabaseBackend.signOut(signOutCtx)
+                            }
                             engine.signOut()
                             nav.popAll()
                         }

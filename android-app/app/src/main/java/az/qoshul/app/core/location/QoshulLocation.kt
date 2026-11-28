@@ -59,13 +59,21 @@ object QoshulLocation {
      *
      * Sıra: GPS last-known → network last-known → 5 s lik canlı gözləmə.
      * Hər namizəd mock-dursa keçilir.
+     *
+     * P0.1 (D-182, 2026-11-28): last-known artıq KOHNƏLIK filtri ilə
+     * qəbul olunur — `elapsedRealtimeNanos` 10 s-dən köhnə fix RƏDD
+     * edilir (tələb: "köhnə fix-lər rədd edilir"). Dəqiqlik filtri
+     * [MAX_ACCURACY_M] stream qapısı ilə eynidir — locateOnce da artıq
+     * yalnız "təsdiqlənmiş" (≤ hədd) fix qaytarır; kobud fix gələrsə
+     * canlı gözləmə mərhələsinə keçir.
      */
     suspend fun locateOnce(context: Context): LocateResult {
         if (!hasPermission(context)) return LocateResult.Denied
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
             ?: return LocateResult.Unavailable
 
-        // 1) last-known (anı, enerji sərfi sıfır)
+        // 1) last-known (anı, enerji sərfi sıfır) — P0.1: mock + köhnəlik
+        //    (10 s) + dəqiqlik (≤ MAX_ACCURACY_M) filtri ilə
         for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER)) {
             val last = try {
                 lm.getLastKnownLocation(provider)
@@ -74,20 +82,55 @@ object QoshulLocation {
             } catch (_: IllegalArgumentException) {
                 null // provayder mövcud deyil (emulyator konfiqurasiyası)
             }
-            if (last != null && !last.isFromMockProvider) {
+            if (last != null && isUsableFix(last)) {
                 return LocateResult.Found(last.latitude, last.longitude)
             }
         }
 
         // 2) canlı fix — 5 s gözlə (GPS soyuq başlanğıcında tez fix üçün
-        // network provayderi də dinlənilir; ilk REAL fix gələn kimi qayıt)
+        // network provayderi də dinlənilir; ilk REAL fix gələn kimi qayıt).
+        // P0.1: burada da dəqiqlik/köhnəlik filtri tətbiq olunur —
+        // [isUsableFix] yalnız "təsdiqlənmiş" fix-i ötürür
         val live = awaitProviderFix(lm, timeoutMs = 5_000)
         return when {
-            live != null && !live.isFromMockProvider ->
+            live != null && isUsableFix(live) ->
                 LocateResult.Found(live.latitude, live.longitude)
-            else -> LocateResult.Unavailable // mock-only və ya heç nə
+            else -> LocateResult.Unavailable // mock-only, kobud və ya heç nə
         }
     }
+
+    /**
+     * P0.1 (D-182): fix-in "istifadə oluna biləcəyi" qərarı — vahid
+     * filtr hər yerə (locateOnce + stream) tətbiq olunur:
+     *  1. mock RƏDD ([Location.isMock] API 31+, köhnə
+     *     `isFromMockProvider` fallback — deprecated amma minSdk 24 üçün
+     *     lazımdır);
+     *  2. dəqiqlik həddi `accuracy <= MAX_ACCURACY_M` (NaN accuracy
+     *     bəzi emulyatorlarda gəlir — NaN RƏDD);
+     *  3. köhnəlik: `elapsedRealtimeNanos` fərqi 10 s-dən çoxsa RƏDD
+     *     (tələb: "10 saniyədən köhnə olanlar rədd edilir"). Clock
+     *     rollback-inə davamlıdır (elapsedRealtime monotondur).
+     */
+    fun isUsableFix(location: Location): Boolean {
+        // 1) mock (API 31+ isMock; API 24-30 isFromMockProvider)
+        val isMock = if (android.os.Build.VERSION.SDK_INT >= 31) {
+            location.isMock
+        } else {
+            @Suppress("DEPRECATION")
+            location.isFromMockProvider
+        }
+        if (isMock) return false
+        // 2) dəqiqlik qapısı (NaN = bilinmir → RƏDD)
+        if (location.accuracy.isNaN() || location.accuracy > MAX_ACCURACY_M) return false
+        // 3) köhnəlik qapısı — elapsedRealtimeNanos monoton saat
+        val ageNs = android.os.SystemClock.elapsedRealtimeNanos() -
+            location.elapsedRealtimeNanos
+        if (ageNs > MAX_FIX_AGE_NS) return false
+        return true
+    }
+
+    /** P0.1: fix bu qədər köhnədirsə locateOnce RƏDD edir (10 s). */
+    const val MAX_FIX_AGE_NS = 10_000_000_000L
 
     /**
      * G.1 (D-170, Snapchat məntiqi): DAVAMLI lokasiya axını — dəqiqlik
@@ -141,11 +184,11 @@ object QoshulLocation {
         var lastSentAt = 0L
 
         val listener = LocationListener { location ->
-            // 1) mock fix RƏDD (G.4)
-            if (location.isFromMockProvider) return@LocationListener
-            // 2) dəqiqlik filtri
-            if (location.accuracy > MAX_ACCURACY_M) return@LocationListener
-            // 3) throttle + hərəkət yumşaltması
+            // P0.1 (D-182): vahid filtr — mock RƏDD + dəqiqlik qapısı
+            // (isUsableFix-də; köhnəlik stream-də ayrıca tətbiq olunmur —
+            // stream canlı fix verir, elapsedRealtime fərqi ~0-dır)
+            if (!isUsableFix(location)) return@LocationListener
+            // throttle + hərəkət yumşaltması
             val nowMs = System.currentTimeMillis()
             val movedEnough = lastSentAt == 0L || distanceM(
                 lastSentLat, lastSentLng, location.latitude, location.longitude) >= MIN_MOVE_M
@@ -196,6 +239,25 @@ object QoshulLocation {
         "Yaxınlıqdakı məkanları göstərmək və xəritədə mövqeyinizə getmək üçün lokasiya icazəsi lazımdır."
 
     /**
+     * P0.1 (D-182): lokasiya XİDMƏTLƏRİ (GPS/network provayder) aktivdirmi?
+     * Söndürüülübsə istifadəçi sistem ayarlarına yönəldilir
+     * (Settings.ACTION_LOCATION_SOURCE_SETTINGS) — Play Services
+     * `SettingsClient`-ə asılılıq YOX (layihə konsepsiyası: framework
+     * LocationManager). Yoxlama yalnız ikisi də SÖNDÜRÜLÜBSƏ false verir —
+     * network provayder tək başına da kobud fix verir.
+     */
+    fun isLocationEnabled(context: Context): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+            ?: return false
+        return try {
+            lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        } catch (_: Exception) {
+            true // bilinmirsə — istifadəçini lazımsız yönləndirmə (false alarm yox)
+        }
+    }
+
+    /**
      * Provayderlərdən ilk (mock olmayan) fix — [callbackFlow] üzərində
      * [kotlinx.coroutines.withTimeoutOrNull]: ya real fix, ya vaxtaşımı
      * (null). awaitClose listener-i qeydiyyatdan çıxarır (lek yoxdur).
@@ -211,8 +273,9 @@ object QoshulLocation {
 
         val fixes = callbackFlow {
             val listener = LocationListener { location ->
-                // mock fix kanala düşmür — kamera saxta koordinata uçmur
-                if (!location.isFromMockProvider) trySend(location)
+                // P0.1: mock fix kanala düşmür — kamera saxta koordinata uçmur;
+                // dəqiqlik qapısı da burada (vahid isUsableFix filtri)
+                if (isUsableFix(location)) trySend(location)
             }
             // H1 (audit v0.49): provayderlər FƏRDİ qeydiyyata alınır — biri
             // partlasa (Security/IllegalArgument) qalanın listener-i awaitClose

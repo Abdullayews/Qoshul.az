@@ -452,4 +452,105 @@ class DirectivesAuditTest {
             )
         }
     }
+
+    // ═══════════ D-182 (P0.1–P0.3): GPS filtrləri + auth təmizliyi ═══════════
+
+    @Test
+    fun `D-182 locateOnce köhnəlik filtri var (elapsedRealtimeNanos)`() {
+        val loc = read("$main/core/location/QoshulLocation.kt")
+        assertTrue(
+            "köhnə fix rədd edilməlidir — 10 s elapsedRealtimeNanos qapısı",
+            loc.contains("MAX_FIX_AGE_NS") && loc.contains("elapsedRealtimeNanos"),
+        )
+        assertTrue(
+            "locateOnce accuracy filtri ilə (isUsableFix)",
+            loc.contains("isUsableFix(last)"),
+        )
+    }
+
+    @Test
+    fun `D-182 isMock API 31+ (deprecated fallback ilə)`() {
+        val loc = read("$main/core/location/QoshulLocation.kt")
+        assertTrue(
+            "Location.isMock (API 31+) istifadə olunmalıdır",
+            loc.contains("location.isMock"),
+        )
+        // isFromMockProvider yalnız SDK < 31 fallback-i kimi qalır
+        assertTrue(
+            "isFromMockProvider yalnız deprecated fallback şəklində",
+            loc.contains("Suppress(\"DEPRECATION\")"),
+        )
+    }
+
+    @Test
+    fun `D-182 GPS status UI + ayar keçidi var`() {
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "„Dəqiq mövqe axtarılır“ göstəricisi olmalıdır",
+            scr.contains("Dəqiq mövqe axtarılır"),
+        )
+        assertTrue(
+            "GPS söndürüübsə ayar keçidi (ACTION_LOCATION_SOURCE_SETTINGS)",
+            scr.contains("ACTION_LOCATION_SOURCE_SETTINGS"),
+        )
+        assertTrue(
+            "isLocationEnabled yoxlaması (xidmət statusu)",
+            scr.contains("QoshulLocation.isLocationEnabled"),
+        )
+    }
+
+    @Test
+    fun `D-182 google girişdə köhnə sessiya təmizlənir + e-poçt müqayisəsi`() {
+        val be = read("$main/core/backend/SupabaseBackend.kt")
+        // signInWithGoogle DAXİLINDA signOut çağırışı olmalıdır
+        val fnStart = be.indexOf("suspend fun signInWithGoogle")
+        val fnEnd = be.indexOf("suspend fun", fnStart + 10)
+        val fnBody = be.substring(fnStart, if (fnEnd > 0) fnEnd else be.length)
+        assertTrue(
+            "yeni girişdən əvvəl köhnə sessiya ləğv olunmalıdır",
+            fnBody.contains("signOut()"),
+        )
+        assertTrue(
+            "e-poçt müqayisəsi (seçilən hesab ≡ açılan sessiya)",
+            fnBody.contains("sessionEmail") && fnBody.contains("googleEmail"),
+        )
+        // signOut — clearCredentialState (Credential Manager təmizliyi)
+        val soStart = be.indexOf("suspend fun signOut")
+        val soBody = be.substring(soStart, be.indexOf("}", be.indexOf("clearCredentialState")))
+        assertTrue(
+            "clearCredentialState çağırılmalıdır (logout tam təmizlik)",
+            soBody.contains("clearCredentialState"),
+        )
+    }
+
+    @Test
+    fun `D-182 auth timeout-ları var (15 s)`() {
+        val au = read("$main/features/auth/AuthScreen.kt")
+        assertTrue(
+            "AUTH_TIMEOUT_MS sabiti (15 s) olmalıdır",
+            au.contains("AUTH_TIMEOUT_MS = 15_000L"),
+        )
+        assertTrue(
+            "Google girişi timeout-a alınmalıdır",
+            au.contains("withTimeoutOrNull(AUTH_UI_TIMEOUT_MS)"),
+        )
+        assertTrue(
+            "GoTrue çağırışları withTimeout içində olmalıdır",
+            au.contains("withTimeout(AUTH_TIMEOUT_MS)"),
+        )
+        assertTrue(
+            "vaxtaşımı mesajı istifadəçiyə aydın olmalıdır",
+            au.contains("vaxtaşımı"),
+        )
+    }
+
+    @Test
+    fun `D-182 fetchGoogleConfig TTL cache (login gecikməsi)`() {
+        val be = read("$main/core/backend/SupabaseBackend.kt")
+        assertTrue(
+            "m4 /config cache-lənməlidir (TTL)",
+            be.contains("GOOGLE_CONFIG_TTL_MS") && be.contains("googleConfigCachedAtMs"),
+        )
+    }
+
 }
