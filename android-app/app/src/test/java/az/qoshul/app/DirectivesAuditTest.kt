@@ -722,4 +722,37 @@ class DirectivesAuditTest {
         )
     }
 
+
+    // ═══════════ D-185 (Loop 4): Snapchat paritet analizi ═══════════
+
+    @Test
+    fun `D-185 paritet senedi movcuddur ve 7 kateqoriyani ehative edir`() {
+        val doc = read("../docs/feature_parity_snapchat.md")
+        listOf(
+            "mövqe məxfiliyi", "Streak", "ephemeral", "Stories",
+            "Kamera", "kəşfi", "Monetizasiya",
+        ).forEach { topic ->
+            assertTrue("paritet sənədində \"$topic\" bölməsi olmalıdır", topic in doc)
+        }
+        // bütün mənbələr rəsmi help.snapchat.com-dur
+        assertTrue(
+            "mənbələr rəsmi Snapchat kömək mərkəzindən olmalıdır",
+            doc.contains("help.snapchat.com/hc/en-us/articles/7012322854932"),
+        )
+        // kod referansları fayl:sətir formatında
+        assertTrue(
+            "kod referansları AppEngine sətir göstəricisi ilə",
+            doc.contains("AppEngine.kt:"),
+        )
+    }
+
+    @Test
+    fun `D-185 streak gostericisi ProfileScreen statistikasindadir (P3-2)`() {
+        val scr = read("$main/features/profile/ProfileScreen.kt")
+        assertTrue(
+            "giriş seriyası göstəricisi (🔥 + loginStreak) profil statistikasında",
+            scr.contains("st.loginStreak") && scr.contains("🔥"),
+        )
+    }
+
 }

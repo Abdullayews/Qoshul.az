@@ -99,3 +99,23 @@ P1-P2 UX: (1) vahid dropdown komponenti (Material3 ExposedDropdownMenuBox, ≥48
 
 ### Loop 4 planı (növbəti)
 P3: docs/feature_parity_snapchat.md — rəsmi Snapchat mənbələrindən (support.snapchat.com, business.snapchat.com) kateqoriyalar üzrə paritet analizi: Stories/Map/Chat/Snap/Discover qarşılıqları; mənbə linkli. Sonra P4 optimizasiya dövrü (başlanğıc sürəti, R8, keş).
+
+---
+
+## Loop 4 — 2026-11-28 (D-185, v0.62.0)
+
+**Məqsəd**: P3 — Snapchat paritet analizi (rəsmi mənbələrdən) + P3.2 icrası.
+
+**Dəyişən fayllar**:
+- `docs/feature_parity_snapchat.md` — YENİ: 7 kateqoriya üzrə paritet analizi (mövqe məxfiliyi, streak, ephemeral çat, stories, kamera/Lens, kəşf, monetizasiya); 7 rəsmi help.snapchat.com mənbəsi açılıb təsdiqlənib; hər Qoshul.az faktı kod fayl:sətir ref ilə
+- `ProfileScreen.kt` — P3.2: giriş seriyası göstəricisi (🔥 N gün) statistika sırasında
+- `DirectivesAuditTest.kt` — D-185 audit testləri
+- `docs/decisions.md` — D-185
+
+**Verifikasiya**: kompilyasiya + unit test → CI (bu push).
+
+**Bağlanan bəndlər**: P3 (Snapchat analizi — LOOP_LOG Loop 3 planındakı vəd); P3.2 (streak UI).
+**Açıq qalanlar**: P3.1 (onboarding xəritə rejimi seçimi — D-176 dostluq sistemindən sonra); P3.3 (görüş sonu çat arxivi — opsiya); P4 optimizasiya dövrü (başlanğıc sürəti, R8, keş); real cihaz vizual yoxlama.
+
+### Loop 5 planı (növbəti)
+P4 optimizasiya: (1) başlanğıc sürəti ölçümü (baseline report); (2) R8/ProGuard qurğuları yoxlaması; (3) şəkil/keş strategiyası; (4) APK ölçüsü analizi (30 MB —成分 baxımı). Sonra sahib tərəfindən real cihaz testi dövrü.
