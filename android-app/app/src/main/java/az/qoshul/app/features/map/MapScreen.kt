@@ -429,7 +429,7 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     if (gpsOff) {
                         Icon(
                             Icons.Filled.LocationOff, null,
-                            tint = Q.error, modifier = Modifier.size(16.dp),
+                            tint = Q.destructive, modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
