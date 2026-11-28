@@ -771,15 +771,23 @@ class DirectivesAuditTest {
     }
 
     @Test
-    fun `D-186 maplibre lokal exclude gradle-da glob ile qurulub (P4-1)`() {
+    fun `D-186 locale exclude revert edilib ve du-versus-zip dersli seneqlenib (P4-1)`() {
         val gradle = read("app/build.gradle.kts")
+        // exclude silinib — yalnız META-INF default qalıb
         assertTrue(
-            "packaging excludes-də maplibre values-* globu olmalıdır",
-            "org.maplibre.compose.generated/values-*/**" in gradle,
+            "maplibre values-* exclude REVERT olunmalıdır (qənaət 7.3 KB idi)",
+            "org.maplibre.compose.generated/values-*" !in gradle,
+        )
+        // revert səbəbi şərhdə sənədləşib
+        assertTrue("revert şərhi D-186 düzəlişini göstərməlidir", "DÜZƏLİŞ" in gradle)
+        val doc = read("../docs/perf_baseline.md")
+        assertTrue(
+            "sənəd real ZIP ölçüsünü göstərməlidir (7.3 KB, 0.02%)",
+            "7.3 KB" in doc && "0.02%" in doc,
         )
         assertTrue(
-            "exclude qərarı D-186 şərhi ilə işarələnib",
-            "D-186" in gradle,
+            "sənəd du blok ölçüsü dərsini yazmalıdır",
+            "du" in doc,
         )
     }
 

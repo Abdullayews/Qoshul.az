@@ -34,8 +34,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 73
-        versionName = "0.63.0"
+        versionCode = 74
+        versionName = "0.64.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
@@ -156,16 +156,15 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            // D-186 (P4.1): maplibre-compose öz composeResources assetində 126
-            // dilin strings.commonMain.cvr-ini gətirir (~4 KB/dil, cəm ~1 MB).
-            // AGP excludes GLOB qəbul edir (regex YOX — lookahead xəta verir),
-            // ona görə inkar mümkün deyil: bütün values-* qovluqları çıxarılır.
-            // Tərkibi yalnız xəritə etiketləridir (kompas/attribution/km-mi
-            // simvolları) — ana values/ (default en) qalır; az/tr/ru mətnləri
-            // itir, amma tətbiq öz UI-ında azəricədir, xəritə etiketləri
-            // universal (latın simvolları) — istifadəçi üçün görünməz fərq.
-            // AndroidResources.localeFilter bura aid DEYİL (res/, assets yox).
-            excludes += "**/org.maplibre.compose.generated/values-*/**"
+            // D-186 (P4.1, DÜZƏLİŞ): maplibre 126 dil qovluğunu exclude etmək
+            // cəhdi REVERT edilib — iki səbəblə:
+            // 1) packaging.resources.excludes yalnız java resursları üçündür,
+            //    AAR assetlərinə (composeResources) tətbiq olunmur — v0.63.0
+            //    APK-da 128 qovluq qaldı, ölçü dəyişmədi;
+            // 2) əsas səbəb — qənaət YOXDUR: du -k blok ölçüsü (1 MB) aldatdı;
+            //    ZIP-də real sıxılmış ölçü 7.3 KB / 32 MB = 0.02%-dir (hər
+            //    .cvr faylı 67 baytdur). Bu qənaətə Variant API artifact
+            //    transformu yazmaq mənasızdır. Detallar: docs/perf_baseline.md
         }
     }
 }

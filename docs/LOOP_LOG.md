@@ -142,6 +142,15 @@ P4 optimizasiya: (1) başlanğıc sürəti ölçümü (baseline report); (2) R8/
 **Verifikasiya**: CI build + audit testi (D-186) + release APK ölçüsü
 müqayisəsi (perf_baseline.md §4).
 
+**REVERT (Loop 5 davamı, v0.64.0)**: v0.63.0 APK ölçüsü dəyişməz
+qaldı (32,023,089 bayt) — exclude AAR assetlərinə tətbiq olunmur.
+Kritik ölçüm: ZIP entry-lərin real sıxılmış ölçüsü 7.3 KB (0.02%) —
+`du` blok yuvarlaqlaşdırması (8 KB × 126 fayl) „1 MB" yalanını
+göstərirdi. Exclude tam revert edildi; 7 KB üçün Variant API
+MERGED_ASSETS transformu yazmaq mənasızdır. Sənəd düzgün metodla
+(zipfile compress_size) yenidən yazıldı; dərs: çoxsaylı kiçik
+fayllarda du YOX, ZIP ölçüsü.
+
 ### Loop 6 planı (növbəti)
 Sahib gözləməsi: real cihaz testi (v0.63.0 APK) — xəritə çat oxuma,
 çat realtime, swipe axını, streak göstəricisi profildə (D-185), APK
