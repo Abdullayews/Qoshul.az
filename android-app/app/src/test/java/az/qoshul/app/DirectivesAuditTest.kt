@@ -705,7 +705,7 @@ class DirectivesAuditTest {
 
     @Test
     fun `D-184 serverde null clearing (0015 migrasiyasi)`() {
-        val mig = read("supabase/migrations/0015_profile_null_clearing.sql")
+        val mig = read("../../supabase/migrations/0015_profile_null_clearing.sql")
         assertTrue(
             "p_group_size btrim('')='' → NULL yazır",
             mig.contains("when btrim(p_group_size) = '' then null"),
