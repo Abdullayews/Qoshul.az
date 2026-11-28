@@ -158,12 +158,14 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
             // D-186 (P4.1): maplibre-compose öz composeResources assetində 126
             // dilin strings.commonMain.cvr-ini gətirir (~4 KB/dil, cəm ~1 MB).
-            // Tətbiq yalnız Azərbaycan dilindədir (default=ingilis ehtiyat);
-            // tr/ru istifadəçi bazası ehtimalı üçün saxlanılır. Pattern tam
-            // path-ə regex kimi tətbiq olunur; values-az|en|tr|ru (və ana
-            // values/) lookahead ilə qorunur, qalan 122 qovluq çıxarılır.
+            // AGP excludes GLOB qəbul edir (regex YOX — lookahead xəta verir),
+            // ona görə inkar mümkün deyil: bütün values-* qovluqları çıxarılır.
+            // Tərkibi yalnız xəritə etiketləridir (kompas/attribution/km-mi
+            // simvolları) — ana values/ (default en) qalır; az/tr/ru mətnləri
+            // itir, amma tətbiq öz UI-ında azəricədir, xəritə etiketləri
+            // universal (latın simvolları) — istifadəçi üçün görünməz fərq.
             // AndroidResources.localeFilter bura aid DEYİL (res/, assets yox).
-            excludes += """.*/org\.maplibre\.compose\.generated/values-(?!az/|en/|tr/|ru/)[^/]+/.*"""
+            excludes += "**/org.maplibre.compose.generated/values-*/**"
         }
     }
 }

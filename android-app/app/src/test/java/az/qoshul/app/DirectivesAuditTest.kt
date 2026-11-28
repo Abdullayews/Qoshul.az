@@ -771,12 +771,11 @@ class DirectivesAuditTest {
     }
 
     @Test
-    fun `D-186 maplibre lokal exclude gradle-da regex ile qurulub (P4-1)`() {
+    fun `D-186 maplibre lokal exclude gradle-da glob ile qurulub (P4-1)`() {
         val gradle = read("app/build.gradle.kts")
         assertTrue(
-            "packaging excludes-də maplibre lokal regex olmalıdır",
-            "org\\.maplibre\\.compose\\.generated/values-" in gradle &&
-                "az/|en/|tr/|ru/" in gradle,
+            "packaging excludes-də maplibre values-* globu olmalıdır",
+            "org.maplibre.compose.generated/values-*/**" in gradle,
         )
         assertTrue(
             "exclude qərarı D-186 şərhi ilə işarələnib",
