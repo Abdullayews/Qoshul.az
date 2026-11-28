@@ -580,7 +580,7 @@ class DirectivesAuditTest {
     }
 
     @Test
-    fun `D-183 manifest OpenGL ES 3.0 elan olunub`() {
+    fun `D-183 manifest OpenGL ES 3 elan olunub`() {
         val mf = read("$main/../../AndroidManifest.xml")
         assertTrue(
             "uses-feature glEsVersion 0x00030000 olmalıdır (MapLibre v11+)",
@@ -589,7 +589,7 @@ class DirectivesAuditTest {
     }
 
     @Test
-    fun `D-183 style URL konfiqurasiya olunandır (tile openstreetmap org qadaga)`() {
+    fun `D-183 style URL konfiqurasiya olunandir (tile openstreetmap org qadaga)`() {
         val gradle = read("$main/../../app/build.gradle.kts")
         assertTrue(
             "MAP_STYLE_URL BuildConfig sahəsi olmalıdır (tək konfiq dəyəri)",
