@@ -649,7 +649,7 @@ class DirectivesAuditTest {
         assertTrue("dillər sahəsi (bilir/öyrənir)", scr.contains("Dillər"))
         assertTrue(
             "„Heç nə“ (DB NULL) seçimi allowEmpty",
-            scr.contains("emptyLabel = "Heç nə""),
+            scr.contains("emptyLabel = \"Heç nə\""),
         )
         assertTrue(
             "„Öz aralığım“ min≤max validasiyası",
