@@ -755,4 +755,33 @@ class DirectivesAuditTest {
         )
     }
 
+
+    // ═══════════ D-186 (Loop 5): P4 perf baseline + lokal exclude ═══════════
+
+    @Test
+    fun `D-186 perf baseline senedi movcuddur ve bolme tahlilini ehative edir`() {
+        val doc = read("../docs/perf_baseline.md")
+        listOf(
+            "lib/", "classes.dex", "res/", "composeResources",
+            "maplibre", "R8", "Başlanğıc zənciri",
+        ).forEach { topic ->
+            assertTrue("perf baseline sənədində \"$topic\" olmalıdır", topic in doc)
+        }
+        assertTrue("APK ölçüsü rəqəmsal qeyd olunmalıdır", "30.5 MB" in doc)
+    }
+
+    @Test
+    fun `D-186 maplibre lokal exclude gradle-da regex ile qurulub (P4-1)`() {
+        val gradle = read("app/build.gradle.kts")
+        assertTrue(
+            "packaging excludes-də maplibre lokal regex olmalıdır",
+            "org\\.maplibre\\.compose\\.generated/values-" in gradle &&
+                "az/|en/|tr/|ru/" in gradle,
+        )
+        assertTrue(
+            "exclude qərarı D-186 şərhi ilə işarələnib",
+            "D-186" in gradle,
+        )
+    }
+
 }

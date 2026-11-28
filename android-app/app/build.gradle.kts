@@ -34,8 +34,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 72
-        versionName = "0.62.0"
+        versionCode = 73
+        versionName = "0.63.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
@@ -156,6 +156,14 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            // D-186 (P4.1): maplibre-compose öz composeResources assetində 126
+            // dilin strings.commonMain.cvr-ini gətirir (~4 KB/dil, cəm ~1 MB).
+            // Tətbiq yalnız Azərbaycan dilindədir (default=ingilis ehtiyat);
+            // tr/ru istifadəçi bazası ehtimalı üçün saxlanılır. Pattern tam
+            // path-ə regex kimi tətbiq olunur; values-az|en|tr|ru (və ana
+            // values/) lookahead ilə qorunur, qalan 122 qovluq çıxarılır.
+            // AndroidResources.localeFilter bura aid DEYİL (res/, assets yox).
+            excludes += """.*/org\.maplibre\.compose\.generated/values-(?!az/|en/|tr/|ru/)[^/]+/.*"""
         }
     }
 }

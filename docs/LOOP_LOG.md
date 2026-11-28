@@ -119,3 +119,32 @@ P3: docs/feature_parity_snapchat.md — rəsmi Snapchat mənbələrindən (suppo
 
 ### Loop 5 planı (növbəti)
 P4 optimizasiya: (1) başlanğıc sürəti ölçümü (baseline report); (2) R8/ProGuard qurğuları yoxlaması; (3) şəkil/keş strategiyası; (4) APK ölçüsü analizi (30 MB —成分 baxımı). Sonra sahib tərəfindən real cihaz testi dövrü.
+
+---
+
+## Loop 5 — 2026-11-28 (D-186, v0.63.0)
+
+**Məqsəd**: P4 optimizasiya — APK ölçüsü təhlili, başlanğıc baseline,
+ən yüksək dəyərli risk-free optimizasiyanın icrası.
+
+**Təhlil** (`docs/perf_baseline.md`):
+- APK 30.5 MB: lib/ 25.1 MB (maplibre .so — strukturla bağlı), dex 9.3 MB
+  (R8 açıqdır), maplibre 126 dil asseti ~1 MB
+- Başlanğıc zənciri təmiz: Application.onCreate 3 əməliyyat, AppEngine.init
+  O(1), profileinstaller var — başlanğıc optimizasiyası lazımsız
+- R8 keep azaltma və ABI buraxma RƏDD (runtime risk / cihaz payı)
+
+**İcra (D-186)**:
+- `build.gradle.kts` packaging: maplibre 122 lokal qovluq regex exclude
+  (values + az/en/tr/ru qalır) — gözlənilən −0.9 MB
+- `docs/perf_baseline.md` — ölçülü baseline + təkrarölçüm komandası
+
+**Verifikasiya**: CI build + audit testi (D-186) + release APK ölçüsü
+müqayisəsi (perf_baseline.md §4).
+
+### Loop 6 planı (növbəti)
+Sahib gözləməsi: real cihaz testi (v0.63.0 APK) — xəritə çat oxuma,
+çat realtime, swipe axını, streak göstəricisi profildə (D-185), APK
+ölçüsü təsdiqi. Kod tərəfində: P3.1 (onboarding xəritə rejimi seçimi)
+və ya Play app bundle hazırlığı (per-device .so çatdırılma) — sahibin
+prioritet seçiminə görə.
