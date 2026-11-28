@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.MilitaryTech
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -82,12 +83,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import az.qoshul.app.R
 import az.qoshul.app.core.model.BadgeDef
@@ -923,6 +922,7 @@ fun Wordmark(fontSize: Int = 25) {
  * @param allowEmpty true olanda siyahının başında boş seçim („Seçilməyib“)
  *                 də var — DB NULL-a qayıtmaq üçün (qrup ölçüsü „Heç nə“)
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QRDropDown(
     label: String,
