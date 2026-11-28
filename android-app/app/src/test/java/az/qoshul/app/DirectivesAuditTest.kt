@@ -558,7 +558,7 @@ class DirectivesAuditTest {
 
     @Test
     fun `D-183 maplibre esas backenddir (default konfiqurasiyasiz)`() {
-        val gradle = read("$main/../../app/build.gradle.kts")
+        val gradle = read("app/build.gradle.kts")
         assertTrue(
             "MAP_BACKEND default „maplibre“ olmalıdır (D-183 P1)",
             Regex("MAP_BACKEND[\\s\\S]{0,200}\\?: \"maplibre\"").containsMatchIn(gradle),
@@ -581,7 +581,7 @@ class DirectivesAuditTest {
 
     @Test
     fun `D-183 manifest OpenGL ES 3 elan olunub`() {
-        val mf = read("$main/../../AndroidManifest.xml")
+        val mf = read("app/src/main/AndroidManifest.xml")
         assertTrue(
             "uses-feature glEsVersion 0x00030000 olmalıdır (MapLibre v11+)",
             mf.contains("0x00030000"),
@@ -590,7 +590,7 @@ class DirectivesAuditTest {
 
     @Test
     fun `D-183 style URL konfiqurasiya olunandir (tile openstreetmap org qadaga)`() {
-        val gradle = read("$main/../../app/build.gradle.kts")
+        val gradle = read("app/build.gradle.kts")
         assertTrue(
             "MAP_STYLE_URL BuildConfig sahəsi olmalıdır (tək konfiq dəyəri)",
             gradle.contains("MAP_STYLE_URL"),
