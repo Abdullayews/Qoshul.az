@@ -161,3 +161,14 @@ Snapchat paritet təklifi); (b) Play app bundle hazırlığı (per-device
 P4 nəticəsi: APK struktur etibarlı ilə optimaldır, kod optimizasiyası
 lazım deyil — bu loopun dəyəri mənfi nəticənin sənədləşməsidir
 (locale exclude qiymətsizdir, təkrar cəhd olmayacaq).
+
+---
+
+## Avtomatik metrikalar (loop_metrics.sh qeydləri)
+### Metrik qeydi — 2026-11-28 14:51 (avtomatik)
+
+- Release: v0.64.0 · APK 32023089 bayt (30.5 MB)
+- CI (main, 818a1e1): success
+- Testlər: 360 unit (o cümlədən 49 audit)
+- Soyuq başlanğıc / login vaxtı: ölçülmədi — real cihaz tələb olunur
+
