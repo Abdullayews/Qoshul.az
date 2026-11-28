@@ -763,7 +763,7 @@ class DirectivesAuditTest {
         val doc = read("../docs/perf_baseline.md")
         listOf(
             "lib/", "classes.dex", "res/", "composeResources",
-            "maplibre", "R8", "Başlanğıc zənciri",
+            "maplibre", "R8", "başlanğıc zənciri",
         ).forEach { topic ->
             assertTrue("perf baseline sənədində \"$topic\" olmalıdır", topic in doc)
         }
