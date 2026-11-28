@@ -750,8 +750,8 @@ class DirectivesAuditTest {
     fun `D-185 streak gostericisi ProfileScreen statistikasindadir (P3-2)`() {
         val scr = read("$main/features/profile/ProfileScreen.kt")
         assertTrue(
-            "giriş seriyası göstəricisi (★ + loginStreak) profil statistikasında",
-            scr.contains("st.loginStreak") && scr.contains("★"),
+            "giriş seriyası göstəricisi (• + loginStreak) profil statistikasında",
+            scr.contains("st.loginStreak") && scr.contains("•"),
         )
     }
 

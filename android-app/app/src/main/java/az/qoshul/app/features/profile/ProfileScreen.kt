@@ -285,11 +285,11 @@ fun ProfileScreen(
                     StatCount(st.joined.size, "Tədbir")
                     Stat(st.rank, "Səviyyə")
                     // D-185 (P3.2): giriş seriyası — Snapchat Streaks paritetinin
-                    // bizim modeli (girişə bağlı, B2). Ulduz + gün sayı; motor
+                    // bizim modeli (girişə bağlı, B2). Nöqtə + gün sayı; motor
                     // AppEngine.dailyLogin-da idi, UI-da heç yerə görünmürdü.
-                    // (Alov emoji YOX: qoshul-fonts diapazon xarici — fontda
-                    // qlifi yoxdur, ★ U+2605 icazəli sözlə qalıcıdır.)
-                    Stat("★ ${st.loginStreak}", "Giriş seriyası (gün)")
+                    // (Alov emoji/★ fontda qlif yoxdur — CI qoshul-fonts audit;
+                    // • U+2022 OpenSans-də mövcuddur, EXTRA icazəlidir.)
+                    Stat("• ${st.loginStreak}", "Giriş seriyası (gün)")
                 }
             }
         }
