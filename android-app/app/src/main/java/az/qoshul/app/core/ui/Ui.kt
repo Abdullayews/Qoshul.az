@@ -928,10 +928,10 @@ fun QRDropDown(
     label: String,
     options: List<String>,
     selected: String,
-    onPick: (String) -> Unit,
     modifier: Modifier = Modifier,
     allowEmpty: Boolean = false,
     emptyLabel: String = "Seçilməyib",
+    onPick: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     // cari seçim options-da yoxdursa (köhnə server dəyəri) onu siyahıya
