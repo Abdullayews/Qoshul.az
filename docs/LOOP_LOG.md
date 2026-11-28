@@ -122,7 +122,7 @@ P4 optimizasiya: (1) başlanğıc sürəti ölçümü (baseline report); (2) R8/
 
 ---
 
-## Loop 5 — 2026-11-28 (D-186, v0.63.0)
+## Loop 5 — 2026-11-28 (D-186, v0.63.0 → v0.64.0 revert)
 
 **Məqsəd**: P4 optimizasiya — APK ölçüsü təhlili, başlanğıc baseline,
 ən yüksək dəyərli risk-free optimizasiyanın icrası.
@@ -152,8 +152,12 @@ MERGED_ASSETS transformu yazmaq mənasızdır. Sənəd düzgün metodla
 fayllarda du YOX, ZIP ölçüsü.
 
 ### Loop 6 planı (növbəti)
-Sahib gözləməsi: real cihaz testi (v0.63.0 APK) — xəritə çat oxuma,
-çat realtime, swipe axını, streak göstəricisi profildə (D-185), APK
-ölçüsü təsdiqi. Kod tərəfində: P3.1 (onboarding xəritə rejimi seçimi)
-və ya Play app bundle hazırlığı (per-device .so çatdırılma) — sahibin
-prioritet seçiminə görə.
+Sahib gözləməsi: real cihaz testi (**v0.64.0 APK** — ən son) — xəritə
+çat oxuma, çat realtime, swipe axını, streak göstəricisi profildə
+(D-185), başlanğıc sürəti subyektiv qiymət. Kod tərəfindən seçimlər:
+(a) P3.1 — onboarding-də xəritə rejimi seçimi (default FRIENDS,
+Snapchat paritet təklifi); (b) Play app bundle hazırlığı (per-device
+.so, −10-13 MB — perf_baseline F2); (c) sahibin başqa prioriteti.
+P4 nəticəsi: APK struktur etibarlı ilə optimaldır, kod optimizasiyası
+lazım deyil — bu loopun dəyəri mənfi nəticənin sənədləşməsidir
+(locale exclude qiymətsizdir, təkrar cəhd olmayacaq).
