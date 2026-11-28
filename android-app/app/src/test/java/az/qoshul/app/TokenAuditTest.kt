@@ -77,12 +77,14 @@ class TokenAuditTest {
             .map { it.first to it.second.trim().take(50) }
         // gözlənti (D-105): LiquidRail (1 — alt panel artıq FloatingTabBar-dır,
         // şüşə deyil) + MapScreen filtr paneli (1) + MapScreen alt kart (1) +
-        // MapScreen sayğac (1) + MatchScreen Keç/Maraqlıyam (2) = 6 çağırış.
+        // MapScreen sayğac (1) + MapScreen GPS status çipi (1 — D-182/P0.1:
+        // „Dəqiq mövqe axtarılır/Lokasiya söndürülüb“ göstəricisi) +
+        // MatchScreen Keç/Maraqlıyam (2) = 7 çağırış.
         // Səth TİPİ sayı dəyişməz (rail = naviqasiya səthinin şaquli forması,
-        // D-096 "5 icazəli səth" dili pozulmur).
+        // D-096 "5 icazəli səth" dili pozulmur — status çipi keçici overlaydir).
         assertEquals(
             "glass səthləri: ${uses.joinToString("; ")}",
-            6,
+            7,
             uses.size,
         )
     }
