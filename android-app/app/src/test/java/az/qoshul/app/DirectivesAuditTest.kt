@@ -553,4 +553,57 @@ class DirectivesAuditTest {
         )
     }
 
+
+    // ═══════════ D-183 (P1): MapLibre əsas backend + attribution + ES 3.0 ═══════════
+
+    @Test
+    fun `D-183 maplibre esas backenddir (default konfiqurasiyasiz)`() {
+        val gradle = read("$main/../../app/build.gradle.kts")
+        assertTrue(
+            "MAP_BACKEND default „maplibre“ olmalıdır (D-183 P1)",
+            Regex("MAP_BACKEND[\\s\\S]{0,200}\\?: \"maplibre\"").containsMatchIn(gradle),
+        )
+    }
+
+    @Test
+    fun `D-183 attribution xeritede gorunur (OSM kredit)`() {
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "MAP_ATTRIBUTION çipi xəritədə render olunmalıdır",
+            scr.contains("MAP_ATTRIBUTION"),
+        )
+        val canvas = read("$main/features/map/MaplibreCanvas.kt")
+        assertTrue(
+            "attribution mətnində „© OpenStreetMap contributors“ olmalıdır",
+            canvas.contains("© OpenStreetMap contributors"),
+        )
+    }
+
+    @Test
+    fun `D-183 manifest OpenGL ES 3.0 elan olunub`() {
+        val mf = read("$main/../../AndroidManifest.xml")
+        assertTrue(
+            "uses-feature glEsVersion 0x00030000 olmalıdır (MapLibre v11+)",
+            mf.contains("0x00030000"),
+        )
+    }
+
+    @Test
+    fun `D-183 style URL konfiqurasiya olunandır (tile openstreetmap org qadaga)`() {
+        val gradle = read("$main/../../app/build.gradle.kts")
+        assertTrue(
+            "MAP_STYLE_URL BuildConfig sahəsi olmalıdır (tək konfiq dəyəri)",
+            gradle.contains("MAP_STYLE_URL"),
+        )
+        val canvas = read("$main/features/map/MaplibreCanvas.kt")
+        assertFalse(
+            "tile.openstreetmap.org production mənbəyi kimi QADAĞDIR",
+            canvas.contains("tile.openstreetmap.org"),
+        )
+        assertTrue(
+            "OpenFreeMap (açarsız OSM əsaslı) istifadə olunmalıdır",
+            canvas.contains("tiles.openfreemap.org"),
+        )
+    }
+
 }

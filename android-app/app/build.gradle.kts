@@ -34,8 +34,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 69
-        versionName = "0.59.2"
+        versionCode = 70
+        versionName = "0.60.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).
@@ -60,20 +60,27 @@ android {
             "\"" + (localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
                 ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: "") + "\"",
         )
-        // — D-108/D-109: xəritə backend seçimi — GOOGLE ƏSAS (direktiv
-        // 2026-11-09: „google ilə dəyişdirib“). MAP_BACKEND mənbəyi:
-        // local.properties → env (CI) → default „google“.
-        // MAPS_API_KEY (AIza…) local.properties VƏ YA env-dən (CI secret
-        // MAPS_API_KEY — native.yml ötürür); açar olanda BuildConfig.
-        // MAPS_KEY_PRESENT=true → GoogleMapCanvas, açarsızda maplibre
-        // FALLBACK (resolveMapBackend, D-048 açarsız axın qalır — xəritə
-        // heç vaxt boş qalmır). Manifest placeholder boş olanda meta-data
-        // boş dəyərlə birləşir — maplibre rejimində Google xəritə heç
-        // kompozisiya olunmur (zərərsiz).
+        // — D-108/D-109: Google Maps SDK — köhnə ƏSAS backend. D-183
+        // (2026-11-28, master prompt P1): MAP_BACKEND default „maplibre“ —
+        // Google keçidlə yalnız aşkar seçimlə qayıdır (local.properties /
+        // env MAP_BACKEND=google). MAPS_API_KEY söndürülmür: hər iki kanvas
+        // kompayl olunur (bitrot yox), runtime seçimi resolveMapBackend.
         buildConfigField(
             "String", "MAP_BACKEND",
             "\"" + (localProps.getProperty("MAP_BACKEND")
-                ?: System.getenv("MAP_BACKEND") ?: "google") + "\"",
+                ?: System.getenv("MAP_BACKEND") ?: "maplibre") + "\"",
+        )
+        // D-183 (P1 §5.3): tile/style mənbəyi TƏK konfiqurasiya dəyərindən
+        // oxunur — APK yeniləməsi olmadan dəyişdirilə bilər
+        // (local.properties → env CI → default OpenFreeMap bright).
+        // OpenFreeMap: pulsuz, açarsız, OSM əsaslı; attribution tələbi:
+        // „© OpenStreetMap contributors“ + OpenFreeMap linki (xəritədə
+        // attribution çipində göstərilir — D-183 MapChrome).
+        buildConfigField(
+            "String", "MAP_STYLE_URL",
+            "\"" + (localProps.getProperty("MAP_STYLE_URL")
+                ?: System.getenv("MAP_STYLE_URL")
+                ?: "https://tiles.openfreemap.org/styles/bright") + "\"",
         )
         // D-177 (ikinci dalğa): şəkil yükləmə backendi (0011 avatars bucket)
         // hələ tam aktiv deyil — false olanda onboarding şəkil addımı və

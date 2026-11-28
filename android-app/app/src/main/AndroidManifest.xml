@@ -18,6 +18,15 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- D-183 (P1 §5.1): MapLibre Native v11+ render üçün OpenGL ES 3.0
+         tələb edir. android:required="true" — ES 3.0-suz köhnə cihazlarda
+         (API 24+ bazarda <0.2%) Play xəritə açıb qara ekran göstərməkdənsə
+         tətbiqi filtrləyir (düzgün davranış). minSdk 24 uyğundur (API 18+
+         cihazlarda ES 3.0 var). -->
+    <uses-feature
+        android:glEsVersion="0x00030000"
+        android:required="true" />
+
     <application
         android:name=".QoshulApplication"
         android:allowBackup="false"

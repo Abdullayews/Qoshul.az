@@ -67,7 +67,15 @@ private const val STYLE_TEXT_FONT = "Noto Sans Regular"
 // əsas backendi). Burada (fallback) raster-saturation MÜMKÜN DEYİL —
 // bright VEKTOR stildir və OpenFreeMap-in ən doyğun stilidir; uzaq
 // stil JSON-u runtime-da transformasiya edilmir (offline riski).
+// D-183 (P1 §5.3): URL artıq BuildConfig.MAP_STYLE_URL-dan gəlir —
+// tək konfiqurasiya dəyəri (local.properties → env CI → default
+// OpenFreeMap bright). Burada yalnız DEFAULT qalır (BuildConfig
+// ilə eynidir — bir mənbək prinsipi pozulmasın deyə istinad).
 private const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright"
+
+/** D-183 (P1 §5.2): xəritə attribution mətni — OSM + provayder. */
+internal const val MAP_ATTRIBUTION =
+    "© OpenStreetMap contributors · OpenFreeMap"
 
 /** Pin siyahısından GeoJSON feature kolleksiyası. */
 private fun pinFeatures(pins: List<MapPin>): FeatureCollection<Point, JsonObject> = FeatureCollection(

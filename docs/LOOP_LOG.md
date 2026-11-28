@@ -48,3 +48,28 @@ Format: hər dövr məqsəd → dəyişikliklər → verifikasiya → nəticə. 
 **Bağlanan bəndlər**: P0.1 (kod+UI), P0.2 (sessiya təmizliyi+müqayisə), P0.3 (timeout+cache).
 **Açıq qalanlar**: P0.1 real cihaz verifikasiyası; P0.4 (düymə çökmələri — emülator tələb edir); P1 MapLibre əsas backend keçidi; P1-P2 UX (6.2-6.4); P3 Snapchat analizi; P4 optimizasiya.
 **Yeni aşkarlananlar**: fetchGoogleConfig hər girişdə HTTP round-trip edirdi (TTL cache ilə həll); `GoogleIdTokenCredential.id` deprecated (yeni `email` propertisi yeni googleid versiyasında — hazırda 1.2.1-də `id` istifadə olunur).
+
+---
+
+## Loop 2 — 2026-11-28 (D-183, v0.60.0)
+
+**Məqsəd**: P1 MapLibre miqrasiyası — əsas backend keçidi, style URL konfiqurasiyası, attribution, OpenGL ES 3.0.
+
+**Dəyişən fayllar**:
+- `app/build.gradle.kts` — MAP_BACKEND default „maplibre“; yeni MAP_STYLE_URL BuildConfig (local.properties → env → OpenFreeMap bright); versiya 0.60.0 (70)
+- `MapPins.kt` — resolveMapBackend sənədlənməsi (maplibre əsas; məntiq dəyişməz)
+- `MaplibreCanvas.kt` — MAP_ATTRIBUTION sabiti (© OpenStreetMap contributors · OpenFreeMap)
+- `MapScreen.kt` — attribution çipi xəritədə (aşağı-sol; pin kartı açılınca gizlənir)
+- `AndroidManifest.xml` — uses-feature glEsVersion 0x00030000 required
+- `MapBackendTest.kt` — 2 yeni test (default maplibre; style URL OpenFreeMap)
+- `DirectivesAuditTest.kt` — D-183 4 audit testi (39 ümumi)
+- `docs/decisions.md` — D-183
+
+**Verifikasiya**: kompilyasiya + unit test → CI (bu push); emülator vizual yoxlanılmadı (mühit məhdudiyyəti — xəritə renderi vizual olaraq real cihazda yoxlanılmalıdır).
+
+**Bağlanan bəndlər**: P1 §5.1 (backend keçidi + minSdk/ES3 yoxlaması), §5.2 (style — OpenFreeMap bright konfiqurasiya olunan URL), §5.3 (tile mənbəyi konfiqurasiyası), attribution tələbi (§2).
+**Açıq qalanlar**: P1 §5.5 cleanup (Google Maps SDK + maps-compose asılılığını silmək — D-183-də SAXLANILDI, geri qaytarıla bilən keçid üçün; silinməsi ayrıca qərar tələb edir); P1-P2 UX (6.2-6.4: dropdown komponenti, Ayarlar→Hesab, Profilə dillər/qrup/büdcə/səviyyə); P3 Snapchat analizi; P4 optimizasiya.
+**Yeni aşkarlananlar**: D-117-də SDK attribution overlay tam söndürüldüyündən lisenziya krediti UI-da yox idi — D-183 bizim çiplə həll etdi.
+
+### Loop 3 planı (növbəti)
+P1-P2 UX: (1) vahid dropdown komponenti (Material3 ExposedDropdownMenuBox, ≥48dp); (2) Ayarlar → Hesab bölməsi (e-poçt + şifrə köçürməsi ProfileEdit-dən); (3) Profili redaktə-yə dillər/qrup ölçüsü/büdcə/səviyyə (6.4 tələbləri: „Heç nə“ default NULL, „Fərq etmir“, „Öz aralığım“ min≤max); (4) xəritə zoom 16-17 + jest izləməni dayandırır.

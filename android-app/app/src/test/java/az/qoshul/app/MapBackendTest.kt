@@ -99,6 +99,32 @@ class MapBackendTest {
     }
 
     @Test
+    fun `d183 maplibre esas backendir default konfiqurasiyasiz`() {
+        // D-183 (P1): default MAP_BACKEND = „maplibre“ — build.gradle.kts
+        // default-u dəyişib (local.properties/env google AÇIQ SEÇİMDİR).
+        // CI-də env ötürülmür → BuildConfig dəyəri birbaşa defaultdur.
+        assertEquals(
+            "D-183: konfiqurasiya olunmamış build-də MAP_BACKEND=maplibre olmalıdır, " +
+                "faktiki: ${BuildConfig.MAP_BACKEND}",
+            "maplibre",
+            BuildConfig.MAP_BACKEND,
+        )
+    }
+
+    @Test
+    fun `d183 map style url konfiqurasiya deyerindedir`() {
+        // P1 §5.3: style/tile mənbəyi tək konfiqurasiya dəyərindən oxunur
+        assertTrue(
+            "MAP_STYLE_URL boş/boşluq olmamalıdır",
+            BuildConfig.MAP_STYLE_URL.isNotBlank(),
+        )
+        assertTrue(
+            "default OpenFreeMap olmalıdır (tile.openstreetmap.org QADAĞDIR)",
+            BuildConfig.MAP_STYLE_URL.contains("tiles.openfreemap.org"),
+        )
+    }
+
+    @Test
     fun `mapscreen xromu backendden asili olmayaq render olunur`() {
         // JVM test — kanvas yoxdur (isJvmTest gate), amma filtr paneli,
         // sayğac və tab inteqrasiyası işləyir: seam xromu pozmadı

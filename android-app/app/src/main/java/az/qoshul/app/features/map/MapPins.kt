@@ -39,14 +39,13 @@ fun MapPin.key(): String = when (this) {
 }
 
 /**
- * Xəritə backend selektoru (D-109, direktiv 2026-11-09: „google ilə
- * dəyişdirib“) — GOOGLE ƏSAS backenddir: konfiqurasiya google olanda və
- * MAPS_API_KEY mövcud olanda (BuildConfig.MAPS_KEY_PRESENT) GoogleMapCanvas
- * işə düşür. Açar yoxdursa Google SDK tile yükləyə bilməz (manifest
- * meta-data boş) → maplibre FALLBACK (D-048 açarsız OpenFreeMap axını
- * qalır — xəritə həmişə işləkdir). Açıq şəkildə maplibre seçiləndə açardan
- * asılı olmayaraq maplibre qalır. Saf funksiyadır — MapBackendTest həqiqət
- * cədvəli ilə bağlayır.
+ * Xəritə backend selektoru — D-183 (2026-11-28, master prompt P1):
+ * MAPLIBRE ƏSAS backenddir (default „maplibre“ — build.gradle.kts). Google
+ * yalnız AÇIQ ŞƏKİLDƏ seçiləndə (MAP_BACKEND=google) və MAPS_API_KEY varsa
+ * (MAPS_KEY_PRESENT) işə düşür; açar yoxdursa maplibre-ə düşür (Google SDK
+ * tile yükləyə bilməz — manifest meta-data boş). Açıq maplibre həmişə
+ * maplibre qalır. Saf funksiyadır — MapBackendTest həqiqət cədvəli ilə
+ * bağlayır.
  */
 fun resolveMapBackend(configured: String, keyPresent: Boolean): String =
     if (configured == "google" && keyPresent) "google" else "maplibre"

@@ -580,6 +580,25 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
             }
         }
 
+        // — D-183 (P1 §2 attribution tələbi): OSM/OpenFreeMap kredit
+        // sətri — xəritə İSTİFADƏ OLUNDUQDA görünməlidir (lisenziya
+        // tələbi: „© OpenStreetMap contributors“ + provayder). Aşağı-sol
+        // küncdə kiçik çip; pin kartı açılanda gizlənir (üst-üstə düşmə
+        // yoxdur). D-117 SDK overlay-i (iⓘ) ləğv edildiyindən attribution
+        // burada, bizim çipdə göstərilir — hər iki backend üçün.
+        if (selected == null) {
+            Text(
+                MAP_ATTRIBUTION,
+                style = T.metaSm,
+                color = Q.mutedFg,
+                maxLines = 1,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .navigationBarsPadding()
+                    .padding(start = 10.dp, bottom = 76.dp),
+            )
+        }
+
         // — seçilmiş pinin alt kartı (D-025 səth #3) —
         // D-053 fix: kart nav pill-in arxasında qalırdı — „Ətraflı“/„Rezerv et“
         // düymələri basıla bilmirdi. Pill zone = navbar inset + 10 + 68dp;
