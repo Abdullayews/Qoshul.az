@@ -606,4 +606,120 @@ class DirectivesAuditTest {
         )
     }
 
+
+    // ═══════════ D-184 (Loop 3): P1-P2 UX paketi ═══════════
+
+    @Test
+    fun `D-184 QRDropDown vahid dropdown komponenti movcuddur`() {
+        val ui = read("$main/core/ui/Ui.kt")
+        assertTrue(
+            "QRDropDown Material3 ExposedDropdownMenuBox üzərində olmalıdır",
+            ui.contains("ExposedDropdownMenuBox"),
+        )
+        assertTrue(
+            "48dp+ toxunma hədəfi (height(56dp)) tələbi",
+            ui.contains(".height(56.dp)") || ui.contains("heightIn(min = 48.dp)"),
+        )
+        // dropdown parametrləri: label/options/selected/onPick + allowEmpty
+        assertTrue(
+            "allowEmpty parametri („Heç nə“ = DB NULL seçimi)",
+            ui.contains("allowEmpty: Boolean"),
+        )
+    }
+
+    @Test
+    fun `D-184 profil redakte rememberSaveable ile proses olumune davam edir`() {
+        val scr = read("$main/features/profile/ProfileEditScreen.kt")
+        assertTrue(
+            "forma state-i rememberSaveable olmalıdır (6.1)",
+            scr.contains("rememberSaveable"),
+        )
+        assertFalse(
+            "köhnə adi remember { mutableStateOf(st.firstName) } qalmamalıdır",
+            "remember { mutableStateOf(st.firstName) }" in scr,
+        )
+    }
+
+    @Test
+    fun `D-184 profil redakteededir grup olcusu budget seviyye diller`() {
+        val scr = read("$main/features/profile/ProfileEditScreen.kt")
+        assertTrue("qrup ölçüsü sahəsi", scr.contains("Qrup ölçüsü"))
+        assertTrue("büdcə sahəsi", scr.contains("Büdcə"))
+        assertTrue("səviyyə sahəsi", scr.contains("səviyyə"))
+        assertTrue("dillər sahəsi (bilir/öyrənir)", scr.contains("Dillər"))
+        assertTrue(
+            "„Heç nə“ (DB NULL) seçimi allowEmpty",
+            scr.contains("emptyLabel = "Heç nə""),
+        )
+        assertTrue(
+            "„Öz aralığım“ min≤max validasiyası",
+            scr.contains("min > mx") || scr.contains("mn > mx"),
+        )
+    }
+
+    @Test
+    fun `D-184 ayarlarda hesab bolmesi (e-poct + sifre)`() {
+        val scr = read("$main/features/settings/SettingsScreen.kt")
+        assertTrue(
+            "E-poçt sətri Ayarlar→Hesab-da olmalıdır (6.3)",
+            scr.contains("\"E-poçt\""),
+        )
+        assertTrue(
+            "Şifrə sətri Ayarlar→Hesab-da olmalıdır (6.3)",
+            scr.contains("\"Şifrə\""),
+        )
+        assertTrue(
+            "updateUserEmail çağırışı (D-167 köçürmə)",
+            scr.contains("updateUserEmail"),
+        )
+        // ProfileEdit-dən KÖÇÜRÜLDÜ — orada qalmamalıdır
+        val pe = read("$main/features/profile/ProfileEditScreen.kt")
+        assertFalse(
+            "e-poçt idarəetməsi ProfileEdit-dən çıxarılmalıdır (6.3)",
+            "updateUserEmail" in pe,
+        )
+    }
+
+    @Test
+    fun `D-184 xerite menim yerim zoom 16 ve jest izlemeni dayandirir`() {
+        val ml = read("$main/features/map/MaplibreCanvas.kt")
+        assertTrue(
+            "izləmə rejimində zoom 16 (6.5)",
+            ml.contains("zoom = 16.0"),
+        )
+        assertTrue(
+            "jest izləməni dayandırır — SDK CameraMoveReason.Gesture API",
+            ml.contains("CameraMoveReason.Gesture"),
+        )
+        val g = read("$main/features/map/GoogleMapCanvas.kt")
+        assertTrue(
+            "Google backend pariteti — cameraMoveStartedReason GESTURE",
+            g.contains("CameraMoveStartedReason.GESTURE"),
+        )
+        val scr = read("$main/features/map/MapScreen.kt")
+        assertTrue(
+            "MapScreen followMe state-i + jest ləğvi",
+            scr.contains("followMe = false"),
+        )
+    }
+
+    @Test
+    fun `D-184 serverde null clearing (0015 migrasiyasi)`() {
+        val mig = read("supabase/migrations/0015_profile_null_clearing.sql")
+        assertTrue(
+            "p_group_size btrim('')='' → NULL yazır",
+            mig.contains("when btrim(p_group_size) = '' then null"),
+        )
+        assertTrue(
+            "p_budget btrim('')='' → NULL yazır",
+            mig.contains("when btrim(p_budget) = '' then null"),
+        )
+        // engine setterləri boş stringi ÖTÜRÜR (null yox)
+        val eng = read("$main/core/engine/AppEngine.kt")
+        assertFalse(
+            "setGroupSize köhnə ifBlank{null} toxunma kontraktı qalmamalıdır",
+            "groupSize = gs.ifBlank { null }" in eng,
+        )
+    }
+
 }

@@ -114,6 +114,11 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
     var reserveVenue by remember { mutableStateOf<Partner?>(null) }
     var detailEvent by remember { mutableStateOf<QoshulEvent?>(null) }
     var pendingCamera by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    // D-184 (Loop 3): İZLƏMƏ REJİMİ — „Mənim yerimə get“ basılınca
+    // true; istifadəçi xəritəni jestlə hərəkət etdirincə kanvaslar
+    // onUserGesture çağırır → false (izləmə dayanır). Növbəti „mənim
+    // yerim“ basqısı yenidən aktivləşdirir.
+    var followMe by remember { mutableStateOf(false) }
     // D-089: xəritə filtr pick host-u (kateqoriya + məsafə panelləri)
     val pickHost = rememberPickHostState()
     val hour = remember { engine.now().hour } // A2: vahid clock
@@ -273,6 +278,9 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     is QoshulLocation.LocateResult.Found -> {
                         myRealLat = r.lat; myRealLng = r.lng
                         pendingCamera = r.lng to r.lat
+                        // D-184: dəqiq fix → izləmə rejimi BAŞLAYIR (hər
+                        // yeni fix-də kamera izləyir, zoom 16; jest → dayanır)
+                        followMe = true
                     }
                     // İcazə var, amma fix yoxdur / yalnız mock: kamera
                     // saxta koordinata uçmur — səssizcə fallback dotu qalır
@@ -375,6 +383,8 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     myBearing = if (myFixStale) null else myBearing,
                     selectedKey = selected?.key(),
                     pendingCamera = pendingCamera,
+                    followMe = followMe,
+                    onUserGesture = { followMe = false },
                     onPinTap = { selected = it },
                     onPinDismiss = { selected = null },
                     onCameraConsumed = { pendingCamera = null },
@@ -391,6 +401,8 @@ fun MapScreen(engine: AppEngine, nav: NavState, focus: MapFocusState) {
                     myBearing = if (myFixStale) null else myBearing,
                     selectedKey = selected?.key(),
                     pendingCamera = pendingCamera,
+                    followMe = followMe,
+                    onUserGesture = { followMe = false },
                     onPinTap = { selected = it },
                     onPinDismiss = { selected = null },
                     onCameraConsumed = { pendingCamera = null },

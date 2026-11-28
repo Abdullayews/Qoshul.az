@@ -34,8 +34,8 @@ android {
         applicationId = "az.qoshul.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 70
-        versionName = "0.60.0"
+        versionCode = 71
+        versionName = "0.61.0"
         vectorDrawables { useSupportLibrary = true }
         // — M1: Supabase konfiqi (D-078/D-079; server inteqrasiyası 2026-11-24) —
         // Mənbə öncəliyi: local.properties → env (CI secret) → PLACEHOLDER (MOCK).

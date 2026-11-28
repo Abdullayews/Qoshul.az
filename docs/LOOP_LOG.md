@@ -73,3 +73,29 @@ Format: hər dövr məqsəd → dəyişikliklər → verifikasiya → nəticə. 
 
 ### Loop 3 planı (növbəti)
 P1-P2 UX: (1) vahid dropdown komponenti (Material3 ExposedDropdownMenuBox, ≥48dp); (2) Ayarlar → Hesab bölməsi (e-poçt + şifrə köçürməsi ProfileEdit-dən); (3) Profili redaktə-yə dillər/qrup ölçüsü/büdcə/səviyyə (6.4 tələbləri: „Heç nə“ default NULL, „Fərq etmir“, „Öz aralığım“ min≤max); (4) xəritə zoom 16-17 + jest izləməni dayandırır.
+
+---
+
+## Loop 3 — 2026-11-28 (D-184, v0.61.0)
+
+**Məqsəd**: P1-P2 UX paketi — vahid dropdown, profil redaktə zənginləşdirməsi, Ayarlar→Hesab köçürməsi, xəritə izləmə rejimi.
+
+**Dəyişən fayllar**:
+- `core/ui/Ui.kt` — QRDropDown (Material3 ExposedDropdownMenuBox, 56dp, allowEmpty)
+- `ProfileEditScreen.kt` — rememberSaveable + Qrup ölçüsü/Büdcə(Öz aralığım)/Ana dil səviyyəsi/Dillər çipləri; e-poçt bölməsi çıxarıldı
+- `SettingsScreen.kt` — Hesab bölməsinə E-poçt + Şifrə sətirləri + idarəetmə dialoqu (D-167-dən köçürmə)
+- `MapScreen.kt` — followMe state; dəqiq fix → izləmə başlayır
+- `MaplibreCanvas.kt` — followMe (zoom 16) + CameraMoveReason.Gesture jest ləğvi
+- `GoogleMapCanvas.kt` — paritet (CameraMoveStartedReason.GESTURE)
+- `AppEngine.kt` — setGroupSize/setBudget boş string ötürür (NULL clearing)
+- `supabase/migrations/0015_profile_null_clearing.sql` — fn_save_profile üçvəziyyətli clearing
+- `DirectivesAuditTest.kt` — D-184 6 audit testi
+- `docs/decisions.md` — D-184
+
+**Verifikasiya**: kompilyasiya + unit test → CI (bu push); emülator vizual yoxlanılmadı (mühit məhdudiyyəti).
+
+**Bağlanan bəndlər**: 6.1 (rememberSaveable), 6.2 (QRDropDown ≥48dp), 6.3 (Ayarlar→Hesab), 6.4 (Profilə dillər/qrup/büdcə/səviyyə — „Heç nə“ NULL, „Fərq etmir“, „Öz aralığım“ min≤max), 6.5 (xəritə zoom 16 + jest izləməni dayandırır).
+**Açıq qalanlar**: P1 §5.5 cleanup (Google Maps SDK silinməsi — ayrıca qərar); P3 Snapchat analizi (docs/feature_parity_snapchat.md); P4 optimizasiya; real cihaz vizual yoxlama.
+
+### Loop 4 planı (növbəti)
+P3: docs/feature_parity_snapchat.md — rəsmi Snapchat mənbələrindən (support.snapchat.com, business.snapchat.com) kateqoriyalar üzrə paritet analizi: Stories/Map/Chat/Snap/Discover qarşılıqları; mənbə linkli. Sonra P4 optimizasiya dövrü (başlanğıc sürəti, R8, keş).

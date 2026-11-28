@@ -822,13 +822,17 @@ class AppEngine(
     fun setGroupSize(gs: String) {
         groupSizeV = gs
         emit()
-        report(SyncEvent.SaveProfileIntent(groupSize = gs.ifBlank { null }))
+        // D-184: boş string ÖTÜRÜLÜR ("" → serverdə NULL yazır — 0015
+        // miqrasiyası: btrim('')='' → null). Köhnə ifBlank{null} kontraktı
+        // „toxunma“ idi — istifadəçi seçimi geri ala bilmirdi.
+        report(SyncEvent.SaveProfileIntent(groupSize = gs))
     }
 
     fun setBudget(b: String) {
         budgetV = b
         emit()
-        report(SyncEvent.SaveProfileIntent(budget = b.ifBlank { null }))
+        // D-184: boş string ÖTÜRÜLÜR ("" → serverdə NULL — 0015)
+        report(SyncEvent.SaveProfileIntent(budget = b))
     }
 
     fun setCity(name: String) {

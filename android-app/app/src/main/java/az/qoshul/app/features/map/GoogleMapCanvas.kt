@@ -63,6 +63,9 @@ internal fun GoogleMapCanvas(
     myBearing: Float? = null,
     selectedKey: String?,
     pendingCamera: Pair<Double, Double>?,
+    // D-184: izləmə rejimi („Mənim yerim“ + jest ləğvi) — maplibre pariteti
+    followMe: Boolean = false,
+    onUserGesture: () -> Unit = {},
     onPinTap: (MapPin) -> Unit,
     onPinDismiss: () -> Unit,
     onCameraConsumed: () -> Unit,
@@ -74,6 +77,7 @@ internal fun GoogleMapCanvas(
 
     // D-050 pariteti: fokus istəyi → kameranı pinə uçur (zoom ≥ 15).
     // pendingCamera = (lng, lat) cütü (MapScreen konvensiyası).
+    // D-184 (Loop 3): „Mənim yerimə get“ → zoom 16 (maplibre pariteti).
     LaunchedEffect(pendingCamera) {
         val pos = pendingCamera ?: return@LaunchedEffect
         cameraPositionState.animate(
@@ -83,6 +87,27 @@ internal fun GoogleMapCanvas(
             ),
         )
         onCameraConsumed()
+    }
+
+    // D-184: İZLƏMƏ REJİMİ — followMe=true olanda kamera hər yeni GPS
+    // fix-də istifadəçini izləyir (zoom 16). İstifadəçi jest edəndə
+    // izləmə dayanır — GoogleMap CAMERA_MOVE_STARTED səbəbi GESTURE
+    // olanda ləğv (maplibre CameraMoveReason.Gesture pariteti).
+    if (followMe) {
+        LaunchedEffect(myLat, myLng) {
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(LatLng(myLat, myLng), 16f),
+            )
+        }
+        LaunchedEffect(Unit) {
+            snapshotFlow {
+                cameraPositionState.isMoving to cameraPositionState.cameraMoveStartedReason
+            }.collect { (moving, reason) ->
+                if (moving &&
+                    reason == com.google.maps.android.compose.CameraMoveStartedReason.GESTURE
+                ) onUserGesture()
+            }
+        }
     }
 
     val scope = rememberCoroutineScope()

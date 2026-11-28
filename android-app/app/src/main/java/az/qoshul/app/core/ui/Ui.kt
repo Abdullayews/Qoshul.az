@@ -47,7 +47,12 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.MilitaryTech
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -75,6 +80,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -893,4 +900,94 @@ fun LogoMark(size: Dp = 56.dp) {
 fun Wordmark(fontSize: Int = 25) {
     Text("Qoshul", style = T.brand(fontSize.toDouble(), Q.primaryText))
     Text(".az", style = T.brand(fontSize.toDouble(), Q.foreground))
+}
+
+// ═══════════════════ D-184: vahid dropdown (QRDropDown) ═══════════════════
+
+/**
+ * VAHİD DROPDOWN KOMPONENTİ — D-184 (Loop 3, master prompt §6.2):
+ * Material3 `ExposedDropdownMenuBox` üzərində brend dilimiz (ağ kart,
+ * pill forma, Q border palitrası). Bütün seçim sahələri (status, qrup
+ * ölçüsü, büdcə, səviyyə…) üçün tək komponent — hər ekranda fərqli
+ * dialoq/dropdown olmaz.
+ *
+ * Əlçatanlıq: sahə hündürlüyü 56dp (min 48dp toxunma hədəfi), seçilən
+ * dəyər `weight(1f)` ilə kəsilib (overflow ellips), açılan menyuda
+ * hər item 48dp-dən az olmayan padding-lə toxunulur.
+ *
+ * @param label    sahə etiketi (yuxarıda kiçik başlıq, T.label stili)
+ * @param options  seçim siyahısı (bütün seçilə bilən dəyərlər)
+ * @param selected cari seçim; options-da OLMAYAN dəyər (məs. serverdən
+ *                 gələn köhnə dəyər) aşağıda „hazırkı“ kimi göstərilir
+ * @param onPick   seçim hadisəsi (dəyər + index)
+ * @param allowEmpty true olanda siyahının başında boş seçim („Seçilməyib“)
+ *                 də var — DB NULL-a qayıtmaq üçün (qrup ölçüsü „Heç nə“)
+ */
+@Composable
+fun QRDropDown(
+    label: String,
+    options: List<String>,
+    selected: String,
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    allowEmpty: Boolean = false,
+    emptyLabel: String = "Seçilməyib",
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // cari seçim options-da yoxdursa (köhnə server dəyəri) onu siyahıya
+    // əlavə etmək əvəzinə sahədə göstərib menyuda seçilə bilən saxlayırıq
+    val shown = selected.ifBlank { "" }
+    val display = shown.ifBlank { emptyLabel }
+    val menuOptions = if (allowEmpty) listOf("") + options else options
+    androidx.compose.foundation.layout.Column(modifier) {
+        Text(label, style = T.label)
+        Spacer(Modifier.height(7.dp))
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+        ) {
+            OutlinedTextField(
+                value = display,
+                onValueChange = {},
+                readOnly = true,
+                textStyle = T.input.copy(
+                    color = if (shown.isBlank()) Q.mutedFg else Q.foreground,
+                ),
+                shape = RoundedCornerShape(Q.rPill),
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                    unfocusedBorderColor = Q.border,
+                    focusedBorderColor = Q.primaryText,
+                    unfocusedContainerColor = Q.card,
+                    focusedContainerColor = Q.card,
+                ),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .height(56.dp),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                menuOptions.forEach { opt ->
+                    val isSel = opt == shown
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                opt.ifBlank { emptyLabel },
+                                style = T.bodySm.copy(
+                                    fontWeight = if (isSel) FontWeight.W700 else FontWeight.W400,
+                                    color = if (isSel) Q.primaryText else Q.foreground,
+                                ),
+                            )
+                        },
+                        onClick = { onPick(opt); expanded = false },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 16.dp, vertical = 12.dp,
+                        ),
+                    )
+                }
+            }
+        }
+    }
 }

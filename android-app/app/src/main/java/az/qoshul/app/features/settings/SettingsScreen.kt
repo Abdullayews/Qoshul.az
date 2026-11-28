@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
@@ -60,6 +62,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -122,6 +127,76 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
     // D-119: dizayn seçim dialoqları (rəng + mod)
     var showDesignColor by remember { mutableStateOf(false) }
     var showDesignMode by remember { mutableStateOf(false) }
+    // D-184 (6.3): e-poçt/şifrə idarəetməsi (ProfileEdit-dən köçürülüb)
+    var email by rememberSaveable { mutableStateOf("") }
+    var emailLoaded by remember { mutableStateOf(false) }
+    var hasEmailIdentity by remember { mutableStateOf<Boolean?>(null) }
+    var emailOpen by remember { mutableStateOf(false) }
+    var newPass by rememberSaveable { mutableStateOf("") }
+    var mailBusy by remember { mutableStateOf(false) }
+    var mailMsg by rememberSaveable { mutableStateOf<String?>(null) }
+    var mailErr by rememberSaveable { mutableStateOf<String?>(null) }
+    val mailScope = rememberCoroutineScope()
+
+    // Cari e-poçt + identitet növü (bir dəfə, ekrana girəndə — D-167 portu)
+    LaunchedEffect(Unit) {
+        if (az.qoshul.app.core.backend.BackendConfig.isConfigured &&
+            az.qoshul.app.core.backend.SupabaseBackend.client != null
+        ) {
+            runCatching {
+                email = az.qoshul.app.core.backend.SupabaseBackend.currentEmail() ?: ""
+                hasEmailIdentity = az.qoshul.app.core.backend.SupabaseBackend.hasEmailIdentity()
+            }
+            emailLoaded = true
+        }
+    }
+
+    fun saveMail() {
+        val v = email.trim()
+        mailErr = null; mailMsg = null
+        if (v.isBlank() || !v.contains("@")) {
+            mailErr = "Düzgün e-poçt ünvanı yaz."
+            return
+        }
+        mailScope.launch {
+            mailBusy = true
+            try {
+                if (hasEmailIdentity == true) {
+                    az.qoshul.app.core.backend.SupabaseBackend.updateUserEmail(v)
+                    mailMsg = "Təsdiq məktubu yeni ünvana göndərildi. " +
+                        "Hər iki ünvanda təsdiqləyəndə dəyişiklik tamamlanar."
+                } else {
+                    az.qoshul.app.core.backend.SupabaseBackend.linkEmailIdentity(v)
+                    mailMsg = "Təsdiq məktubu göndərildi. Ünvanı təsdiqləyib " +
+                        "şifrə qoyandan sonra eyni hesabla e-poçt ilə də daxil ola bilərsən."
+                }
+            } catch (t: Throwable) {
+                mailErr = t.message?.take(140) ?: "Əməliyyat alınmadı."
+            } finally {
+                mailBusy = false
+            }
+        }
+    }
+
+    fun savePassword() {
+        mailErr = null; mailMsg = null
+        if (newPass.length < 8) {
+            mailErr = "Şifrə ən azı 8 simvol olmalıdır."
+            return
+        }
+        mailScope.launch {
+            mailBusy = true
+            try {
+                az.qoshul.app.core.backend.SupabaseBackend.updatePassword(newPass)
+                newPass = ""
+                mailMsg = "Şifrə yeniləndi. Artıq e-poçt + şifrə ilə də daxil ola bilərsən."
+            } catch (t: Throwable) {
+                mailErr = t.message?.take(140) ?: "Əməliyyat alınmadı."
+            } finally {
+                mailBusy = false
+            }
+        }
+    }
 
     PushScreenScaffold(title = "Ayarlar", onBack = { nav.pop() }) { mod ->
         LazyColumn(
@@ -141,6 +216,23 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
                         cityOpen = true
                     }
                     DividerLine()
+                    // D-184 (6.3): E-POÇT idarəetməsi ProfileEdit-dən
+                    // (D-167) AYARLARA köçürüldü — hesab məlumatı profil
+                    // redaktəsində deyil, hesab bölməsində idarə olunur.
+                    // emailLoaded=false → server konfiqurasiyası yoxdur
+                    // (demo rejim) — sətirlər gizli qalır.
+                    if (emailLoaded) {
+                        NavRow(
+                            Icons.Filled.Email, "E-poçt",
+                            if (hasEmailIdentity == true) (email.ifBlank { "qeyd olunmayıb" })
+                            else "Google hesabı — e-poçt əlavə et",
+                        ) { emailOpen = true }
+                        DividerLine()
+                        NavRow(Icons.Filled.Lock, "Şifrə",
+                            if (hasEmailIdentity == true) "Dəyiş" else "Qeyd et — e-poçt girişi üçün",
+                        ) { emailOpen = true }
+                        DividerLine()
+                    }
                     // D.1 (D-170): profil seçimləri Ayarlardan idarə olunur —
                     // hər dəyişiklik dərhal serverə yazılır (setter-lər
                     // SaveProfileIntent göndərir)
@@ -561,6 +653,74 @@ fun SettingsScreen(engine: AppEngine, nav: NavState) {
             options = Taxonomy.languageOptions,
             selected = st.languages,
         ) { engine.setLanguages(it); langsOpen = false }
+    }
+    // D-184 (6.3): e-poçt/şifrə idarəetmə dialoqu (D-167-dən köçürülüb)
+    if (emailOpen) {
+        AlertDialog(
+            onDismissRequest = { emailOpen = false },
+            title = { Text(if (hasEmailIdentity == true) "E-poçt və şifrə" else "E-poçt əlavə et") },
+            text = {
+                Column {
+                    if (hasEmailIdentity != true) {
+                        Text(
+                            "Google ilə daxil olubsan. E-poçt əlavə edib şifrə qoyasan, " +
+                                "eyni hesabla e-poçt ilə də daxil ola bilərsən.",
+                            style = T.chipXs.copy(color = Q.mutedFg),
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    az.qoshul.app.features.auth.QoshulTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        hint = "ad@example.com",
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                        ),
+                    )
+                    Spacer(Modifier.height(9.dp))
+                    Button(
+                        onClick = { saveMail() },
+                        enabled = !mailBusy && email.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(Q.rPill),
+                    ) {
+                        Text(if (hasEmailIdentity == true) "E-poçtu dəyiş" else "E-poçtu əlavə et",
+                            style = T.button)
+                    }
+                    Spacer(Modifier.height(14.dp))
+                    az.qoshul.app.features.auth.QoshulTextField(
+                        value = newPass,
+                        onValueChange = { if (it.length <= 64) newPass = it },
+                        hint = if (hasEmailIdentity == true) "Yeni şifrə (ən azı 8)"
+                        else "Şifrə qoy (ən azı 8) — e-poçt girişi üçün",
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                        ),
+                    )
+                    Spacer(Modifier.height(9.dp))
+                    Button(
+                        onClick = { savePassword() },
+                        enabled = !mailBusy && newPass.length >= 8,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(Q.rPill),
+                    ) {
+                        Text(if (hasEmailIdentity == true) "Şifrəni yenilə" else "Şifrəni qeyd et",
+                            style = T.button)
+                    }
+                    mailMsg?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = T.chipXs.copy(color = Q.primaryText))
+                    }
+                    mailErr?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, style = T.chipXs.copy(color = Q.destructive))
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {},
+        )
     }
     if (groupOpen) {
         OptionDialog(

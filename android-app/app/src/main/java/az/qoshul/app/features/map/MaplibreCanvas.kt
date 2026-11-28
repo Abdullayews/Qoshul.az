@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import org.maplibre.compose.camera.CameraAnimation
 import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.CameraMoveReason
 import org.maplibre.compose.camera.CameraUpdate
 import org.maplibre.compose.map.AndroidRenderMode
 import org.maplibre.compose.map.MapUiOptions
@@ -126,6 +127,9 @@ internal fun MaplibreCanvas(
     myBearing: Float? = null,
     selectedKey: String?,
     pendingCamera: Pair<Double, Double>?,
+    // D-184: izləmə rejimi („Mənim yerim“ + jest ləğvi)
+    followMe: Boolean = false,
+    onUserGesture: () -> Unit = {},
     onPinTap: (MapPin) -> Unit,
     onPinDismiss: () -> Unit,
     onCameraConsumed: () -> Unit,
@@ -162,7 +166,10 @@ internal fun MaplibreCanvas(
                 .collect { state -> styleFailed = state is StyleLoadState.Failed }
         }
 
-        // D-050: fokus istəyi → kameranı pinə uçur (zoom ≥ 15)
+        // D-050: fokus istəyi → kameranı pinə uçur (zoom ≥ 15).
+        // D-184 (Loop 3): „Mənim yerimə get“ → zoom 16 (küçə səviyyəsi,
+        // master prompt §6.5: 16-17 aralığının alt həddi — pinç-zoom
+        // hələ də istifadəçinin ixtiyarındadır).
         LaunchedEffect(pendingCamera) {
             val pos = pendingCamera ?: return@LaunchedEffect
             mapState.animateCamera(
@@ -173,6 +180,33 @@ internal fun MaplibreCanvas(
                 CameraAnimation.Ease.Standard,
             )
             onCameraConsumed()
+        }
+
+        // D-184: İZLƏMƏ REJİMİ — followMe=true olanda kamera hər yeni GPS
+        // fix-də istifadəçini izləyir (zoom 16, küçə səviyyəsi — master
+        // prompt §6.5). İstifadəçi xəritəni əl ilə hərəkət etdirsə
+        // (pan/pinch/rotate) izləmə DAYANDIRILIR — kamera müdaxiləsi
+        // istifadəçinin jestinə üstün gəlmir (Snapchat/Google Maps
+        // davranışı). Jest aşkarlanması DƏQİQ SDK API-si ilə:
+        // cameraMoveReason == Gesture (maplibre-compose 0.20 ZoomButtons
+        // pariteti — heuristikası yox, SDK öz bildirir).
+        if (followMe) {
+            LaunchedEffect(myLat, myLng) {
+                mapState.animateCamera(
+                    CameraUpdate(
+                        center = Position(longitude = myLng, latitude = myLat),
+                        zoom = 16.0,
+                    ),
+                    CameraAnimation.Ease.Standard,
+                )
+            }
+            LaunchedEffect(mapState.isCameraMoving, mapState.cameraMoveReason) {
+                if (mapState.isCameraMoving &&
+                    mapState.cameraMoveReason == CameraMoveReason.Gesture
+                ) {
+                    onUserGesture()
+                }
+            }
         }
 
         // animateCamera suspend-dir — zoom həbləri coroutine scope-da işə düşür
