@@ -27,11 +27,14 @@
 `maplibre-compose` öz composeResources assetində 126 dilin
 `strings.commonMain.cvr` faylını gətirir (compass, attribution, km/mi
 simvolları — hər dil ~4 KB, cəm ~1 MB). Tətbiq azərbaycan dilindədir,
-xəritə etiketləri əksərən latın hərfləridir; bizə lazım olanlar: ana
-`values/` (default en), `values-az`, `values-tr`, `values-ru` (region
-ehtiyatı). **Həll**: `packaging.resources.excludes` regex ilə 122
-qovluq APK-dan çıxarılır (`androidResources.localeFilter` bura aid
-deyil — o `res/` üçündür, bu assetdir). Gözlənilən qənaət ~0.9 MB.
+xəritə etiketləri latın simvollarıdır. **Həll**: `packaging.resources.excludes`
+**glob** ilə bütün `values-*` qovluqları çıxarılır — AGP excludes regex
+qəbul etmir (birinci cəhd lookahead regex idi, CI-də „Explicit name
+separator" xətası verdi); glob-da inkar ifadəsi olmadığından az/tr/ru
+da gedir — onlar yalnız kompas/attribution/km-mi etiketləridir,
+ana `values/` (default en) qalır, istifadəçi üçün görünməz fərq.
+`androidResources.localeFilter` bura aid deyil — o `res/` üçündür,
+bu assetdir. Qənaət ~1 MB (126→1 qovluq).
 
 ### F2 — native .so 25 MB (struktur, dəyişmədi)
 Əsas kütlə maplibre-native (13.1 MB/ABI). Bu, D-048 qərarının bilinən
@@ -71,12 +74,14 @@ amma qlif auditindən keçən bütün simvollar istifadə olunur
 
 | Göstərici | v0.62.0 | v0.63.0 (gözlənilən) |
 |---|---|---|
-| APK ölçüsü | 30.5 MB | ~29.6 MB (F1: −0.9 MB) |
-| Lokal qovluq | 126 | 4 + ana values |
+| APK ölçüsü | 30.5 MB | ~29.5 MB (F1: −1 MB) |
+| Lokal qovluq | 126 | 1 (yalnız ana values/, default en) |
 | Başlanğıc | — | dəyişməz (F4: təmiz zəncir) |
 
-Qənaət kiçikdir (3%), amma sıfır riskli və düzgün gənc nəsil
-praktikasıdır: istifadəilməyən lokalizasiya APK-da daşınmamalıdır.
+Qənaət kiçikdir (~3%), amma sıfır riskli və düzgün praktikadır:
+istifadəlməyən lokalizasiya APK-da daşınmamalıdır (birinci cəhd regex
+lookahead idi — AGP „Explicit name separator" glob xətası verdi, CI-də
+tutuldu və tam values-* exclude-a keçildi; dərs LOOP_LOG Loop 5-də).
 Əsl optimizasiya sahəsi F2 (native lib) Play app bundle ilə həll
 olunacaq — birbaşa APK paylanması saxlanıldığı müddətdə 25 MB lib/
 qiyməti sabitdir.
@@ -87,5 +92,5 @@ qiyməti sabitdir.
 unzip -q app-release.apk -d /tmp/apk && du -k /tmp/apk/* | sort -rn | head
 # locale qənaəti yoxlaması:
 ls /tmp/apk/assets/composeResources/org.maplibre.compose.generated/ | wc -l
-# → 5 olmalıdır (values + az/en/tr/ru)
+# → 1 olmalıdır (yalnız values/, default en)
 ```
